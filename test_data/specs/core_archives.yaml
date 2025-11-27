@@ -1,0 +1,98 @@
+version: 1
+archives:
+- name: multi_volume_test.tar.gz
+  type: tar_gz
+  entries:
+  - name: archive.tar.gz
+    type: tar_gz
+    entries:
+    - name: file1.txt
+      type: raw
+      content: "content1\n"
+    - name: file2.txt
+      type: raw
+      content: "content2\n"
+    split:
+      size: 100
+      parts: 3
+      pad: false
+- name: nested_with_multi_volume.tar.gz
+  type: tar_gz
+  entries:
+  - name: inner.tar.gz
+    type: tar_gz
+    entries:
+    - name: file1.txt
+      type: raw
+      content: "Hello World\n"
+    - name: file2.txt
+      type: raw
+      content: "Test Data\n"
+  - name: data.txt
+    type: tar_gz
+    entries:
+    - name: data.txt
+      type: raw
+      content: !!binary |
+        WFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhY
+        WFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhY
+        WA==
+    split:
+      size: 50
+      parts: 5
+      pad: false
+- name: deeply_nested.tar.gz
+  type: tar_gz
+  entries:
+  - name: level1.tar.gz
+    type: tar_gz
+    entries:
+    - name: level2.tar.gz
+      type: tar_gz
+      entries:
+      - name: level3.tar.gz
+        type: tar_gz
+        entries:
+        - name: deep.txt
+          type: raw
+          content: "deep content\n"
+      - name: archive.tar.gz
+        type: tar_gz
+        entries:
+        - name: archive_data.txt
+          type: raw
+          content: !!binary |
+            WVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZ
+            WVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZ
+            WVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZWVlZ
+            WVlZWQ==
+        split:
+          size: 100
+          parts: 3
+          pad: false
+    - name: root.txt
+      type: raw
+      content: "root data\n"
+  - name: root.txt
+    type: raw
+    content: "top level\n"
+- name: deeply_nested_multi_volume.tar.gz
+  type: tar_gz
+  entries:
+  - name: level1.tar
+    type: tar
+    entries:
+    - name: level3.tar.gz
+      type: tar_gz
+      entries:
+      - name: deep_file.dat
+        type: raw
+        size: 5000
+      split:
+        size: 2000
+        parts: 3
+        pad: false
+    split:
+      size: 10240
+      parts: 7
+      pad: false

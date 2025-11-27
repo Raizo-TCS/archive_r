@@ -1,0 +1,948 @@
+version: 1
+archives:
+- name: stress_test_ultimate.tar.gz
+  split:
+    size: 10240
+    parts: 4
+    pattern: ".part%03d"
+    start_index: 1
+    keep_base: true
+  type: tar_gz
+  entries:
+  - name: extra_archive_1.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_1.txt
+      type: raw
+      content:
+        text: 'Extra 1
+
+          '
+        repeat: 100
+  - name: extra_archive_2.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_2.txt
+      type: raw
+      content:
+        text: 'Extra 2
+
+          '
+        repeat: 200
+  - name: extra_archive_3.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_3.txt
+      type: raw
+      size: 2400
+  - name: extra_archive_4.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_4.txt
+      type: raw
+      size: 3200
+  - name: extra_archive_5.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_5.txt
+      type: raw
+      size: 4000
+  - name: extra_archive_6.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_6.txt
+      type: raw
+      size: 4800
+  - name: extra_archive_7.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_7.txt
+      type: raw
+      size: 5600
+  - name: extra_archive_8.tar.gz
+    type: tar_gz
+    entries:
+    - name: extra_file_8.txt
+      type: raw
+      size: 6400
+  - name: level1_final.tar.gz
+    type: tar_gz
+    entries:
+    - name: level2_multi_set.tar.gz
+      type: tar_gz
+      entries:
+      - name: deep_path_2.tar.gz
+        type: tar_gz
+        entries:
+        - name: another/deep/path/to/test/traversal/capabilities/path_archive.tar.gz
+          type: tar_gz
+          entries:
+          - name: path_regular.txt
+            type: raw
+            size: 2600
+        - name: another/deep/path/to/test/traversal/capabilities/path_multi
+          type: tar_gz
+          entries:
+          - name: path_content.txt
+            type: raw
+            size: 6000
+          split:
+            size: 3000
+            parts: 2
+            pattern: ".part%03d"
+            start_index: 1
+      - name: level3_alternating.tar.gz
+        type: tar_gz
+        entries:
+        - name: alternating_multi_1
+          type: tar_gz
+          entries:
+          - name: multi_content_1.txt
+            type: raw
+            size: 8000
+          split:
+            size: 4000
+            parts: 3
+            pattern: ".part%03d"
+            start_index: 1
+        - name: alternating_multi_2
+          type: tar_gz
+          entries:
+          - name: multi_content_2.txt
+            type: raw
+            size: 10000
+          split:
+            size: 5000
+            parts: 3
+            pattern: ".part%03d"
+            start_index: 1
+        - name: level4_deep_paths.tar.gz
+          type: tar_gz
+          entries:
+          - name: deep_dirs.tar.gz
+            type: tar_gz
+            entries:
+            - name: very/long/directory/path/structure/that/goes/deep/into/filesystem/deep_multi
+              type: tar_gz
+              entries:
+              - name: deep_content_1.txt
+                type: raw
+                size: 8000
+              - name: deep_content_2.txt
+                type: raw
+                size: 12000
+              split:
+                size: 10000
+                parts: 2
+                pattern: ".part%03d"
+                start_index: 1
+            - name: very/long/directory/path/structure/that/goes/deep/into/filesystem/deep_nested.tar.gz
+              type: tar_gz
+              entries:
+              - name: deep_nested.txt
+                type: raw
+                content:
+                  text: 'Nested
+
+                    '
+                  repeat: 100
+            - name: very/long/directory/path/structure/that/goes/deep/into/filesystem/deeply_nested_file.txt
+              type: raw
+              content:
+                text: 'Deep file
+
+                  '
+                repeat: 50
+            - name: very/long/directory/path/structure/that/goes/deep/into/filesystem/level5_multi_nest.tar.gz
+              type: tar_gz
+              entries:
+              - name: extra_multi
+                type: tar_gz
+                entries:
+                - name: l5_extra.txt
+                  type: raw
+                  size: 3000
+                split:
+                  size: 6000
+                  parts: 2
+                  pattern: ".part%03d"
+                  start_index: 1
+              - name: level6_tiny_parts.tar.gz
+                type: tar_gz
+                entries:
+                - name: level7_many_archives.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: archive_01.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_01_a.txt
+                      type: raw
+                      content:
+                        text: 'File 1 A
+
+                          '
+                        repeat: 10
+                    - name: file_01_b.txt
+                      type: raw
+                      content:
+                        text: 'File 1 B
+
+                          '
+                        repeat: 15
+                  - name: archive_02.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_02_a.txt
+                      type: raw
+                      content:
+                        text: 'File 2 A
+
+                          '
+                        repeat: 10
+                    - name: file_02_b.txt
+                      type: raw
+                      content:
+                        text: 'File 2 B
+
+                          '
+                        repeat: 15
+                  - name: archive_03.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_03_a.txt
+                      type: raw
+                      content:
+                        text: 'File 3 A
+
+                          '
+                        repeat: 10
+                    - name: file_03_b.txt
+                      type: raw
+                      content:
+                        text: 'File 3 B
+
+                          '
+                        repeat: 15
+                  - name: archive_04.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_04_a.txt
+                      type: raw
+                      content:
+                        text: 'File 4 A
+
+                          '
+                        repeat: 10
+                    - name: file_04_b.txt
+                      type: raw
+                      content:
+                        text: 'File 4 B
+
+                          '
+                        repeat: 15
+                  - name: archive_05.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_05_a.txt
+                      type: raw
+                      content:
+                        text: 'File 5 A
+
+                          '
+                        repeat: 10
+                    - name: file_05_b.txt
+                      type: raw
+                      content:
+                        text: 'File 5 B
+
+                          '
+                        repeat: 15
+                  - name: archive_06.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_06_a.txt
+                      type: raw
+                      content:
+                        text: 'File 6 A
+
+                          '
+                        repeat: 10
+                    - name: file_06_b.txt
+                      type: raw
+                      content:
+                        text: 'File 6 B
+
+                          '
+                        repeat: 15
+                  - name: archive_07.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_07_a.txt
+                      type: raw
+                      content:
+                        text: 'File 7 A
+
+                          '
+                        repeat: 10
+                    - name: file_07_b.txt
+                      type: raw
+                      content:
+                        text: 'File 7 B
+
+                          '
+                        repeat: 15
+                  - name: archive_08.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_08_a.txt
+                      type: raw
+                      content:
+                        text: 'File 8 A
+
+                          '
+                        repeat: 10
+                    - name: file_08_b.txt
+                      type: raw
+                      content:
+                        text: 'File 8 B
+
+                          '
+                        repeat: 15
+                  - name: archive_09.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_09_a.txt
+                      type: raw
+                      content:
+                        text: 'File 9 A
+
+                          '
+                        repeat: 10
+                    - name: file_09_b.txt
+                      type: raw
+                      content:
+                        text: 'File 9 B
+
+                          '
+                        repeat: 15
+                  - name: archive_10.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_10_a.txt
+                      type: raw
+                      content:
+                        text: 'File 10 A
+
+                          '
+                        repeat: 10
+                    - name: file_10_b.txt
+                      type: raw
+                      content:
+                        text: 'File 10 B
+
+                          '
+                        repeat: 15
+                  - name: archive_11.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_11_a.txt
+                      type: raw
+                      content:
+                        text: 'File 11 A
+
+                          '
+                        repeat: 10
+                    - name: file_11_b.txt
+                      type: raw
+                      content:
+                        text: 'File 11 B
+
+                          '
+                        repeat: 15
+                  - name: archive_12.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: file_12_a.txt
+                      type: raw
+                      content:
+                        text: 'File 12 A
+
+                          '
+                        repeat: 10
+                    - name: file_12_b.txt
+                      type: raw
+                      content:
+                        text: 'File 12 B
+
+                          '
+                        repeat: 15
+                  - name: level8_big_parts.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: large_multi
+                      type: tar_gz
+                      entries:
+                      - name: large_content_1.txt
+                        type: raw
+                        size: 100000
+                      - name: large_content_2.txt
+                        type: raw
+                        size: 150000
+                      - name: large_content_3.txt
+                        type: raw
+                        size: 80000
+                      split:
+                        size: 100000
+                        parts: 4
+                        pattern: ".part%03d"
+                        start_index: 1
+                    - name: level9_container.tar.gz
+                      type: tar_gz
+                      entries:
+                      - name: level10_archive.tar.gz
+                        type: tar_gz
+                        entries:
+                        - name: deep_file_001.txt
+                          type: raw
+                          content:
+                            text: 'Deep content 1
+
+                              '
+                            repeat: 50
+                        - name: deep_file_002.txt
+                          type: raw
+                          content:
+                            text: 'Deep content 2
+
+                              '
+                            repeat: 100
+                        - name: deep_file_003.txt
+                          type: raw
+                          content:
+                            text: 'Deep content 3
+
+                              '
+                            repeat: 25
+                      - name: multi_small
+                        type: tar_gz
+                        entries:
+                        - name: l9_multipart_content_1.txt
+                          type: raw
+                          size: 10000
+                        - name: l9_multipart_content_2.txt
+                          type: raw
+                          size: 15000
+                        split:
+                          size: 5000
+                          parts: 5
+                          pattern: ".part%03d"
+                          start_index: 1
+                      - name: small_archive.tar.gz
+                        type: tar_gz
+                        entries:
+                        - name: l9_file_a.txt
+                          type: raw
+                          content:
+                            text: 'Level 9 A
+
+                              '
+                            repeat: 30
+                        - name: l9_file_b.txt
+                          type: raw
+                          content:
+                            text: 'Level 9 B
+
+                              '
+                            repeat: 45
+                - name: tiny_parts
+                  type: tar_gz
+                  entries:
+                  - name: small_part_content.txt
+                    type: raw
+                    size: 50000
+                  split:
+                    size: 8192
+                    parts: 8
+                    pattern: ".part%03d"
+                    start_index: 1
+              - name: nested_multi
+                type: tar_gz
+                entries:
+                - name: l5_data_1.txt
+                  type: raw
+                  size: 5000
+                - name: l5_data_2.txt
+                  type: raw
+                  size: 7000
+                split:
+                  size: 12000
+                  parts: 3
+                  pattern: ".part%03d"
+                  start_index: 1
+          - name: level5_multi_nest.tar.gz
+            type: tar_gz
+            entries:
+            - name: extra_multi
+              type: tar_gz
+              entries:
+              - name: l5_extra.txt
+                type: raw
+                size: 3000
+              split:
+                size: 6000
+                parts: 2
+                pattern: ".part%03d"
+                start_index: 1
+            - name: level6_tiny_parts.tar.gz
+              type: tar_gz
+              entries:
+              - name: level7_many_archives.tar.gz
+                type: tar_gz
+                entries:
+                - name: archive_01.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_01_a.txt
+                    type: raw
+                    content:
+                      text: 'File 1 A
+
+                        '
+                      repeat: 10
+                  - name: file_01_b.txt
+                    type: raw
+                    content:
+                      text: 'File 1 B
+
+                        '
+                      repeat: 15
+                - name: archive_02.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_02_a.txt
+                    type: raw
+                    content:
+                      text: 'File 2 A
+
+                        '
+                      repeat: 10
+                  - name: file_02_b.txt
+                    type: raw
+                    content:
+                      text: 'File 2 B
+
+                        '
+                      repeat: 15
+                - name: archive_03.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_03_a.txt
+                    type: raw
+                    content:
+                      text: 'File 3 A
+
+                        '
+                      repeat: 10
+                  - name: file_03_b.txt
+                    type: raw
+                    content:
+                      text: 'File 3 B
+
+                        '
+                      repeat: 15
+                - name: archive_04.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_04_a.txt
+                    type: raw
+                    content:
+                      text: 'File 4 A
+
+                        '
+                      repeat: 10
+                  - name: file_04_b.txt
+                    type: raw
+                    content:
+                      text: 'File 4 B
+
+                        '
+                      repeat: 15
+                - name: archive_05.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_05_a.txt
+                    type: raw
+                    content:
+                      text: 'File 5 A
+
+                        '
+                      repeat: 10
+                  - name: file_05_b.txt
+                    type: raw
+                    content:
+                      text: 'File 5 B
+
+                        '
+                      repeat: 15
+                - name: archive_06.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_06_a.txt
+                    type: raw
+                    content:
+                      text: 'File 6 A
+
+                        '
+                      repeat: 10
+                  - name: file_06_b.txt
+                    type: raw
+                    content:
+                      text: 'File 6 B
+
+                        '
+                      repeat: 15
+                - name: archive_07.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_07_a.txt
+                    type: raw
+                    content:
+                      text: 'File 7 A
+
+                        '
+                      repeat: 10
+                  - name: file_07_b.txt
+                    type: raw
+                    content:
+                      text: 'File 7 B
+
+                        '
+                      repeat: 15
+                - name: archive_08.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_08_a.txt
+                    type: raw
+                    content:
+                      text: 'File 8 A
+
+                        '
+                      repeat: 10
+                  - name: file_08_b.txt
+                    type: raw
+                    content:
+                      text: 'File 8 B
+
+                        '
+                      repeat: 15
+                - name: archive_09.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_09_a.txt
+                    type: raw
+                    content:
+                      text: 'File 9 A
+
+                        '
+                      repeat: 10
+                  - name: file_09_b.txt
+                    type: raw
+                    content:
+                      text: 'File 9 B
+
+                        '
+                      repeat: 15
+                - name: archive_10.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_10_a.txt
+                    type: raw
+                    content:
+                      text: 'File 10 A
+
+                        '
+                      repeat: 10
+                  - name: file_10_b.txt
+                    type: raw
+                    content:
+                      text: 'File 10 B
+
+                        '
+                      repeat: 15
+                - name: archive_11.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_11_a.txt
+                    type: raw
+                    content:
+                      text: 'File 11 A
+
+                        '
+                      repeat: 10
+                  - name: file_11_b.txt
+                    type: raw
+                    content:
+                      text: 'File 11 B
+
+                        '
+                      repeat: 15
+                - name: archive_12.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: file_12_a.txt
+                    type: raw
+                    content:
+                      text: 'File 12 A
+
+                        '
+                      repeat: 10
+                  - name: file_12_b.txt
+                    type: raw
+                    content:
+                      text: 'File 12 B
+
+                        '
+                      repeat: 15
+                - name: level8_big_parts.tar.gz
+                  type: tar_gz
+                  entries:
+                  - name: large_multi
+                    type: tar_gz
+                    entries:
+                    - name: large_content_1.txt
+                      type: raw
+                      size: 100000
+                    - name: large_content_2.txt
+                      type: raw
+                      size: 150000
+                    - name: large_content_3.txt
+                      type: raw
+                      size: 80000
+                    split:
+                      size: 100000
+                      parts: 4
+                      pattern: ".part%03d"
+                      start_index: 1
+                  - name: level9_container.tar.gz
+                    type: tar_gz
+                    entries:
+                    - name: level10_archive.tar.gz
+                      type: tar_gz
+                      entries:
+                      - name: deep_file_001.txt
+                        type: raw
+                        content:
+                          text: 'Deep content 1
+
+                            '
+                          repeat: 50
+                      - name: deep_file_002.txt
+                        type: raw
+                        content:
+                          text: 'Deep content 2
+
+                            '
+                          repeat: 100
+                      - name: deep_file_003.txt
+                        type: raw
+                        content:
+                          text: 'Deep content 3
+
+                            '
+                          repeat: 25
+                    - name: multi_small
+                      type: tar_gz
+                      entries:
+                      - name: l9_multipart_content_1.txt
+                        type: raw
+                        size: 10000
+                      - name: l9_multipart_content_2.txt
+                        type: raw
+                        size: 15000
+                      split:
+                        size: 5000
+                        parts: 5
+                        pattern: ".part%03d"
+                        start_index: 1
+                    - name: small_archive.tar.gz
+                      type: tar_gz
+                      entries:
+                      - name: l9_file_a.txt
+                        type: raw
+                        content:
+                          text: 'Level 9 A
+
+                            '
+                          repeat: 30
+                      - name: l9_file_b.txt
+                        type: raw
+                        content:
+                          text: 'Level 9 B
+
+                            '
+                          repeat: 45
+              - name: tiny_parts
+                type: tar_gz
+                entries:
+                - name: small_part_content.txt
+                  type: raw
+                  size: 50000
+                split:
+                  size: 8192
+                  parts: 8
+                  pattern: ".part%03d"
+                  start_index: 1
+            - name: nested_multi
+              type: tar_gz
+              entries:
+              - name: l5_data_1.txt
+                type: raw
+                size: 5000
+              - name: l5_data_2.txt
+                type: raw
+                size: 7000
+              split:
+                size: 12000
+                parts: 3
+                pattern: ".part%03d"
+                start_index: 1
+        - name: regular_archive_1.tar.gz
+          type: tar_gz
+          entries:
+          - name: regular_1.txt
+            type: raw
+            content:
+              text: 'Regular 1
+
+                '
+              repeat: 100
+        - name: regular_archive_2.tar.gz
+          type: tar_gz
+          entries:
+          - name: regular_2.txt
+            type: raw
+            content:
+              text: 'Regular 2
+
+                '
+              repeat: 150
+      - name: multi_set_1
+        type: tar_gz
+        entries:
+        - name: multi_set_1.txt
+          type: raw
+          size: 5000
+        split:
+          size: 3000
+          parts: 3
+          pattern: ".part%03d"
+          start_index: 1
+      - name: multi_set_2
+        type: tar_gz
+        entries:
+        - name: multi_set_2.txt
+          type: raw
+          size: 10000
+        split:
+          size: 4000
+          parts: 3
+          pattern: ".part%03d"
+          start_index: 1
+      - name: multi_set_3
+        type: tar_gz
+        entries:
+        - name: multi_set_3.txt
+          type: raw
+          size: 15000
+        split:
+          size: 5000
+          parts: 3
+          pattern: ".part%03d"
+          start_index: 1
+      - name: multi_set_4
+        type: tar_gz
+        entries:
+        - name: multi_set_4.txt
+          type: raw
+          size: 20000
+        split:
+          size: 6000
+          parts: 3
+          pattern: ".part%03d"
+          start_index: 1
+      - name: multi_set_5
+        type: tar_gz
+        entries:
+        - name: multi_set_5.txt
+          type: raw
+          size: 25000
+        split:
+          size: 7000
+          parts: 3
+          pattern: ".part%03d"
+          start_index: 1
+    - name: root_archive_1.tar.gz
+      type: tar_gz
+      entries:
+      - name: root_file_1.txt
+        type: raw
+        content:
+          text: 'Root 1
+
+            '
+          repeat: 75
+    - name: root_archive_2.tar.gz
+      type: tar_gz
+      entries:
+      - name: root_file_2.txt
+        type: raw
+        content:
+          text: 'Root 2
+
+            '
+          repeat: 125
+    - name: root_multipart
+      type: tar_gz
+      entries:
+      - name: root_multi_content.txt
+        type: raw
+        size: 20000
+      split:
+        size: 7500
+        parts: 4
+        pattern: ".part%03d"
+        start_index: 1
+  - name: ultimate_multi_1
+    type: tar_gz
+    entries:
+    - name: ultimate_multi_1.txt
+      type: raw
+      size: 15000
+    split:
+      size: 6000
+      parts: 4
+      pattern: ".part%03d"
+      start_index: 1
+  - name: ultimate_multi_2
+    type: tar_gz
+    entries:
+    - name: ultimate_multi_2.txt
+      type: raw
+      size: 30000
+    split:
+      size: 12000
+      parts: 4
+      pattern: ".part%03d"
+      start_index: 1
+  - name: ultimate_multi_3
+    type: tar_gz
+    entries:
+    - name: ultimate_multi_3.txt
+      type: raw
+      size: 45000
+    split:
+      size: 18000
+      parts: 4
+      pattern: ".part%03d"
+      start_index: 1

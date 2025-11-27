@@ -1,0 +1,393 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 archive_r Team
+
+import io
+import unittest
+import os
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import archive_r
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import archive_r
+
+class TestTraverser(unittest.TestCase):
+    DEFAULT_FORMATS = tuple(list(archive_r.STANDARD_FORMATS) + ["mtree"])
+
+    class MinimalStream:
+        def __init__(self, payload: bytes):
+            self._buffer = io.BytesIO(payload)
+
+        def read(self, length: int = -1) -> bytes:
+            return self._buffer.read(length)
+
+        def rewind(self) -> None:
+            self._buffer.seek(0)
+
+    @classmethod
+    def setUpClass(cls):
+        # Assuming test archives are available in ../../../test_data/
+        test_data_dir = Path(__file__).parent.parent.parent.parent / 'test_data'
+        cls.simple_archive = str(test_data_dir / 'deeply_nested.tar.gz')
+        cls.multi_volume_archive = str(test_data_dir / 'multi_volume_test.tar.gz')
+        cls.no_uid_archive = str(test_data_dir / 'no_uid.zip')
+        cls.directory_path = str(test_data_dir / 'directory_test')
+        cls.broken_archive = str(test_data_dir / 'broken_nested.tar')
+        
+        if not os.path.exists(cls.simple_archive):
+            raise FileNotFoundError(f"Test archive not found: {cls.simple_archive}")
+        if not os.path.exists(cls.multi_volume_archive):
+            raise FileNotFoundError(f"Multi-volume archive not found: {cls.multi_volume_archive}")
+        if not os.path.exists(cls.no_uid_archive):
+            raise FileNotFoundError(f"ZIP archive not found: {cls.no_uid_archive}")
+        if not os.path.isdir(cls.directory_path):
+            raise FileNotFoundError(f"Test directory not found: {cls.directory_path}")
+        if not os.path.exists(cls.broken_archive):
+            raise FileNotFoundError(f"Broken archive not found: {cls.broken_archive}")
+
+    def _normalized_options(self, **kwargs):
+        options = dict(kwargs)
+        options.setdefault("formats", list(self.DEFAULT_FORMATS))
+        return options
+
+    def create_traverser(self, paths, **kwargs):
+        return archive_r.Traverser(paths, **self._normalized_options(**kwargs))
+
+    def tearDown(self):
+        archive_r.register_stream_factory(None)
+        archive_r.on_fault(None)
+
+    def _collect_paths(self, path):
+        return [entry.path for entry in self.create_traverser([path])]
+
+    @staticmethod
+    def _is_multi_volume_part(filename: str) -> bool:
+        suffix_index = filename.rfind('.part')
+        if suffix_index == -1:
+            return False
+        suffix = filename[suffix_index + 5:]
+        return suffix.isdigit() and len(suffix) > 0
+
+    @staticmethod
+    def _multi_volume_base(filename: str) -> str:
+        suffix_index = filename.rfind('.part')
+        return filename[:suffix_index] if suffix_index != -1 else filename
+
+    @staticmethod
+    def _expected_entry_name(entry: "archive_r.Entry") -> str:  # type: ignore[name-defined]
+        hierarchy = entry.path_hierarchy
+        if not hierarchy:
+            return ""
+        return hierarchy[-1]
+    
+    def test_traverser_creation(self):
+        """Test that Traverser can be created"""
+        traverser = self.create_traverser([self.simple_archive])
+        self.assertIsInstance(traverser, archive_r.Traverser)
+    
+    def test_iterator_protocol(self):
+        """Test that Traverser implements iterator protocol"""
+        traverser = self.create_traverser([self.simple_archive])
+        entry_count = 0
+        for entry in traverser:
+            self.assertIsInstance(entry, archive_r.Entry)
+            entry_count += 1
+        
+        self.assertGreater(entry_count, 0)
+    
+    def test_context_manager(self):
+        """Test that Traverser works as context manager"""
+        entry_count = 0
+        with self.create_traverser([self.simple_archive]) as traverser:
+            for entry in traverser:
+                entry_count += 1
+        
+        self.assertGreater(entry_count, 0)
+
+    def test_root_entry_exposed(self):
+        """Root file should appear as the first entry with depth 0"""
+        with self.create_traverser([self.simple_archive]) as traverser:
+            first_entry = next(iter(traverser))
+
+        self.assertEqual(first_entry.depth, 0)
+        self.assertEqual(Path(first_entry.path).name, Path(self.simple_archive).name)
+    
+    def test_entry_properties(self):
+        """Test Entry properties"""
+        with self.create_traverser([self.simple_archive]) as traverser:
+            for entry in traverser:
+                if entry.depth == 0:
+                    continue
+                # Check property types
+                self.assertIsInstance(entry.path, str)
+                self.assertIsInstance(entry.name, str)
+                self.assertIsInstance(entry.size, int)
+                self.assertIsInstance(entry.depth, int)
+                self.assertIsInstance(entry.is_file, bool)
+                self.assertIsInstance(entry.is_directory, bool)
+                
+                # Basic validation
+                self.assertGreater(len(entry.path), 0)
+                expected_name = self._expected_entry_name(entry)
+                self.assertEqual(entry.name, expected_name)
+                self.assertGreater(len(expected_name), 0)
+                self.assertGreaterEqual(entry.size, 0)
+                self.assertGreater(entry.depth, 0)
+
+                hierarchy = entry.path_hierarchy
+                self.assertIsInstance(hierarchy, list)
+                self.assertGreater(len(hierarchy), 0)
+                self.assertTrue(all(isinstance(component, str) for component in hierarchy))
+                self.assertEqual("/".join(hierarchy), entry.path)
+                
+                # Test first entry only
+                break
+
+    def test_entry_read_full_payload(self):
+        """Entry.read() without size should return the entire file payload"""
+        with self.create_traverser([self.simple_archive]) as traverser:
+            target = None
+            for entry in traverser:
+                if entry.depth >= 1 and entry.is_file and 0 < entry.size <= 4096:
+                    target = entry
+                    break
+
+            self.assertIsNotNone(target, "No suitable file entry found for read() test")
+            payload = target.read()
+            self.assertIsInstance(payload, bytes)
+            self.assertEqual(target.size, len(payload))
+            self.assertEqual(b"", target.read())
+
+    def test_entry_read_with_size_argument(self):
+        """Entry.read(size) should stream in bounded chunks"""
+        with self.create_traverser([self.simple_archive]) as traverser:
+            target = None
+            for entry in traverser:
+                if entry.depth >= 1 and entry.is_file and entry.size >= 64:
+                    target = entry
+                    break
+
+            self.assertIsNotNone(target, "No suitable file entry found for chunked read() test")
+            chunk_size = max(1, min(target.size // 4, 64 * 1024))
+            collected = bytearray()
+            while True:
+                chunk = target.read(chunk_size)
+                self.assertIsInstance(chunk, bytes)
+                if not chunk:
+                    break
+                self.assertLessEqual(len(chunk), chunk_size)
+                collected.extend(chunk)
+            self.assertEqual(target.size, len(collected))
+
+    def test_path_hierarchy_component_values(self):
+        """Ensure path_hierarchy captures absolute archive and relative entry components"""
+        archive_abs = os.path.abspath(self.simple_archive)
+        with self.create_traverser([self.simple_archive]) as traverser:
+            entry = next(e for e in traverser if e.depth >= 1)
+
+        hierarchy = entry.path_hierarchy
+        self.assertIsInstance(hierarchy, list)
+        self.assertGreater(len(hierarchy), 1)
+        self.assertEqual(archive_abs, hierarchy[0])
+        self.assertEqual(entry.name, self._expected_entry_name(entry))
+
+        self.assertEqual(entry.path, "/".join(hierarchy))
+    
+    def test_set_descent(self):
+        """Test per-entry descent control"""
+        entries_with_skip = []
+        with self.create_traverser([self.simple_archive]) as traverser:
+            for i, entry in enumerate(traverser):
+                entries_with_skip.append(entry.path)
+                if i == 0:
+                    entry.set_descent(False)
+        
+        self.assertGreater(len(entries_with_skip), 0)
+    
+    def test_entry_repr(self):
+        """Test Entry repr"""
+        with self.create_traverser([self.simple_archive]) as traverser:
+            entry = next(iter(traverser))
+            repr_str = repr(entry)
+            self.assertIn('Entry', repr_str)
+            self.assertIn('path=', repr_str)
+            self.assertIn('size=', repr_str)
+            self.assertIn('depth=', repr_str)
+    
+    def test_list_comprehension(self):
+        """Test using list comprehension"""
+        paths = [entry.path for entry in self.create_traverser([self.simple_archive])]
+        self.assertGreater(len(paths), 0)
+        self.assertTrue(all(isinstance(p, str) for p in paths))
+    
+    def test_filter_files(self):
+        """Test filtering files"""
+        # Collect file information during iteration, not Entry objects
+        files = []
+        for e in self.create_traverser([self.simple_archive]):
+            if e.is_file:
+                files.append({'path': e.path, 'is_file': e.is_file})
+        
+        self.assertGreater(len(files), 0)
+        self.assertTrue(all(f['is_file'] for f in files))
+
+    def test_traverser_with_options(self):
+        """Ensure optional passphrases and formats arguments are accepted"""
+        traverser = self.create_traverser(
+            [self.simple_archive],
+            passphrases=["unused-passphrase"],
+            formats=["tar"],
+        )
+        entries = [entry.path for entry in traverser]
+        self.assertGreater(len(entries), 0)
+        self.assertTrue(all(isinstance(p, str) for p in entries))
+
+    def test_metadata_selection(self):
+        """Verify metadata selection and retrieval semantics"""
+        traverser = self.create_traverser(
+            [self.simple_archive],
+            metadata_keys=["pathname", "size"],
+        )
+        entry = next(e for e in traverser if e.depth >= 1)
+
+        metadata = entry.metadata
+        expected_name = self._expected_entry_name(entry)
+        self.assertIn("pathname", metadata)
+        self.assertEqual(metadata["pathname"], expected_name)
+        self.assertEqual(entry.name, expected_name)
+        self.assertIn("size", metadata)
+        self.assertIsInstance(metadata["size"], int)
+
+        missing = entry.metadata_value("uid")
+        self.assertIsNone(missing)
+
+    def test_metadata_missing_value(self):
+        """Ensure requested metadata absent in archive yields None"""
+        traverser = self.create_traverser(
+            [self.no_uid_archive],
+            metadata_keys=["pathname", "uid"],
+        )
+        entry = next(e for e in traverser if e.depth >= 1)
+
+        metadata = entry.metadata
+        expected_name = self._expected_entry_name(entry)
+        self.assertIn("pathname", metadata)
+        self.assertEqual(metadata["pathname"], expected_name)
+        self.assertEqual(entry.name, expected_name)
+        self.assertNotIn("uid", metadata)
+        self.assertIsNone(entry.metadata_value("uid"))
+
+    def test_stream_factory_with_bytes_io(self):
+        expected = self._collect_paths(self.simple_archive)
+        payload = Path(self.simple_archive).read_bytes()
+        calls = {"count": 0}
+
+        def factory(hierarchy):
+            calls["count"] += 1
+            if hierarchy[0] == os.path.abspath(self.simple_archive):
+                return io.BytesIO(payload)
+            return None
+
+        archive_r.register_stream_factory(factory)
+        actual = self._collect_paths(self.simple_archive)
+        self.assertEqual(expected, actual)
+        self.assertEqual(1, calls["count"])
+
+    def test_stream_factory_path_override(self):
+        virtual = self.simple_archive + ".virtual"
+        expected = [
+            path.replace(self.simple_archive, virtual, 1)
+            for path in self._collect_paths(self.simple_archive)
+        ]
+
+        def factory(hierarchy):
+            if hierarchy[0] == os.path.abspath(virtual):
+                return open(self.simple_archive, "rb")
+            return None
+
+        archive_r.register_stream_factory(factory)
+        actual = self._collect_paths(virtual)
+        self.assertEqual(expected, actual)
+
+    def test_stream_factory_with_custom_stream_without_seek(self):
+        expected = self._collect_paths(self.simple_archive)
+        payload = Path(self.simple_archive).read_bytes()
+        calls = {"count": 0}
+
+        def factory(hierarchy):
+            absolute = os.path.abspath(self.simple_archive)
+            if hierarchy[0] != absolute:
+                return None
+            calls["count"] += 1
+            return self.MinimalStream(payload)
+
+        archive_r.register_stream_factory(factory)
+        actual = self._collect_paths(self.simple_archive)
+        self.assertEqual(expected, actual)
+        self.assertEqual(1, calls["count"])
+
+    def test_multi_volume_grouping(self):
+        """Verify multi-volume archives can be grouped and traversed"""
+        part_paths = []
+        for entry in self.create_traverser([self.multi_volume_archive]):
+            filename = Path(entry.path).name
+            if self._is_multi_volume_part(filename):
+                part_paths.append(entry.path)
+
+        self.assertGreater(len(part_paths), 0)
+
+        entries_inside = []
+        for entry in self.create_traverser([self.multi_volume_archive]):
+            filename = Path(entry.path).name
+            if self._is_multi_volume_part(filename):
+                entry.set_multi_volume_group(
+                    self._multi_volume_base(filename),
+                    order="given",
+                )
+            if entry.depth > 1:
+                entries_inside.append(entry.path)
+
+        self.assertGreater(len(entries_inside), 0)
+
+    def test_multi_root_traversal(self):
+        """Ensure multiple roots are fully traversed"""
+        paths = [self.simple_archive, self.directory_path]
+        entries = list(self.create_traverser(paths))
+        self.assertEqual(len(entries), 21)
+
+        counts = {self.simple_archive: 0, self.directory_path: 0}
+        for entry in entries:
+            root_component = entry.path_hierarchy[0]
+            if root_component == self.simple_archive or root_component.startswith(self.simple_archive + os.sep):
+                counts[self.simple_archive] += 1
+            elif root_component == self.directory_path or root_component.startswith(self.directory_path + os.sep):
+                counts[self.directory_path] += 1
+            else:
+                self.fail(f"Unexpected root component: {root_component}")
+
+        self.assertEqual(counts[self.simple_archive], 11)
+        self.assertEqual(counts[self.directory_path], 10)
+
+    def test_fault_callback_receives_nested_fault(self):
+        """Verify faults propagate through archive_r.on_fault"""
+        captured = []
+
+        def handler(fault):
+            captured.append(fault)
+
+        archive_r.on_fault(handler)
+        saw_ok = False
+        try:
+            for entry in self.create_traverser([self.broken_archive]):
+                if entry.name == 'ok.txt':
+                    saw_ok = True
+        finally:
+            archive_r.on_fault(None)
+
+        self.assertTrue(saw_ok, 'Expected to enumerate ok.txt even when faults occur')
+        self.assertTrue(captured, 'Fault callback did not receive any faults')
+        self.assertTrue(any('corrupt_inner.tar' in fault.get('path', '') for fault in captured))
+
+if __name__ == '__main__':
+    unittest.main()

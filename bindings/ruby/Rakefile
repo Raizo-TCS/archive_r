@@ -1,0 +1,37 @@
+require 'rake/testtask'
+require 'rake/extensiontask'
+
+# Define the extension build task
+Rake::ExtensionTask.new('archive_r') do |ext|
+  ext.ext_dir = 'ext/archive_r'
+  ext.lib_dir = 'lib'
+end
+
+# Define the test task
+Rake::TestTask.new(:test) do |t|
+  t.deps = [:compile]
+  t.test_files = FileList['test/**/*_test.rb', 'test/**/test_*.rb']
+  t.verbose = true
+end
+
+desc 'Run tests'
+task default: :test
+
+desc 'Build gem'
+task :build => :compile do
+  system 'gem build archive_r.gemspec'
+end
+
+desc 'Clean build artifacts'
+task :clean do
+  rm_rf 'lib/archive_r.so'
+  rm_rf 'lib/archive_r.bundle'
+  rm_rf 'tmp'
+  rm_rf Dir.glob('*.gem')
+  cd 'ext/archive_r' do
+    rm_rf 'Makefile'
+    rm_rf Dir.glob('*.o')
+    rm_rf Dir.glob('*.so')
+    rm_rf Dir.glob('*.bundle')
+  end
+end

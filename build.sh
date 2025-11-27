@@ -1,0 +1,280 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 archive_r Team
+
+#!/bin/bash
+# Experimental2 Build Script
+# Usage: ./build.sh [OPTIONS]
+
+set -e
+
+# === Configuration ===
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BUILD_DIR="$ROOT_DIR/build"
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# === Utility Functions ===
+log_info() {
+    echo -e "${BLUE}▶${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+show_help() {
+    cat << HELP
+Experimental2 Build Script
+
+Usage: ./build.sh [OPTIONS]
+
+Options:
+    --clean         Remove core build artifacts only
+    --clean-all     Remove core build artifacts and binding artifacts
+    --rebuild       Clean core artifacts and rebuild the core library
+    --rebuild-all   Clean core/binding artifacts and rebuild everything
+    --with-ruby     Build Ruby binding after core library
+    --with-python   Build Python binding after core library
+    --bindings-only Build only bindings (skip core library)
+    --help          Show this help message
+
+Examples:
+    ./build.sh                    # Normal build (core only)
+    ./build.sh --clean            # Remove build artifacts only
+    ./build.sh --rebuild          # Clean core and rebuild from scratch
+    ./build.sh --with-ruby        # Build core + Ruby binding
+    ./build.sh --with-python      # Build core + Python binding
+    ./build.sh --rebuild-all      # Full rebuild including bindings
+
+HELP
+}
+
+## Parse arguments
+CLEAN_CORE=false
+CLEAN_BINDINGS=false
+REBUILD=false
+REBUILD_ALL=false
+PERFORM_BUILD=true
+BUILD_RUBY=false
+BUILD_PYTHON=false
+BINDINGS_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clean)
+            CLEAN_CORE=true
+            CLEAN_BINDINGS=true
+            PERFORM_BUILD=false
+            shift
+            ;;
+        --clean-all)
+            CLEAN_CORE=true
+            CLEAN_BINDINGS=true
+            PERFORM_BUILD=false
+            shift
+            ;;
+        --rebuild)
+            CLEAN_CORE=true
+            REBUILD=true
+            PERFORM_BUILD=true
+            BINDINGS_ONLY=false
+            shift
+            ;;
+        --rebuild-all)
+            CLEAN_CORE=true
+            CLEAN_BINDINGS=true
+            REBUILD_ALL=true
+            PERFORM_BUILD=true
+            BUILD_RUBY=true
+            BUILD_PYTHON=true
+            BINDINGS_ONLY=false
+            shift
+            ;;
+        --with-ruby)
+            BUILD_RUBY=true
+            shift
+            ;;
+        --with-python)
+            BUILD_PYTHON=true
+            shift
+            ;;
+        --bindings-only)
+            BINDINGS_ONLY=true
+            shift
+            ;;
+        --help)
+            show_help
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            show_help
+            exit 1
+            ;;
+    esac
+done
+
+# If user requested clean/clean-all without rebuild, skip build steps entirely
+if [ "$PERFORM_BUILD" = false ]; then
+    # Still allow bindings-only clean if specified
+    BUILD_RUBY=false
+    BUILD_PYTHON=false
+fi
+
+# === Main Build Process ===
+log_info "Experimental2 Build Starting..."
+
+# Check for CMake when building core
+if [ "$PERFORM_BUILD" = true ] && [ "$BINDINGS_ONLY" = false ]; then
+    if ! command -v cmake >/dev/null 2>&1; then
+        log_error "CMake not found. Please install CMake."
+        exit 1
+    fi
+fi
+
+# Clean steps
+if [ "$CLEAN_CORE" = true ]; then
+    log_info "Cleaning core build artifacts..."
+    rm -rf "$BUILD_DIR"
+    log_success "Core build directory cleaned"
+fi
+
+if [ "$CLEAN_BINDINGS" = true ]; then
+    log_info "Cleaning Ruby binding artifacts..."
+    if [ -d "$ROOT_DIR/bindings/ruby" ]; then
+        pushd "$ROOT_DIR/bindings/ruby" >/dev/null
+        make clean 2>/dev/null || true
+        rm -f Makefile mkmf.log archive_r.so
+        find . -maxdepth 1 -name "*.o" -delete 2>/dev/null || true
+        rm -f ext/archive_r/mkmf.log
+        find ext/archive_r -name "*.o" -delete 2>/dev/null || true
+        find ext/archive_r -name "*.so" -delete 2>/dev/null || true
+        find ext/archive_r -name ".*.time" -delete 2>/dev/null || true
+        popd >/dev/null
+    fi
+
+    log_info "Cleaning Python binding artifacts..."
+    if [ -d "$ROOT_DIR/bindings/python" ]; then
+        pushd "$ROOT_DIR/bindings/python" >/dev/null
+        rm -rf build/ dist/ *.egg-info
+        find . -name "*.so" -delete
+        find . -name "*.pyc" -delete
+        find . -name "__pycache__" -delete
+        popd >/dev/null
+    fi
+
+    log_success "Binding artifacts cleaned"
+fi
+
+# Skip build if this was a clean-only request
+if [ "$PERFORM_BUILD" = false ]; then
+    log_success "Clean operation completed"
+    exit 0
+fi
+
+# Build core library (unless --bindings-only)
+if [ "$BINDINGS_ONLY" = false ]; then
+    mkdir -p "$BUILD_DIR"
+
+    log_info "Configuring with CMake..."
+    cd "$BUILD_DIR"
+    cmake .. -DCMAKE_BUILD_TYPE=Release
+
+    log_info "Building core library..."
+    make -j$(nproc)
+
+    if [ -f "$BUILD_DIR/libarchive_r_experimental2.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
+        echo ""
+        log_success "Core build completed"
+        log_success "  Library: $BUILD_DIR/libarchive_r_experimental2.a"
+        log_success "  Example: $BUILD_DIR/find_and_traverse"
+        echo ""
+    else
+        log_error "Core build failed - expected files not found"
+        exit 1
+    fi
+
+    cd "$ROOT_DIR"
+fi
+
+# === Build Bindings ===
+
+build_ruby_binding() {
+    log_info "Building Ruby binding..."
+    
+    if ! command -v ruby >/dev/null 2>&1; then
+        log_warning "Ruby not found - skipping Ruby binding"
+        return 1
+    fi
+    
+    cd "$ROOT_DIR/bindings/ruby"
+    
+    # Run extconf.rb
+    ruby ext/archive_r/extconf.rb
+    
+    # Build
+    make
+    
+    if [ -f "archive_r.so" ]; then
+        log_success "Ruby binding built successfully"
+        log_success "  Extension: $ROOT_DIR/bindings/ruby/archive_r.so"
+        cd "$ROOT_DIR"
+        return 0
+    else
+        cd "$ROOT_DIR"
+        log_error "Ruby binding build failed"
+        return 1
+    fi
+}
+
+build_python_binding() {
+    log_info "Building Python binding..."
+    
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_warning "Python3 not found - skipping Python binding"
+        return 1
+    fi
+    
+    cd "$ROOT_DIR/bindings/python"
+    
+    # Build extension in-place
+    python3 setup.py build_ext --inplace
+    
+    if ls *.so 1>/dev/null 2>&1; then
+        log_success "Python binding built successfully"
+        log_success "  Extension: $ROOT_DIR/bindings/python/*.so"
+        cd "$ROOT_DIR"
+        return 0
+    else
+        cd "$ROOT_DIR"
+        log_error "Python binding build failed"
+        return 1
+    fi
+}
+
+# Build requested bindings
+if [ "$BUILD_RUBY" = true ]; then
+    build_ruby_binding || log_warning "Ruby binding build had issues"
+fi
+
+if [ "$BUILD_PYTHON" = true ]; then
+    build_python_binding || log_warning "Python binding build had issues"
+fi
+
+# Run tests if requested
+# Final summary
+echo ""
+log_success "Build process completed!"
