@@ -2,7 +2,7 @@
 # Copyright (c) 2025 archive_r Team
 
 #!/bin/bash
-# Experimental2 Build Script
+# archive_r Build Script
 # Usage: ./build.sh [OPTIONS]
 
 set -e
@@ -35,9 +35,10 @@ log_error() {
     echo -e "${RED}✗${NC} $1"
 }
 
+# archive_r Build Script
 show_help() {
     cat << HELP
-Experimental2 Build Script
+archive_r Build Script
 
 Usage: ./build.sh [OPTIONS]
 
@@ -135,7 +136,7 @@ if [ "$PERFORM_BUILD" = false ]; then
 fi
 
 # === Main Build Process ===
-log_info "Experimental2 Build Starting..."
+log_info "archive_r Build Starting..."
 
 # Check for CMake when building core
 if [ "$PERFORM_BUILD" = true ] && [ "$BINDINGS_ONLY" = false ]; then
@@ -196,10 +197,10 @@ if [ "$BINDINGS_ONLY" = false ]; then
     log_info "Building core library..."
     make -j$(nproc)
 
-    if [ -f "$BUILD_DIR/libarchive_r_experimental2.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
+    if [ -f "$BUILD_DIR/libarchive_r_core.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
         echo ""
         log_success "Core build completed"
-        log_success "  Library: $BUILD_DIR/libarchive_r_experimental2.a"
+        log_success "  Library: $BUILD_DIR/libarchive_r_core.a"
         log_success "  Example: $BUILD_DIR/find_and_traverse"
         echo ""
     else

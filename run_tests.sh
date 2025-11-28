@@ -2,7 +2,7 @@
 
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 archive_r Team
-# Experimental2 Test Runner Script
+# archive_r Test Runner Script
 # Usage: ./run_tests.sh [--perf-archive <path>]
 
 set -e
@@ -137,7 +137,7 @@ if [ ! -d "$TEST_DATA_DIR" ]; then
 fi
 
 # === Main Test Execution ===
-log_info "Experimental2 Test Runner Starting..."
+log_info "archive_r Test Runner Starting..."
 log_info "Executable: $EXECUTABLE"
 log_info "Test Data:  $TEST_DATA_DIR"
 echo ""

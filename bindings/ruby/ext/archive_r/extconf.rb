@@ -27,8 +27,8 @@ unless have_library('archive')
 end
 
 # Try to link with pre-built static library first
-if File.exist?(File.join(archive_r_lib, 'libarchive_r_experimental2.a'))
-  $LOCAL_LIBS << " #{File.join(archive_r_lib, 'libarchive_r_experimental2.a')}"
+if File.exist?(File.join(archive_r_lib, 'libarchive_r_core.a'))
+  $LOCAL_LIBS << " #{File.join(archive_r_lib, 'libarchive_r_core.a')}"
   puts "Using pre-built archive_r core library"
 else
   # Build from source as fallback

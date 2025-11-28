@@ -26,7 +26,7 @@ sources = ['src/archive_r_py.cc']
 
 # Try to use pre-built library first
 extra_objects = []
-static_lib = archive_r_build / 'libarchive_r_experimental2.a'
+static_lib = archive_r_build / 'libarchive_r_core.a'
 if static_lib.exists():
     extra_objects = [str(static_lib)]
     print(f"Using pre-built archive_r library: {static_lib}")
