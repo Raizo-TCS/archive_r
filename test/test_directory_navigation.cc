@@ -123,25 +123,40 @@ int main(int argc, char *argv[]) {
         std::cerr << "Max depth mismatch for " << dirname << ": expected " << expected_max_depth << ", got " << max_depth << std::endl;
         return 1;
       }
-      for (size_t i = 0; i < expected_entries.size(); ++i) {
-        const auto &expected = expected_entries[i];
+
+      std::unordered_map<std::string, ExpectedEntry> expected_by_path;
+      for (const auto &expected : expected_entries) {
+        expected_by_path.emplace(expected.relative_path, expected);
+      }
+
+      for (size_t i = 0; i < observed.size(); ++i) {
         const auto &actual = observed[i];
-        if (actual.relative_path != expected.relative_path) {
-          std::cerr << "Entry " << i + 1 << " path mismatch: expected " << expected.relative_path << ", got " << actual.relative_path << std::endl;
+        auto expected_it = expected_by_path.find(actual.relative_path);
+        if (expected_it == expected_by_path.end()) {
+          std::cerr << "Unexpected entry path: " << actual.relative_path << std::endl;
           return 1;
         }
+
+        const auto &expected = expected_it->second;
         if (actual.depth != expected.depth) {
-          std::cerr << "Entry " << i + 1 << " depth mismatch for " << actual.relative_path << std::endl;
+          std::cerr << "Depth mismatch for " << actual.relative_path << ": expected " << expected.depth << ", got " << actual.depth << std::endl;
           return 1;
         }
         if (actual.is_file != expected.is_file) {
-          std::cerr << "Entry " << i + 1 << " type mismatch for " << actual.relative_path << std::endl;
+          std::cerr << "Type mismatch for " << actual.relative_path << std::endl;
           return 1;
         }
         if (actual.size != expected.size) {
-          std::cerr << "Entry " << i + 1 << " size mismatch for " << actual.relative_path << std::endl;
+          std::cerr << "Size mismatch for " << actual.relative_path << ": expected " << expected.size << ", got " << actual.size << std::endl;
           return 1;
         }
+
+        expected_by_path.erase(expected_it);
+      }
+
+      if (!expected_by_path.empty()) {
+        std::cerr << "Missing expected entries. Example: " << expected_by_path.begin()->first << std::endl;
+        return 1;
       }
     } else {
       if (observed.empty()) {
