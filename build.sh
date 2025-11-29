@@ -58,6 +58,7 @@ Options:
     --skip-python-package
                     Disable Python packaging when previously enabled
     --bindings-only Build only bindings (skip core library)
+    --python-only   Skip Ruby binding entirely (implies --with-python)
     --help          Show this help message
 
 Examples:
@@ -149,6 +150,7 @@ BUILD_PYTHON=false
 BINDINGS_ONLY=false
 PACKAGE_RUBY=true
 PACKAGE_PYTHON=false
+PYTHON_ONLY_MODE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -211,6 +213,11 @@ while [[ $# -gt 0 ]]; do
             BINDINGS_ONLY=true
             shift
             ;;
+        --python-only)
+            PYTHON_ONLY_MODE=true
+            BUILD_PYTHON=true
+            shift
+            ;;
         --help)
             show_help
             exit 0
@@ -223,6 +230,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [ "$PYTHON_ONLY_MODE" = true ]; then
+    BUILD_RUBY=false
+    PACKAGE_RUBY=false
+fi
+
 # If user requested clean/clean-all without rebuild, skip build steps entirely
 if [ "$PERFORM_BUILD" = false ]; then
     # Still allow bindings-only clean if specified
@@ -232,6 +244,10 @@ fi
 
 # === Main Build Process ===
 log_info "archive_r Build Starting..."
+
+if [ "$PYTHON_ONLY_MODE" = true ]; then
+    log_info "Python-only mode enabled - skipping Ruby binding build and packaging"
+fi
 
 # Check for CMake when building core
 if [ "$PERFORM_BUILD" = true ] && [ "$BINDINGS_ONLY" = false ]; then

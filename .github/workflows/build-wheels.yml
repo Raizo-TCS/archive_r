@@ -1,0 +1,104 @@
+name: Build Wheels
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-manylinux-wheels:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-tag:
+          - cp39-cp39
+          - cp310-cp310
+          - cp311-cp311
+          - cp312-cp312
+    env:
+      MANYLINUX_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
+      LIBARCHIVE_VERSION: 3.7.4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build wheel for ${{ matrix.python-tag }}
+        run: |
+          set -euo pipefail
+          docker run --rm \
+            -e PYTHON_TAG=${{ matrix.python-tag }} \
+            -e LIBARCHIVE_VERSION=${{ env.LIBARCHIVE_VERSION }} \
+            -v "${{ github.workspace }}:/io" \
+            ${{ env.MANYLINUX_IMAGE }} \
+            /bin/bash -c "set -euo pipefail && \
+              yum install -y \
+                cmake \
+                gcc-c++ \
+                make \
+                curl \
+                tar \
+                xz \
+                autoconf \
+                automake \
+                libtool \
+                pkgconfig \
+                openssl-devel \
+                zlib-devel \
+                bzip2-devel \
+                xz-devel \
+                libxml2-devel \
+                python3 \
+                python3-pip \
+                python3-devel \
+                rust \
+                cargo >/dev/null && \
+              mkdir -p /tmp/libarchive && \
+              curl -sSL "https://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VERSION}.tar.xz" -o /tmp/libarchive.tar.xz && \
+              tar -xf /tmp/libarchive.tar.xz -C /tmp/libarchive --strip-components=1 && \
+              cd /tmp/libarchive && \
+              ./configure --prefix=/opt/libarchive-custom >/dev/null && \
+              make -j\$(nproc) >/dev/null && \
+              make install >/dev/null && \
+              echo '/opt/libarchive-custom/lib' > /etc/ld.so.conf.d/libarchive_custom.conf && \
+              ldconfig && \
+              python3 -m pip install --upgrade pip >/dev/null && \
+              python3 -m pip install --upgrade build twine virtualenv pybind11 >/dev/null && \
+              export PKG_CONFIG_PATH=/opt/libarchive-custom/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}} && \
+              export LD_LIBRARY_PATH=/opt/libarchive-custom/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
+              export LIBRARY_PATH=/opt/libarchive-custom/lib${LIBRARY_PATH:+:${LIBRARY_PATH}} && \
+              export CMAKE_PREFIX_PATH=/opt/libarchive-custom${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}} && \
+              export LibArchive_ROOT=/opt/libarchive-custom && \
+              export CPPFLAGS="${CPPFLAGS:+${CPPFLAGS} }-I/opt/libarchive-custom/include" && \
+              export CXXFLAGS="${CXXFLAGS:+${CXXFLAGS} }-pthread -I/opt/libarchive-custom/include" && \
+              export LDFLAGS="${LDFLAGS:+${LDFLAGS} }-pthread -L/opt/libarchive-custom/lib" && \
+              export CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc && \
+              export CXX=/opt/rh/gcc-toolset-14/root/usr/bin/g++ && \
+              cd /io && \
+              ./build.sh --rebuild-all --python-only && \
+              cd bindings/python && \
+              rm -rf dist dist_temp && \
+              mkdir -p dist dist_temp && \
+              PYBIN=/opt/python/\${PYTHON_TAG}/bin && \
+              \${PYBIN}/pip install --upgrade pip setuptools wheel pybind11 >/dev/null && \
+              \${PYBIN}/pip wheel . -w dist_temp/ --no-deps >/dev/null && \
+              \${PYBIN}/pip install auditwheel >/dev/null && \
+              mkdir -p dist/\${PYTHON_TAG} && \
+              auditwheel repair dist_temp/*.whl --plat manylinux_2_28_x86_64 -w dist/\${PYTHON_TAG}/ >/dev/null && \
+              \${PYBIN}/pip install --no-index dist/\${PYTHON_TAG}/*.whl >/dev/null && \
+              \${PYBIN}/python -c \"import archive_r; print(f'validated {archive_r.__version__}')\""
+
+      - name: Upload wheels for ${{ matrix.python-tag }}
+        uses: actions/upload-artifact@v4
+        if: ${{ env.ACT != 'true' }}
+        with:
+          name: wheels-${{ matrix.python-tag }}-${{ github.sha }}
+          path: bindings/python/dist/${{ matrix.python-tag }}/*.whl
+          if-no-files-found: error
+          retention-days: 7

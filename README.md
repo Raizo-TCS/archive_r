@@ -1,6 +1,14 @@
 # archive_r
 
+[![CI](https://github.com/Raizo-TCS/archive_r/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/ci.yml)
+
 > ⚠️ **Development Status**: This library is currently under development. The API may change without notice.
+
+## CI/CD Status
+
+- `ci.yml` (badge above) builds the core library plus Python/Ruby bindings on Ubuntu 24.04, runs `./run_tests.sh`, and uploads build logs and packaged artifacts for every push/PR targeting `main`.
+- `build-wheels.yml` (drafted) runs manylinux_2_28 Docker builds for CPython 3.9–3.12, repairs wheels via `auditwheel`, and stores the artifacts for release candidates. Ruby artifacts are produced by a separate workflow, so this job now drives a **Python-only** rebuild via `./build.sh --rebuild-all --python-only` before packaging wheels.
+- Phase 3 (release automation) will extend this pipeline with GitHub Releases + PyPI/RubyGems publishing once manylinux validation is complete.
 
 ## Overview
 
@@ -47,6 +55,9 @@ Build artifacts will be generated under `archive_r/build/`.
 
 # Include both
 ./build.sh --with-python --with-ruby
+
+# Full rebuild for Python-only CI workflows (skips Ruby binding steps)
+./build.sh --rebuild-all --python-only
 ```
 
 ### For Developers: Individual Binding Builds
@@ -389,6 +400,9 @@ archive_r/
 
 # Rebuild all (core + bindings)
 ./build.sh --rebuild-all
+
+# Rebuild all artifacts but skip Ruby binding (equivalent to Python-only CI)
+./build.sh --rebuild-all --python-only
 
 # Clean core library only
 ./build.sh --clean
