@@ -2,9 +2,11 @@
 # Copyright (c) 2025 archive_r Team
 
 import io
-import unittest
 import os
 import sys
+import tarfile
+import tempfile
+import unittest
 from pathlib import Path
 
 
@@ -41,6 +43,7 @@ class TestTraverser(unittest.TestCase):
         cls.no_uid_archive = str(test_data_dir / 'no_uid.zip')
         cls.directory_path = str(test_data_dir / 'directory_test')
         cls.broken_archive = str(test_data_dir / 'broken_nested.tar')
+        cls.stress_archive = str(test_data_dir / 'stress_test_ultimate.tar.gz')
         
         if not os.path.exists(cls.simple_archive):
             raise FileNotFoundError(f"Test archive not found: {cls.simple_archive}")
@@ -52,6 +55,8 @@ class TestTraverser(unittest.TestCase):
             raise FileNotFoundError(f"Test directory not found: {cls.directory_path}")
         if not os.path.exists(cls.broken_archive):
             raise FileNotFoundError(f"Broken archive not found: {cls.broken_archive}")
+        if not os.path.exists(cls.stress_archive):
+            raise FileNotFoundError(f"Stress archive not found: {cls.stress_archive}")
 
     def _normalized_options(self, **kwargs):
         options = dict(kwargs)
@@ -119,6 +124,24 @@ class TestTraverser(unittest.TestCase):
 
         self.assertEqual(first_entry.depth, 0)
         self.assertEqual(Path(first_entry.path).name, Path(self.simple_archive).name)
+
+    def test_empty_archive_traversal_yields_only_root(self):
+        """Empty archives should enumerate only the root entry"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            empty_tar = Path(tmpdir) / "empty.tar"
+            with tarfile.open(empty_tar, "w"):
+                pass
+            entries = list(self.create_traverser([str(empty_tar)]))
+
+        self.assertEqual(1, len(entries))
+        root_entry = entries[0]
+        self.assertEqual(0, root_entry.depth)
+        self.assertEqual(root_entry.path_hierarchy[0], str(empty_tar))
+
+    def test_invalid_path_hierarchy_rejected(self):
+        """Empty path hierarchy input should raise ValueError"""
+        with self.assertRaises(ValueError):
+            self.create_traverser([[]])
     
     def test_entry_properties(self):
         """Test Entry properties"""
@@ -186,6 +209,24 @@ class TestTraverser(unittest.TestCase):
                 self.assertLessEqual(len(chunk), chunk_size)
                 collected.extend(chunk)
             self.assertEqual(target.size, len(collected))
+
+    def test_entry_multiple_reads_exhaust_payload(self):
+        """Repeated read() calls should eventually return EOF"""
+        with self.create_traverser([self.simple_archive]) as traverser:
+            target = None
+            for entry in traverser:
+                if entry.depth >= 1 and entry.is_file and entry.size >= 64:
+                    target = entry
+                    break
+
+            self.assertIsNotNone(target, "No suitable file entry found for repeated read test")
+            chunk1 = target.read(16)
+            chunk2 = target.read(16)
+            remainder = target.read()
+            self.assertGreater(len(chunk1), 0)
+            self.assertGreater(len(chunk2), 0)
+            self.assertEqual(target.size, len(chunk1) + len(chunk2) + len(remainder))
+            self.assertEqual(b"", target.read())
 
     def test_path_hierarchy_component_values(self):
         """Ensure path_hierarchy captures absolute archive and relative entry components"""
@@ -334,6 +375,45 @@ class TestTraverser(unittest.TestCase):
         self.assertEqual(expected, actual)
         self.assertEqual(1, calls["count"])
 
+    def test_stream_factory_requires_callable(self):
+        """register_stream_factory should reject non-callables"""
+        with self.assertRaises(TypeError):
+            archive_r.register_stream_factory("invalid")
+
+    def test_stream_factory_seekable_without_rewind(self):
+        """Streams with seek/tell but no rewind should be accepted"""
+        expected = self._collect_paths(self.simple_archive)
+        payload = Path(self.simple_archive).read_bytes()
+        streams = []
+
+        class SeekableOnlyStream:
+            def __init__(self, data: bytes):
+                self._buffer = io.BytesIO(data)
+                self.seek_calls = 0
+
+            def read(self, length: int = -1) -> bytes:
+                return self._buffer.read(length)
+
+            def seek(self, offset: int, whence: int = 0) -> int:
+                self.seek_calls += 1
+                return self._buffer.seek(offset, whence)
+
+            def tell(self) -> int:
+                return self._buffer.tell()
+
+        def factory(hierarchy):
+            if hierarchy[0] == os.path.abspath(self.simple_archive):
+                stream = SeekableOnlyStream(payload)
+                streams.append(stream)
+                return stream
+            return None
+
+        archive_r.register_stream_factory(factory)
+        actual = self._collect_paths(self.simple_archive)
+        self.assertEqual(expected, actual)
+        self.assertTrue(streams)
+        self.assertTrue(any(stream.seek_calls >= 1 for stream in streams))
+
     def test_multi_volume_grouping(self):
         """Verify multi-volume archives can be grouped and traversed"""
         part_paths = []
@@ -375,6 +455,14 @@ class TestTraverser(unittest.TestCase):
 
         self.assertEqual(counts[self.simple_archive], 11)
         self.assertEqual(counts[self.directory_path], 10)
+
+    def test_large_archive_entry_count(self):
+        """Stress archive should enumerate hundreds of entries without error"""
+        entries = list(self.create_traverser([self.stress_archive]))
+        self.assertGreaterEqual(len(entries), 300)
+        self.assertGreater(len(entries), 0)
+        max_depth = max(entry.depth for entry in entries)
+        self.assertGreaterEqual(max_depth, 8)
 
     def test_fault_callback_receives_nested_fault(self):
         """Verify faults propagate through archive_r.on_fault"""

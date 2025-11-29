@@ -71,7 +71,6 @@ atexit.register(cleanup_generated)
 
 
 def prepare_distribution_assets() -> None:
-    copy_file(archive_r_root / 'README.md', local_readme)
     copy_file(archive_r_root / 'LICENSE.txt', local_license)
     copy_file(archive_r_root / 'VERSION', local_version)
     copy_tree(archive_r_root / 'include', vendor_include)
@@ -95,7 +94,7 @@ def read_version() -> str:
 
 
 def read_readme() -> str:
-    paths = [archive_r_root / 'README.md', local_readme]
+    paths = [local_readme, archive_r_root / 'README.md']
     for candidate in paths:
         if candidate.exists():
             return candidate.read_text(encoding='utf-8')
