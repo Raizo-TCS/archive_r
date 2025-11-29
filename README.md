@@ -58,13 +58,7 @@ cd bindings/python
 python3 setup.py build_ext --inplace
 ```
 
-To build only Ruby bindings:
-
-```bash
-cd bindings/ruby
-ruby ext/archive_r/extconf.rb
-make
-```
+To build only Ruby bindings: see [`bindings/ruby/README.md`](bindings/ruby/README.md) for the end-to-end workflow (Rake tasks, gem packaging, and usage examples).
 
 ---
 
@@ -194,60 +188,7 @@ with archive_r.Traverser(
 
 ### Ruby
 
-```ruby
-require 'archive_r'
-
-# Archive_r::STANDARD_FORMATS already excludes libarchive's mtree/raw pseudo formats
-SAFE_FORMATS = Archive_r::STANDARD_FORMATS
-
-# `Archive_r.traverse` is a convenience helper that creates a Traverser,
-# iterates over entries, and automatically closes resources when a block is given.
-# Without a block it returns an Enumerator for manual iteration.
-
-# Stream search within entry content (buffer boundary aware)
-def search_in_entry(entry, keyword)
-  overlap = ''
-  
-  loop do
-    chunk = entry.read(8192)
-    break if chunk.nil? || chunk.empty?
-    
-    search_text = overlap + chunk
-    return true if search_text.include?(keyword)
-    
-    # Preserve tail for next iteration (keyword length - 1)
-    if chunk.length >= keyword.length - 1
-      overlap = chunk[-(keyword.length - 1)..-1]
-    else
-      overlap = chunk
-    end
-  end
-  
-  false
-end
-
-# Basic traversal
-Archive_r.traverse('test.zip', formats: SAFE_FORMATS) do |entry|
-  full_path = entry.path
-  puts "#{full_path} (depth=#{entry.depth})"
-  
-  # Search text file content
-  if entry.file? && full_path.end_with?('.txt')
-    if search_in_entry(entry, 'search_keyword')
-      puts "  Found keyword in: #{full_path}"
-    end
-  end
-end
-
-# Password-protected archives
-Archive_r.traverse('protected.zip', passphrases: ['password123'], formats: SAFE_FORMATS) do |entry|
-    puts entry.path
-end
-
-# If you call Archive_r.traverse without a block it returns an Enumerator.
-# You can then manage the underlying Traverser lifecycle manually (e.g., via
-# Archive_r::Traverser.open) when integrating with custom iteration patterns.
-```
+Ruby-specific build, installation, and usage guidance now lives in [`bindings/ruby/README.md`](bindings/ruby/README.md). The document covers gem packaging via `build.sh`, Rake workflows, and practical traversal examples.
 
 ---
 
