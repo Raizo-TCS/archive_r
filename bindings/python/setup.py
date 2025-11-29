@@ -140,18 +140,10 @@ if static_lib.exists():
 else:
     # Build from source as fallback
     print("Pre-built library not found, will compile from source")
-    fallback_units = [
-        'archive_type.cc',
-        'libarchive_common.cc',
-        'nested_archive_reader.cc',
-        'traverser.cc',
-        'navigation_state.cc',
-        'archive_container.cc',
-        'directory_container.cc',
-        'entry.cc',
-        'stream.cc',
-    ]
-    sources.extend([str(core_src_dir / unit) for unit in fallback_units])
+    fallback_units = sorted(core_src_dir.glob('*.cc'))
+    if not fallback_units:
+        raise RuntimeError(f"No .cc files found under {core_src_dir} for fallback build")
+    sources.extend([str(unit) for unit in fallback_units])
 
 
 ext_modules = [

@@ -10,6 +10,12 @@ Python bindings for archive_r, providing recursive archive reading capabilities 
 
 ## Installation
 
+### From PyPI
+
+```bash
+pip install archive_r_python
+```
+
 ### From Source
 
 ```bash
