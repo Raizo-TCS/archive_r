@@ -97,6 +97,13 @@ jobs:
               \${PYBIN}/pip install --no-index "\${TARGET_DIR}"/*.whl >/dev/null && \
               \${PYBIN}/python -c \"import archive_r; print(f'validated {archive_r.__version__}')\""
 
+      - name: List built wheels for ${{ matrix.python-tag }}
+        run: |
+          set -x
+          ls -al bindings/python
+          ls -al bindings/python/dist || true
+          find bindings/python/dist -maxdepth 2 -type f -name '*.whl' || true
+
       - name: Upload wheels for ${{ matrix.python-tag }}
         uses: actions/upload-artifact@v4
         if: ${{ env.ACT != 'true' }}
