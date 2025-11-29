@@ -1,31 +1,139 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 archive_r Team
 
-import os
+import atexit
+import shutil
 import sys
 from pathlib import Path
-from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
+from typing import Iterable, List, Tuple
 
-# Check for pybind11 early
+from setuptools import setup, Extension
+
+
+binding_root = Path(__file__).resolve().parent
+archive_r_root = binding_root.parents[1]
+archive_r_build = archive_r_root / 'build'
+vendor_root = binding_root / '_vendor' / 'archive_r'
+vendor_include = vendor_root / 'include'
+vendor_src = vendor_root / 'src'
+local_readme = binding_root / 'README.md'
+local_license = binding_root / 'LICENSE.txt'
+local_version = binding_root / 'VERSION'
+
+generated_paths: List[Tuple[Path, str]] = []
+
+
+def track_generated(path: Path, kind: str) -> None:
+    generated_paths.append((path, kind))
+
+
+def copy_file(source: Path, target: Path) -> bool:
+    if not source.exists():
+        return False
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, target)
+    track_generated(target, 'file')
+    return True
+
+
+def copy_tree(source: Path, target: Path) -> bool:
+    if not source.exists():
+        return False
+    if target.exists():
+        shutil.rmtree(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target)
+    track_generated(target, 'dir')
+    return True
+
+
+def cleanup_generated() -> None:
+    for path, kind in reversed(generated_paths):
+        try:
+            if kind == 'dir':
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+        except FileNotFoundError:
+            pass
+
+    removable = sorted({path.parent for path, _ in generated_paths}, key=lambda p: len(p.parts), reverse=True)
+    for directory in removable:
+        if directory == binding_root:
+            continue
+        try:
+            directory.rmdir()
+        except OSError:
+            pass
+
+
+atexit.register(cleanup_generated)
+
+
+def prepare_distribution_assets() -> None:
+    copy_file(archive_r_root / 'README.md', local_readme)
+    copy_file(archive_r_root / 'LICENSE.txt', local_license)
+    copy_file(archive_r_root / 'VERSION', local_version)
+    copy_tree(archive_r_root / 'include', vendor_include)
+    copy_tree(archive_r_root / 'src', vendor_src)
+
+
+def read_first_existing(paths: Iterable[Path], default: str = '') -> str:
+    for candidate in paths:
+        if candidate.exists():
+            content = candidate.read_text(encoding='utf-8').strip()
+            if content:
+                return content
+    return default
+
+
+def read_version() -> str:
+    return read_first_existing(
+        [archive_r_root / 'VERSION', local_version],
+        default='0.0.0',
+    )
+
+
+def read_readme() -> str:
+    paths = [archive_r_root / 'README.md', local_readme]
+    for candidate in paths:
+        if candidate.exists():
+            return candidate.read_text(encoding='utf-8')
+    return 'Fast archive traversal library with support for nested archives and multipart files.'
+
+
+def resolve_core_paths() -> Tuple[Path, Path]:
+    include_dir = archive_r_root / 'include'
+    src_dir = archive_r_root / 'src'
+    if include_dir.exists() and src_dir.exists():
+        return include_dir, src_dir
+
+    include_dir = vendor_include
+    src_dir = vendor_src
+    if include_dir.exists() and src_dir.exists():
+        return include_dir, src_dir
+
+    raise RuntimeError('archive_r core sources are missing. Run build.sh to generate vendor files.')
+
+
+prepare_distribution_assets()
+
 try:
     import pybind11
+
     pybind11_include = pybind11.get_include()
 except ImportError:
     print("Error: pybind11 is required. Install it with: pip install pybind11")
     sys.exit(1)
 
-# Get archive_r root directory
-archive_r_root = Path(__file__).parent.parent.parent.absolute()
-archive_r_include = archive_r_root / 'include'
-archive_r_src = archive_r_root / 'src'
-archive_r_build = archive_r_root / 'build'
 
-# Source files
+package_version = read_version()
+core_include_dir, core_src_dir = resolve_core_paths()
+
 sources = ['src/archive_r_py.cc']
 
 # Try to use pre-built library first
-extra_objects = []
+extra_objects: List[str] = []
 static_lib = archive_r_build / 'libarchive_r_core.a'
 if static_lib.exists():
     extra_objects = [str(static_lib)]
@@ -33,17 +141,19 @@ if static_lib.exists():
 else:
     # Build from source as fallback
     print("Pre-built library not found, will compile from source")
-    sources.extend([
-        str(archive_r_src / 'archive_type.cc'),
-        str(archive_r_src / 'libarchive_common.cc'),
-        str(archive_r_src / 'nested_archive_reader.cc'),
-        str(archive_r_src / 'traverser.cc'),
-        str(archive_r_src / 'navigation_state.cc'),
-        str(archive_r_src / 'archive_container.cc'),
-        str(archive_r_src / 'directory_container.cc'),
-    str(archive_r_src / 'entry.cc'),
-        str(archive_r_src / 'stream.cc'),
-    ])
+    fallback_units = [
+        'archive_type.cc',
+        'libarchive_common.cc',
+        'nested_archive_reader.cc',
+        'traverser.cc',
+        'navigation_state.cc',
+        'archive_container.cc',
+        'directory_container.cc',
+        'entry.cc',
+        'stream.cc',
+    ]
+    sources.extend([str(core_src_dir / unit) for unit in fallback_units])
+
 
 ext_modules = [
     Extension(
@@ -51,24 +161,22 @@ ext_modules = [
         sources=sources,
         include_dirs=[
             pybind11_include,
-            str(archive_r_include),
-            str(archive_r_src),
+            str(core_include_dir),
+            str(core_src_dir),
         ],
         libraries=['archive'],
         extra_objects=extra_objects,
         language='c++',
         extra_compile_args=['-std=c++17'],
+        define_macros=[('ARCHIVE_R_VERSION', f'"{package_version}"')],
     ),
 ]
 
+
 setup(
-    name='archive_r',
-    version='0.1.0',
-    author='archive_r Team',
-    description='Python bindings for archive_r library',
-    long_description='Fast archive traversal library with support for nested archives and multipart files',
+    version=package_version,
     ext_modules=ext_modules,
-    python_requires='>=3.7',
-    install_requires=['pybind11>=2.6.0'],
-    zip_safe=False,
+    long_description=read_readme(),
+    long_description_content_type='text/markdown',
+    license_files=['LICENSE.txt'],
 )

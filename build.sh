@@ -52,6 +52,11 @@ Options:
     --package-ruby  (default) Build Ruby binding and package gem into build/bindings/ruby
     --skip-ruby-package
                     Build Ruby binding without packaging the gem
+    --package-python
+                    Build Python binding artifacts (wheel + sdist), run twine check, and
+                    verify installation inside a temporary virtual environment
+    --skip-python-package
+                    Disable Python packaging when previously enabled
     --bindings-only Build only bindings (skip core library)
     --help          Show this help message
 
@@ -143,6 +148,7 @@ BUILD_RUBY=false
 BUILD_PYTHON=false
 BINDINGS_ONLY=false
 PACKAGE_RUBY=true
+PACKAGE_PYTHON=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -190,6 +196,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-ruby-package)
             PACKAGE_RUBY=false
+            shift
+            ;;
+        --package-python)
+            BUILD_PYTHON=true
+            PACKAGE_PYTHON=true
+            shift
+            ;;
+        --skip-python-package)
+            PACKAGE_PYTHON=false
             shift
             ;;
         --bindings-only)
@@ -408,6 +423,110 @@ build_python_binding() {
     fi
 }
 
+create_python_virtualenv() {
+    local venv_dir="$1"
+
+    rm -rf "$venv_dir"
+
+    if python3 -m venv "$venv_dir"; then
+        if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+            return 0
+        fi
+        log_warning "Virtual environment created without pip; retrying with virtualenv module"
+        rm -rf "$venv_dir"
+    else
+        log_warning "python3 -m venv failed. Trying virtualenv module if available..."
+    fi
+
+    if python3 -c "import virtualenv" >/dev/null 2>&1; then
+        if python3 -m virtualenv "$venv_dir"; then
+            if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+                return 0
+            fi
+        fi
+    else
+        log_warning "Python module 'virtualenv' not found. Install it via: python3 -m pip install --user --upgrade --break-system-packages virtualenv"
+    fi
+
+    log_error "Unable to create virtual environment at $venv_dir. Install python3-venv or the virtualenv package."
+    return 1
+}
+
+verify_python_package_installation() {
+    local dist_dir="$1"
+    local venv_dir="$BUILD_DIR/bindings/python/package_test_env"
+
+    log_info "Verifying Python wheel inside temporary virtual environment..."
+
+    if ! create_python_virtualenv "$venv_dir"; then
+        return 1
+    fi
+
+    local venv_python="$venv_dir/bin/python"
+    local venv_pip="$venv_dir/bin/pip"
+
+    "$venv_pip" install --upgrade pip
+
+    local wheel_path
+    wheel_path=$(find "$dist_dir" -maxdepth 1 -type f -name "*.whl" | head -n 1)
+    if [ -z "$wheel_path" ]; then
+        log_error "No wheel artifact found in $dist_dir"
+        return 1
+    fi
+
+    "$venv_pip" install "$wheel_path"
+
+    # Run the binding tests using the installed package only.
+    ARCHIVE_R_TEST_USE_LOCAL_SOURCE=0 "$venv_python" "$ROOT_DIR/bindings/python/test/test_traverser.py"
+
+    log_success "Python wheel installation verified ($venv_dir)"
+    return 0
+}
+
+package_python_binding() {
+    log_info "Packaging Python binding (wheel + sdist)..."
+
+    if ! command -v python3 >/dev/null 2>&1; then
+        log_error "Python3 not found - cannot package Python binding"
+        return 1
+    fi
+
+    if ! python3 -c "import build" >/dev/null 2>&1; then
+        log_error "Python module 'build' is required. Install it via: python3 -m pip install --upgrade build"
+        return 1
+    fi
+
+    if ! python3 -c "import twine" >/dev/null 2>&1; then
+        log_error "Python module 'twine' is required. Install it via: python3 -m pip install --upgrade twine"
+        return 1
+    fi
+
+    local python_root="$ROOT_DIR/bindings/python"
+    local dist_dir="$BUILD_DIR/bindings/python/dist"
+
+    rm -rf "$dist_dir"
+    mkdir -p "$dist_dir"
+
+    pushd "$python_root" >/dev/null
+    rm -rf dist/ build/ *.egg-info
+    python3 -m build --sdist --wheel --outdir "$dist_dir"
+    popd >/dev/null
+
+    mapfile -t dist_artifacts < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
+    if [ "${#dist_artifacts[@]}" -eq 0 ]; then
+        log_error "No distribution artifacts produced for Python binding"
+        return 1
+    fi
+
+    log_info "Running twine check on built artifacts..."
+    python3 -m twine check "${dist_artifacts[@]}"
+
+    verify_python_package_installation "$dist_dir" || return 1
+
+    log_success "Python packages built and verified: $dist_dir"
+    return 0
+}
+
 # Build requested bindings
 if [ "$BUILD_RUBY" = true ]; then
     build_ruby_binding || log_warning "Ruby binding build had issues"
@@ -422,6 +541,13 @@ fi
 
 if [ "$BUILD_PYTHON" = true ]; then
     build_python_binding || log_warning "Python binding build had issues"
+fi
+
+if [ "$PACKAGE_PYTHON" = true ]; then
+    if ! package_python_binding; then
+        log_error "Python packaging workflow failed"
+        exit 1
+    fi
 fi
 
 # Run tests if requested

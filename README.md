@@ -51,14 +51,8 @@ Build artifacts will be generated under `archive_r/build/`.
 
 ### For Developers: Individual Binding Builds
 
-To build only Python bindings:
-
-```bash
-cd bindings/python
-python3 setup.py build_ext --inplace
-```
-
-To build only Ruby bindings: see [`bindings/ruby/README.md`](bindings/ruby/README.md) for the end-to-end workflow (Rake tasks, gem packaging, and usage examples).
+- Python workflows (standalone builds, packaging automation, tests, and usage examples) now live in [`bindings/python/README.md`](bindings/python/README.md).
+- Ruby workflows remain documented in [`bindings/ruby/README.md`](bindings/ruby/README.md).
 
 ---
 
@@ -138,53 +132,8 @@ int main() {
 
 ### Python
 
-```python
-import archive_r
-
-# Provided by the bindings (tuple of recommended formats)
-SAFE_FORMATS = archive_r.STANDARD_FORMATS
-
-# Stream search within entry content (buffer boundary aware)
-def search_in_entry(entry, keyword):
-    overlap = b''
-    
-    while True:
-        chunk = entry.read(8192)
-        if not chunk:
-            break
-        
-        search_data = overlap + chunk
-        if keyword in search_data:
-            return True
-        
-        # Preserve tail for next iteration (keyword length - 1)
-        if len(chunk) >= len(keyword) - 1:
-            overlap = chunk[-(len(keyword) - 1):]
-        else:
-            overlap = chunk
-    
-    return False
-
-# Basic traversal
-with archive_r.Traverser("test.zip", formats=SAFE_FORMATS) as traverser:
-    for entry in traverser:
-        full_path = entry.path
-        print(f"{full_path} (depth={entry.depth})")
-        
-        # Search text file content
-        if entry.is_file and full_path.endswith('.txt'):
-            if search_in_entry(entry, b'search_keyword'):
-                print(f"  Found keyword in: {full_path}")
-
-# Password-protected archives
-with archive_r.Traverser(
-    "protected.zip",
-    formats=SAFE_FORMATS,
-    passphrases=["password123"],
-) as traverser:
-    for entry in traverser:
-        print(entry.path)
-```
+The Python binding usage guide (installation, packaging automation, test instructions, and examples)
+is maintained in [`bindings/python/README.md`](bindings/python/README.md).
 
 ### Ruby
 

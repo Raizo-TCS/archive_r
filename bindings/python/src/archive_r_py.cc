@@ -19,6 +19,10 @@
 #include <vector>
 #include <limits>
 
+#ifndef ARCHIVE_R_VERSION
+#define ARCHIVE_R_VERSION "0.0.0"
+#endif
+
 namespace py = pybind11;
 using namespace archive_r;
 
@@ -715,5 +719,5 @@ PYBIND11_MODULE(archive_r, m) {
       .def("__enter__", &PyTraverser::enter, py::return_value_policy::reference_internal)
       .def("__exit__", &PyTraverser::exit);
 
-  m.attr("__version__") = "0.1.0";
+  m.attr("__version__") = ARCHIVE_R_VERSION;
 }

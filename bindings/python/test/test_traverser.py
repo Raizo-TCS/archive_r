@@ -7,8 +7,15 @@ import os
 import sys
 from pathlib import Path
 
-# Add parent directory to path to import archive_r
-sys.path.insert(0, str(Path(__file__).parent.parent))
+
+def _use_local_source() -> bool:
+    value = os.environ.get("ARCHIVE_R_TEST_USE_LOCAL_SOURCE", "1").lower()
+    return value not in ("0", "false", "no")
+
+
+if _use_local_source():
+    # Allow tests to import from source tree unless explicitly disabled.
+    sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import archive_r
 
