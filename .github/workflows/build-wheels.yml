@@ -84,15 +84,17 @@ jobs:
               cd /io && \
               ./build.sh --rebuild-all --python-only && \
               cd bindings/python && \
-              rm -rf dist dist_temp && \
+              rm -rf dist_temp && \
               mkdir -p dist dist_temp && \
               PYBIN=/opt/python/\${PYTHON_TAG}/bin && \
+              TARGET_DIR="dist/\${PYTHON_TAG}" && \
+              rm -rf "\${TARGET_DIR}" && \
+              mkdir -p "\${TARGET_DIR}" && \
               \${PYBIN}/pip install --upgrade pip setuptools wheel pybind11 >/dev/null && \
               \${PYBIN}/pip wheel . -w dist_temp/ --no-deps >/dev/null && \
               \${PYBIN}/pip install auditwheel >/dev/null && \
-              mkdir -p dist/\${PYTHON_TAG} && \
-              auditwheel repair dist_temp/*.whl --plat manylinux_2_28_x86_64 -w dist/\${PYTHON_TAG}/ >/dev/null && \
-              \${PYBIN}/pip install --no-index dist/\${PYTHON_TAG}/*.whl >/dev/null && \
+              auditwheel repair dist_temp/*.whl --plat manylinux_2_28_x86_64 -w "\${TARGET_DIR}/" >/dev/null && \
+              \${PYBIN}/pip install --no-index "\${TARGET_DIR}"/*.whl >/dev/null && \
               \${PYBIN}/python -c \"import archive_r; print(f'validated {archive_r.__version__}')\""
 
       - name: Upload wheels for ${{ matrix.python-tag }}
