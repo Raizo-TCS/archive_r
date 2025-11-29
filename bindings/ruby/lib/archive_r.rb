@@ -1,7 +1,13 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 archive_r Team
 
-require_relative '../archive_r'
+begin
+  # Prefer the packaged gem layout (lib/archive_r/archive_r.so)
+  require_relative 'archive_r/archive_r'
+rescue LoadError
+  # Fallback to the local development layout (bindings/ruby/archive_r.so)
+  require_relative '../archive_r'
+end
 
 module Archive_r
   VERSION = "0.1.0"

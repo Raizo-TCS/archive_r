@@ -14,10 +14,15 @@ BUILD_DIR="$ROOT_DIR/build"
 TEST_DATA_DIR="$ROOT_DIR/test_data"
 EXECUTABLE="$BUILD_DIR/find_and_traverse"
 TIMEOUT=20
+WRAPPER_TIMEOUT_DEFAULT=600
+WRAPPER_TIMEOUT="${RUN_TESTS_WRAPPER_TIMEOUT:-$WRAPPER_TIMEOUT_DEFAULT}"
+ORIGINAL_ARGS=("$@")
 PERF_RAW_AVG=""
 PERF_TRAVERSER_AVG=""
 PERF_RATIO=""
 PERF_ARCHIVE_PATH="$TEST_DATA_DIR/test_perf.zip"
+RUBY_GEM_HOME="$BUILD_DIR/ruby_gem_home"
+RUBY_TEST_ENV=()
 
 # Color codes
 RED='\033[0;31m'
@@ -34,6 +39,7 @@ Usage: ./run_tests.sh [--perf-archive <path>]
 Options:
   --perf-archive <path>  Use the specified archive for performance_compare test.
                          Relative paths are resolved against the repository root.
+  --wrapper-timeout <s>  Override global timeout (seconds). Use 0 to disable.
 USAGE
 }
 
@@ -51,6 +57,14 @@ while [[ $# -gt 0 ]]; do
                 PERF_ARCHIVE_PATH="$ROOT_DIR/$1"
             fi
             ;;
+        --wrapper-timeout)
+            shift
+            if [[ -z "$1" ]]; then
+                echo "Error: --wrapper-timeout requires seconds" >&2
+                exit 1
+            fi
+            WRAPPER_TIMEOUT="$1"
+            ;;
         -h|--help)
             print_usage
             exit 0
@@ -61,6 +75,32 @@ while [[ $# -gt 0 ]]; do
     esac
     shift
 done
+
+validate_wrapper_timeout() {
+    local value="$1"
+    if [[ -z "$value" ]]; then
+        echo "Error: wrapper timeout value is empty" >&2
+        exit 1
+    fi
+    if ! [[ "$value" =~ ^[0-9]+$ ]]; then
+        echo "Error: wrapper timeout must be a non-negative integer" >&2
+        exit 1
+    fi
+}
+
+validate_wrapper_timeout "$WRAPPER_TIMEOUT"
+
+if [[ -z "$RUN_TESTS_TIMEOUT_ACTIVE" ]] && [[ "$WRAPPER_TIMEOUT" -gt 0 ]]; then
+    if command -v timeout >/dev/null 2>&1; then
+        export RUN_TESTS_TIMEOUT_ACTIVE=1
+        export RUN_TESTS_WRAPPER_TIMEOUT="$WRAPPER_TIMEOUT"
+        exec timeout "$WRAPPER_TIMEOUT" "$0" "${ORIGINAL_ARGS[@]}"
+    else
+        echo "Warning: 'timeout' command not found; continuing without global timeout" >&2
+    fi
+fi
+
+export RUN_TESTS_TIMEOUT_ACTIVE=1
 
 # === Test Counters ===
 TESTS_RUN=0
@@ -89,6 +129,68 @@ log_test_header() {
     echo -e "${CYAN}========================================${NC}"
     echo -e "${CYAN}  TEST: $1${NC}"
     echo -e "${CYAN}========================================${NC}"
+}
+
+prepare_ruby_gem_env() {
+    RUBY_TEST_ENV=()
+
+    if ! command -v ruby >/dev/null 2>&1; then
+        log_warning "Ruby not found - skipping Ruby gem setup"
+        return 1
+    fi
+
+    if ! command -v gem >/dev/null 2>&1; then
+        log_error "RubyGems (gem) command not found"
+        return 1
+    fi
+
+    local gemspec="$ROOT_DIR/bindings/ruby/archive_r.gemspec"
+    if [ ! -f "$gemspec" ]; then
+        log_error "Ruby gemspec not found: $gemspec"
+        return 1
+    fi
+
+    local gem_cache_dir="$BUILD_DIR/bindings/ruby"
+    mkdir -p "$gem_cache_dir"
+
+    local gem_file
+    gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name 'archive_r-*.gem' -printf '%f\n' | sort | tail -n 1)
+
+    if [ -z "$gem_file" ]; then
+        log_info "Ruby gem not found in build cache - packaging before tests..."
+        if ! "$ROOT_DIR/build.sh" --bindings-only --package-ruby; then
+            log_error "Failed to package Ruby gem for tests"
+            return 1
+        fi
+        gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name 'archive_r-*.gem' -printf '%f\n' | sort | tail -n 1)
+        if [ -z "$gem_file" ]; then
+            log_error "Ruby gem packaging did not produce archive_r-*.gem"
+            return 1
+        fi
+    fi
+
+    rm -rf "$RUBY_GEM_HOME"
+    mkdir -p "$RUBY_GEM_HOME"
+    local ruby_system_paths
+    ruby_system_paths="$(ruby -rrubygems -e 'puts Gem.path.join(":")' 2>/dev/null || true)"
+
+    local ruby_gem_path="$RUBY_GEM_HOME"
+    if [ -n "$ruby_system_paths" ]; then
+        ruby_gem_path="$ruby_gem_path:$ruby_system_paths"
+    fi
+
+    local install_env=("GEM_HOME=$RUBY_GEM_HOME" "GEM_PATH=$ruby_gem_path")
+    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
+        install_env+=("ARCHIVE_R_CORE_ROOT=$BUILD_DIR")
+    fi
+
+    if ! env "${install_env[@]}" gem install --local --no-document --install-dir "$RUBY_GEM_HOME" "$gem_cache_dir/$gem_file" >/dev/null; then
+        log_error "Failed to install Ruby gem for tests"
+        return 1
+    fi
+
+    RUBY_TEST_ENV=("GEM_HOME=$RUBY_GEM_HOME" "GEM_PATH=$ruby_gem_path")
+    return 0
 }
 
 # === Test Function ===
@@ -596,22 +698,26 @@ fi
 # === Binding Tests ===
 log_info "Running Binding tests..."
 
-# Ruby Binding Tests
-if [ -f "$ROOT_DIR/bindings/ruby/archive_r.so" ]; then
-    log_test_header "ruby_binding"
-    TESTS_RUN=$((TESTS_RUN + 1))
-    
-    cd "$ROOT_DIR/bindings/ruby"
-    if ruby test/test_traverser.rb > /dev/null 2>&1; then
-        log_success "Test PASSED: ruby_binding"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
+# Ruby Binding Tests (via packaged gem)
+if [ -f "$ROOT_DIR/bindings/ruby/archive_r.gemspec" ]; then
+    if prepare_ruby_gem_env; then
+        log_test_header "ruby_binding"
+        TESTS_RUN=$((TESTS_RUN + 1))
+
+        pushd "$ROOT_DIR/bindings/ruby" >/dev/null
+        if env "${RUBY_TEST_ENV[@]}" ruby test/test_traverser.rb > /dev/null 2>&1; then
+            log_success "Test PASSED: ruby_binding"
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+        else
+            log_error "Test FAILED: ruby_binding"
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
+        popd >/dev/null
     else
-        log_error "Test FAILED: ruby_binding"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+        log_info "Ruby gem setup unavailable - skipping Ruby tests"
     fi
-    cd "$ROOT_DIR"
 else
-    log_info "Ruby binding not built - skipping Ruby tests"
+    log_info "Ruby binding sources not found - skipping Ruby tests"
 fi
 
 # Python Binding Tests
