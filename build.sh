@@ -347,9 +347,10 @@ package_ruby_binding() {
     fi
 
     local gem_version
-    gem_version=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.version" 2>/dev/null || true)
+    local gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
+    local gem_version=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.version" 2>/dev/null || true)
 
-    rm -f archive_r-*.gem
+    rm -f "${gem_name}"-*.gem
     if ! gem build archive_r.gemspec; then
         popd >/dev/null
         cleanup_ruby_vendor_sources
@@ -358,10 +359,10 @@ package_ruby_binding() {
     fi
 
     local gem_file
-    if [ -n "$gem_version" ] && [ -f "archive_r-${gem_version}.gem" ]; then
-        gem_file="archive_r-${gem_version}.gem"
+    if [ -n "$gem_version" ] && [ -f "${gem_name}-${gem_version}.gem" ]; then
+        gem_file="${gem_name}-${gem_version}.gem"
     else
-        gem_file=$(find . -maxdepth 1 -type f -name 'archive_r-*.gem' -printf '%f\n' | sort | tail -n 1)
+        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
     fi
 
     if [ -z "$gem_file" ] || [ ! -f "$gem_file" ]; then
