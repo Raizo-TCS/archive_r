@@ -1,12 +1,12 @@
 Gem::Specification.new do |spec|
-  spec.name          = "archive_r"
+  spec.name          = "archive_r_ruby"
   spec.version       = "0.1.0"
-  spec.authors       = ["archive_r Team"]
-  spec.email         = [""]
+  spec.authors       = ["raiso.tcs"]
+  spec.email         = ["raiso.tcs@users.noreply.github.com"]
   
   spec.summary       = "Ruby bindings for archive_r library"
   spec.description   = "Fast archive traversal library with support for nested archives and multipart files"
-  spec.homepage      = "https://github.com/yourusername/archive_r"
+  spec.homepage      = "https://github.com/raizo-tcs/archive_r"
   spec.license       = "MIT"
   
   spec.required_ruby_version = ">= 2.7.0"
@@ -17,6 +17,8 @@ Gem::Specification.new do |spec|
   
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
+  spec.metadata["bug_tracker_uri"] = "https://github.com/raizo-tcs/archive_r/issues"
+  spec.metadata["changelog_uri"] = "https://github.com/raizo-tcs/archive_r/releases"
   
   spec.add_development_dependency "rake", "~> 13.0"
   spec.add_development_dependency "minitest", "~> 5.0"

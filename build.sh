@@ -49,6 +49,9 @@ Options:
     --rebuild-all   Clean core/binding artifacts and rebuild everything
     --with-ruby     Build Ruby binding after core library
     --with-python   Build Python binding after core library
+    --package-ruby  (default) Build Ruby binding and package gem into build/bindings/ruby
+    --skip-ruby-package
+                    Build Ruby binding without packaging the gem
     --bindings-only Build only bindings (skip core library)
     --help          Show this help message
 
@@ -63,6 +66,73 @@ Examples:
 HELP
 }
 
+copy_directory_contents() {
+    local source="$1"
+    local destination="$2"
+
+    if [ ! -d "$source" ]; then
+        log_error "Source directory not found: $source"
+        return 1
+    fi
+
+    rm -rf "$destination"
+    mkdir -p "$destination"
+
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --delete "$source/" "$destination/"
+    else
+        cp -R "$source/." "$destination/"
+    fi
+
+    return 0
+}
+
+sync_ruby_vendor_sources() {
+    local vendor_root="$ROOT_DIR/bindings/ruby/ext/archive_r/vendor/archive_r"
+    local include_src="$ROOT_DIR/include"
+    local src_src="$ROOT_DIR/src"
+
+    if [ ! -d "$include_src" ] || [ ! -d "$src_src" ]; then
+        log_error "Cannot embed archive_r core sources for Ruby gem (missing include/src directories)"
+        return 1
+    fi
+
+    log_info "Embedding archive_r core sources for Ruby gem..."
+
+    copy_directory_contents "$include_src" "$vendor_root/include" || return 1
+    copy_directory_contents "$src_src" "$vendor_root/src" || return 1
+
+    if [ -f "$ROOT_DIR/LICENSE.txt" ]; then
+        mkdir -p "$vendor_root"
+        cp "$ROOT_DIR/LICENSE.txt" "$vendor_root/LICENSE.txt"
+    fi
+
+    return 0
+}
+
+cleanup_ruby_vendor_sources() {
+    local vendor_root="$ROOT_DIR/bindings/ruby/ext/archive_r/vendor/archive_r"
+    rm -rf "$vendor_root"
+}
+
+purge_ruby_binding_artifacts() {
+    local ruby_dir="$ROOT_DIR/bindings/ruby"
+    local ext_dir="$ruby_dir/ext/archive_r"
+    if [ ! -d "$ext_dir" ]; then
+        return 0
+    fi
+
+    pushd "$ext_dir" >/dev/null
+    make clean >/dev/null 2>&1 || true
+    rm -f Makefile mkmf.log archive_r.so
+    find . -maxdepth 1 -name "*.o" -delete 2>/dev/null || true
+    find . -name "*.so" -delete 2>/dev/null || true
+    find . -name ".*.time" -delete 2>/dev/null || true
+    popd >/dev/null
+
+    return 0
+}
+
 ## Parse arguments
 CLEAN_CORE=false
 CLEAN_BINDINGS=false
@@ -72,6 +142,7 @@ PERFORM_BUILD=true
 BUILD_RUBY=false
 BUILD_PYTHON=false
 BINDINGS_ONLY=false
+PACKAGE_RUBY=true
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -110,6 +181,15 @@ while [[ $# -gt 0 ]]; do
             ;;
         --with-python)
             BUILD_PYTHON=true
+            shift
+            ;;
+        --package-ruby)
+            BUILD_RUBY=true
+            PACKAGE_RUBY=true
+            shift
+            ;;
+        --skip-ruby-package)
+            PACKAGE_RUBY=false
             shift
             ;;
         --bindings-only)
@@ -155,17 +235,7 @@ fi
 
 if [ "$CLEAN_BINDINGS" = true ]; then
     log_info "Cleaning Ruby binding artifacts..."
-    if [ -d "$ROOT_DIR/bindings/ruby" ]; then
-        pushd "$ROOT_DIR/bindings/ruby" >/dev/null
-        make clean 2>/dev/null || true
-        rm -f Makefile mkmf.log archive_r.so
-        find . -maxdepth 1 -name "*.o" -delete 2>/dev/null || true
-        rm -f ext/archive_r/mkmf.log
-        find ext/archive_r -name "*.o" -delete 2>/dev/null || true
-        find ext/archive_r -name "*.so" -delete 2>/dev/null || true
-        find ext/archive_r -name ".*.time" -delete 2>/dev/null || true
-        popd >/dev/null
-    fi
+    purge_ruby_binding_artifacts
 
     log_info "Cleaning Python binding artifacts..."
     if [ -d "$ROOT_DIR/bindings/python" ]; then
@@ -221,24 +291,96 @@ build_ruby_binding() {
         return 1
     fi
     
-    cd "$ROOT_DIR/bindings/ruby"
+    local ruby_root="$ROOT_DIR/bindings/ruby"
+    local ext_dir="$ruby_root/ext/archive_r"
+
+    if [ ! -d "$ext_dir" ]; then
+        log_error "Ruby extension directory not found: $ext_dir"
+        return 1
+    fi
+
+    cd "$ext_dir"
     
     # Run extconf.rb
-    ruby ext/archive_r/extconf.rb
+    ruby extconf.rb
     
     # Build
     make
-    
-    if [ -f "archive_r.so" ]; then
-        log_success "Ruby binding built successfully"
-        log_success "  Extension: $ROOT_DIR/bindings/ruby/archive_r.so"
-        cd "$ROOT_DIR"
-        return 0
-    else
+
+    if [ ! -f "archive_r.so" ]; then
         cd "$ROOT_DIR"
         log_error "Ruby binding build failed"
         return 1
     fi
+
+    local ruby_output_dir="$BUILD_DIR/bindings/ruby"
+    mkdir -p "$ruby_output_dir"
+    cp "archive_r.so" "$ruby_output_dir/"
+
+    log_success "Ruby binding built successfully"
+    log_success "  Extension: $ruby_output_dir/archive_r.so"
+
+    cd "$ROOT_DIR"
+    purge_ruby_binding_artifacts
+    return 0
+}
+
+package_ruby_binding() {
+    log_info "Packaging Ruby gem..."
+
+    if ! command -v gem >/dev/null 2>&1; then
+        log_error "RubyGems (gem) command not found - cannot package Ruby binding"
+        return 1
+    fi
+
+    if ! sync_ruby_vendor_sources; then
+        return 1
+    fi
+
+    pushd "$ROOT_DIR/bindings/ruby" >/dev/null
+
+    if [ ! -f "archive_r.gemspec" ]; then
+        popd >/dev/null
+        cleanup_ruby_vendor_sources
+        log_error "archive_r.gemspec not found"
+        return 1
+    fi
+
+    local gem_version
+    local gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
+    local gem_version=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.version" 2>/dev/null || true)
+
+    rm -f "${gem_name}"-*.gem
+    if ! gem build archive_r.gemspec; then
+        popd >/dev/null
+        cleanup_ruby_vendor_sources
+        log_error "gem build failed"
+        return 1
+    fi
+
+    local gem_file
+    if [ -n "$gem_version" ] && [ -f "${gem_name}-${gem_version}.gem" ]; then
+        gem_file="${gem_name}-${gem_version}.gem"
+    else
+        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
+    fi
+
+    if [ -z "$gem_file" ] || [ ! -f "$gem_file" ]; then
+        popd >/dev/null
+        cleanup_ruby_vendor_sources
+        log_error "Expected gem file $gem_file was not generated"
+        return 1
+    fi
+
+    local gem_output_dir="$BUILD_DIR/bindings/ruby"
+    mkdir -p "$gem_output_dir"
+    mv "$gem_file" "$gem_output_dir/"
+
+    popd >/dev/null
+    cleanup_ruby_vendor_sources
+
+    log_success "Ruby gem packaged: $gem_output_dir/$gem_file"
+    return 0
 }
 
 build_python_binding() {
@@ -269,6 +411,13 @@ build_python_binding() {
 # Build requested bindings
 if [ "$BUILD_RUBY" = true ]; then
     build_ruby_binding || log_warning "Ruby binding build had issues"
+
+    if [ "$PACKAGE_RUBY" = true ]; then
+        if ! package_ruby_binding; then
+            log_error "Ruby gem packaging failed"
+            exit 1
+        fi
+    fi
 fi
 
 if [ "$BUILD_PYTHON" = true ]; then

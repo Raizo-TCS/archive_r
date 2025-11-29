@@ -3,7 +3,7 @@
 
 require 'minitest/autorun'
 require 'stringio'
-require_relative '../lib/archive_r'
+require 'archive_r'
 
 class TestTraverser < Minitest::Test
   DEFAULT_FORMATS = (Archive_r::STANDARD_FORMATS + ['mtree']).freeze

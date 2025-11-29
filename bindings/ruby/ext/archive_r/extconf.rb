@@ -3,16 +3,57 @@
 
 require 'mkmf'
 
-# Find archive_r core library
-archive_r_root = File.expand_path('../../../..', __dir__)
+def archive_r_core_root
+  candidates = []
+
+  env_root = ENV['ARCHIVE_R_CORE_ROOT']
+  candidates << File.expand_path(env_root) if env_root && !env_root.empty?
+
+  repo_root = File.expand_path('../../../..', __dir__)
+  candidates << repo_root
+
+  vendor_root = File.expand_path('vendor/archive_r', __dir__)
+  candidates << vendor_root
+
+  candidates.each do |root|
+    next unless root
+    include_dir = File.join(root, 'include')
+    src_dir = File.join(root, 'src')
+    return root if Dir.exist?(include_dir) && Dir.exist?(src_dir)
+  end
+
+  nil
+end
+archive_r_root = archive_r_core_root
+
+unless archive_r_root
+  abort <<~MSG
+    archive_r core library not found.
+    Please set ARCHIVE_R_CORE_ROOT to a repository checkout or use the vendored gem package.
+  MSG
+end
+
+vendor_root = File.expand_path('vendor/archive_r', __dir__)
+
+if archive_r_root == vendor_root
+  puts 'Using vendored archive_r core sources'
+elsif ENV['ARCHIVE_R_CORE_ROOT'] && File.expand_path(ENV['ARCHIVE_R_CORE_ROOT']) == archive_r_root
+  puts "Using archive_r core from #{archive_r_root} (ARCHIVE_R_CORE_ROOT)"
+else
+  puts "Using archive_r core from #{archive_r_root}"
+end
+
 archive_r_include = File.join(archive_r_root, 'include')
 archive_r_src = File.join(archive_r_root, 'src')
-archive_r_lib = File.join(archive_r_root, 'build')
+archive_r_lib_dir = File.join(archive_r_root, 'build')
+glue_source = File.join(__dir__, 'archive_r_ext.cc')
 
-# Check if core library exists
-unless Dir.exist?(archive_r_include)
-  abort "archive_r core library not found at #{archive_r_root}"
+# Ensure make can locate vendored sources via VPATH
+$VPATH ||= ''
+unless $VPATH.empty?
+  $VPATH << File::PATH_SEPARATOR
 end
+$VPATH << archive_r_src
 
 # Add include paths
 $INCFLAGS << " -I#{archive_r_include}"
@@ -27,19 +68,22 @@ unless have_library('archive')
 end
 
 # Try to link with pre-built static library first
-if File.exist?(File.join(archive_r_lib, 'libarchive_r_core.a'))
-  $LOCAL_LIBS << " #{File.join(archive_r_lib, 'libarchive_r_core.a')}"
+prebuilt_lib = File.join(archive_r_lib_dir, 'libarchive_r_core.a')
+
+if File.exist?(prebuilt_lib)
+  $LOCAL_LIBS << " #{prebuilt_lib}"
   puts "Using pre-built archive_r core library"
 else
-  # Build from source as fallback
+  # Build from source as fallback (ensure the Ruby glue source is compiled too)
   puts "Pre-built library not found, will build from source"
-  
-  # Add all source files
-  srcs = Dir.glob(File.join(archive_r_src, '*.cc'))
-  
-  srcs.each do |src|
-    $srcs << src
-  end
+
+  srcs = [glue_source] + Dir.glob(File.join(archive_r_src, '*.cc'))
+  $srcs = srcs
+end
+
+# Guarantee the Ruby glue source is part of the compilation list when $srcs is set
+if defined?($srcs) && $srcs
+  $srcs.unshift(glue_source) unless $srcs.include?(glue_source)
 end
 
 # Create Makefile
