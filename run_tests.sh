@@ -155,8 +155,11 @@ prepare_ruby_gem_env() {
     local gem_cache_dir="$BUILD_DIR/bindings/ruby"
     mkdir -p "$gem_cache_dir"
 
+    local gem_name
+    gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('$gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
+
     local gem_file
-    gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name 'archive_r-*.gem' -printf '%f\n' | sort | tail -n 1)
+    gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
 
     if [ -z "$gem_file" ]; then
         log_error "Ruby gem not found in $gem_cache_dir. Please run ./build.sh --with-ruby first."

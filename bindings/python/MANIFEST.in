@@ -1,0 +1,11 @@
+include README.md
+include LICENSE.txt
+include VERSION
+include pyproject.toml
+include setup.cfg
+include setup.py
+recursive-include src *.cc *.h
+recursive-include examples *.py
+recursive-include test *.py
+recursive-include _vendor/archive_r/include *
+recursive-include _vendor/archive_r/src *

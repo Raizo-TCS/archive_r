@@ -51,14 +51,8 @@ Build artifacts will be generated under `archive_r/build/`.
 
 ### For Developers: Individual Binding Builds
 
-To build only Python bindings:
-
-```bash
-cd bindings/python
-python3 setup.py build_ext --inplace
-```
-
-To build only Ruby bindings: see [`bindings/ruby/README.md`](bindings/ruby/README.md) for the end-to-end workflow (Rake tasks, gem packaging, and usage examples).
+- Python workflows (standalone builds, packaging automation, tests, and usage examples) now live in [`bindings/python/README.md`](bindings/python/README.md).
+- Ruby workflows remain documented in [`bindings/ruby/README.md`](bindings/ruby/README.md).
 
 ---
 
@@ -138,53 +132,35 @@ int main() {
 
 ### Python
 
+The Python bindings provide a Pythonic iterator API with context manager support for traversing nested archives. For complete usage documentation, installation instructions, API reference, and examples, see [`bindings/python/README.md`](bindings/python/README.md).
+
+**Quick Example**:
+
 ```python
 import archive_r
 
-# Provided by the bindings (tuple of recommended formats)
-SAFE_FORMATS = archive_r.STANDARD_FORMATS
-
-# Stream search within entry content (buffer boundary aware)
-def search_in_entry(entry, keyword):
-    overlap = b''
-    
-    while True:
-        chunk = entry.read(8192)
-        if not chunk:
-            break
-        
-        search_data = overlap + chunk
-        if keyword in search_data:
-            return True
-        
-        # Preserve tail for next iteration (keyword length - 1)
-        if len(chunk) >= len(keyword) - 1:
-            overlap = chunk[-(len(keyword) - 1):]
-        else:
-            overlap = chunk
-    
-    return False
-
-# Basic traversal
-with archive_r.Traverser("test.zip", formats=SAFE_FORMATS) as traverser:
+# Context manager ensures proper resource cleanup
+with archive_r.Traverser("test.zip") as traverser:
     for entry in traverser:
-        full_path = entry.path
-        print(f"{full_path} (depth={entry.depth})")
+        print(f"Path: {entry.path} (depth={entry.depth})")
         
-        # Search text file content
-        if entry.is_file and full_path.endswith('.txt'):
-            if search_in_entry(entry, b'search_keyword'):
-                print(f"  Found keyword in: {full_path}")
-
-# Password-protected archives
-with archive_r.Traverser(
-    "protected.zip",
-    formats=SAFE_FORMATS,
-    passphrases=["password123"],
-) as traverser:
-    for entry in traverser:
-        print(entry.path)
+        # Search text files
+        if entry.is_file and entry.path.endswith('.txt'):
+            content = entry.read()
+            if b"search_keyword" in content:
+                print(f"  Found keyword in: {entry.path}")
+        
+        # Don't expand Office files (they are ZIP internally)
+        if entry.path.endswith(('.docx', '.xlsx', '.pptx')):
+            entry.set_descent(False)
 ```
+
+> ℹ️ **Entry Path Representation (Python)**
+> - `entry.path` returns the full path including the top-level archive (e.g., `"outer.zip/inner.tar/file.txt"`).
+> - `entry.name` returns the last element (e.g., `"inner.tar/file.txt"`).
+> - `entry.path_hierarchy` returns a list of path components (e.g., `["outer.zip", "inner.tar/file.txt"]`).
+
+**Thread Safety**: Python bindings follow the same thread safety constraints as C++. Each thread can create its own `Traverser` instance, but a single instance must not be shared across threads. See [`bindings/python/README.md`](bindings/python/README.md#thread-safety) for details.
 
 ### Ruby
 
@@ -217,17 +193,9 @@ for (Entry& entry : traverser) {
 }
 ```
 
-```python
-# Python example
-with archive_r.Traverser("test.zip") as traverser:
-    for entry in traverser:
-        # Don't attempt to expand Office files
-        if entry.path.endswith(('.docx', '.xlsx', '.pptx')):
-            entry.set_descent(False)
-
-    # Disable archive expansion for every entry by passing
-    # descend_archives=False when constructing the traverser.
-```
+For Python and Ruby examples, see the respective binding documentation:
+- Python: [`bindings/python/README.md#controlling-archive-descent`](bindings/python/README.md#controlling-archive-descent)
+- Ruby: [`bindings/ruby/README.md`](bindings/ruby/README.md)
 
 > ⚠️ **Reading entry content temporarily disables descent**
 > - Calling `Entry::read` (or the binding equivalents) automatically flips `entry.descent_enabled()` to `False` so the partially consumed payload will not be re-opened implicitly.
@@ -253,14 +221,9 @@ for (Entry& entry : traverser) {
 }
 ```
 
-```python
-# Python example
-with archive_r.Traverser("test.tar", metadata_keys=["uid", "gid", "mtime"]) as traverser:
-    for entry in traverser:
-        uid = entry.find_metadata("uid")
-        if uid is not None:
-            print(f"UID: {uid}")
-```
+For Python and Ruby examples, see the respective binding documentation:
+- Python: [`bindings/python/README.md#metadata-access`](bindings/python/README.md#metadata-access)
+- Ruby: [`bindings/ruby/README.md`](bindings/ruby/README.md)
 
 ### Specifying Archive Formats
 
@@ -275,12 +238,9 @@ options.formats = {"zip", "tar"};  // Enable only ZIP and TAR
 Traverser traverser({make_single_path("test.zip")}, options);
 ```
 
-```python
-# Python example
-with archive_r.Traverser("test.zip", formats=["zip", "tar"]) as traverser:
-    for entry in traverser:
-        print(entry.path)
-```
+For Python and Ruby examples, see the respective binding documentation:
+- Python: [`bindings/python/README.md#format-specification`](bindings/python/README.md#format-specification)
+- Ruby: [`bindings/ruby/README.md`](bindings/ruby/README.md)
 
 ### Processing Split Archives
 
@@ -302,17 +262,9 @@ for (Entry& entry : traverser) {
 }
 ```
 
-```python
-# Python example
-with archive_r.Traverser("container.tar") as traverser:
-    for entry in traverser:
-        if '.part' in entry.path:
-            # Extract base name and register as split group
-            # Implement actual extraction logic based on your extension conventions
-            pos = entry.path.rfind('.part')
-            base_name = entry.path[:pos]
-            entry.set_multi_volume_group(base_name)
-```
+For Python and Ruby examples, see the respective binding documentation:
+- Python: [`bindings/python/README.md#processing-split-archives`](bindings/python/README.md#processing-split-archives)
+- Ruby: [`bindings/ruby/README.md`](bindings/ruby/README.md)
 
 ---
 
