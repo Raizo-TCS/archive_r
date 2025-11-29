@@ -77,6 +77,20 @@ Archive_r.traverse('protected.zip', passphrases: ['password123'], formats: SAFE_
 end
 ```
 
+## Thread Safety
+
+The Ruby bindings follow the same thread-safety rules as the C++ core library:
+
+**Safe:**
+- Each thread creates and uses its own `Traverser` instance
+- Concurrent traversal of different archives from different threads
+
+**Unsafe:**
+- Sharing a single `Traverser` instance across multiple threads
+- Calling `Archive_r.register_stream_factory` or `Archive_r.on_fault` from multiple threads (these modify process-wide global state)
+
+**Summary:** Create one `Traverser` per thread. Do not call global configuration methods (`register_stream_factory`, `on_fault`) concurrently.
+
 ## Environment Notes
 
 - Set `ARCHIVE_R_CORE_ROOT` to the repository `build/` directory (or another archive_r build) if the gem needs to link against a pre-built static library instead of compiling the vendored core sources.

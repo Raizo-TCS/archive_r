@@ -95,11 +95,11 @@ public:
       , _tellable(rb_respond_to(io, rb_id_tell_method))
       , _rewindable(rb_respond_to(io, rb_id_rewind_method))
       , _has_eof(rb_respond_to(io, rb_id_eof_method)) {
-    rb_gc_register_address(&_io);
+    // Validate before GC registration to avoid resource leak on validation failure
     if (!_rewindable) {
-      rb_gc_unregister_address(&_io);
       rb_raise(rb_eTypeError, "stream factory IO must respond to #read and #rewind");
     }
+    rb_gc_register_address(&_io);
   }
 
   ~RubyIOStream() override { rb_gc_unregister_address(&_io); }
