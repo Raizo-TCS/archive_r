@@ -1,0 +1,7 @@
+{
+  "inputs": {
+    "tag": "v0.1.0",
+    "publish_pypi": "false",
+    "publish_rubygems": "false"
+  }
+}

@@ -1,0 +1,174 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.1.0)'
+        required: true
+        type: string
+      publish_pypi:
+        description: 'Publish Python distributions to PyPI'
+        required: false
+        default: true
+        type: boolean
+      publish_rubygems:
+        description: 'Publish Ruby gem to RubyGems.org'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+jobs:
+  validate-tag:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version_check.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag and VERSION
+        id: version_check
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          if [[ -z "$TAG" ]]; then
+            echo "::error::Tag input cannot be empty"
+            exit 1
+          fi
+          git fetch --tags --force origin
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG was not found in the repository"
+            exit 1
+          fi
+          FILE_VERSION="$(cat VERSION | tr -d '\n')"
+          if [[ "${TAG#v}" != "$FILE_VERSION" ]]; then
+            echo "::error::Version mismatch: tag=${TAG#v}, VERSION=$FILE_VERSION"
+            exit 1
+          fi
+          echo "version=$FILE_VERSION" >> "$GITHUB_OUTPUT"
+
+  build-local-artifacts:
+    runs-on: ubuntu-24.04
+    needs: validate-tag
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libarchive-dev \
+            build-essential \
+            cmake \
+            python3-dev \
+            python3-pip \
+            ruby-dev
+
+      - name: Install Python build tools
+        run: |
+          python3 -m pip install build pybind11 twine --break-system-packages
+
+      - name: Build core library and bindings
+        run: ./build.sh --rebuild-all
+
+      - name: Build Python sdist/wheel
+        run: |
+          cd bindings/python
+          python3 -m build --wheel --sdist --outdir dist
+
+      - name: Upload local artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-packages
+          if-no-files-found: error
+          path: |
+            build/libarchive_r_core.a
+            build/bindings/ruby/*.gem
+            bindings/python/dist/*.tar.gz
+            bindings/python/dist/*.whl
+            build/logs/*.log
+
+  build-manylinux-wheels:
+    needs: validate-tag
+    uses: ./.github/workflows/build-wheels.yml
+
+  release-and-publish:
+    runs-on: ubuntu-24.04
+    needs:
+      - build-local-artifacts
+      - build-manylinux-wheels
+    environment:
+      name: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install release tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby-full
+          python3 -m pip install twine --break-system-packages
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect release assets
+        run: |
+          set -euo pipefail
+          mkdir -p release/python release/ruby
+          find artifacts -type f -name "*.whl" -exec cp {} release/python/ \;
+          find artifacts -type f -name "*.tar.gz" -exec cp {} release/python/ \;
+          find artifacts -type f -name "*.gem" -exec cp {} release/ruby/ \;
+          if ! compgen -G "release/python/*" > /dev/null; then
+            echo "::error::No Python artifacts were collected"
+            exit 1
+          fi
+          if ! compgen -G "release/ruby/*" > /dev/null; then
+            echo "::error::No Ruby gems were collected"
+            exit 1
+          fi
+          echo "Python artifacts:" && ls -al release/python
+          echo "Ruby artifacts:" && ls -al release/ruby
+
+      - name: Create GitHub Release
+        if: ${{ env.ACT != 'true' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: archive_r ${{ inputs.tag }}
+          draft: false
+          prerelease: ${{ contains(inputs.tag, '-rc') }}
+          files: |
+            release/python/*
+            release/ruby/*
+
+      - name: Publish to PyPI
+        if: ${{ env.ACT != 'true' && inputs.publish_pypi }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: release/python
+          skip-existing: true
+
+      - name: Publish to RubyGems.org
+        if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          gem push release/ruby/*.gem --verbose
