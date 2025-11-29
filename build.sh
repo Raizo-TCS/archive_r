@@ -49,7 +49,9 @@ Options:
     --rebuild-all   Clean core/binding artifacts and rebuild everything
     --with-ruby     Build Ruby binding after core library
     --with-python   Build Python binding after core library
-    --package-ruby  Build Ruby binding and package gem into build/bindings/ruby
+    --package-ruby  (default) Build Ruby binding and package gem into build/bindings/ruby
+    --skip-ruby-package
+                    Build Ruby binding without packaging the gem
     --bindings-only Build only bindings (skip core library)
     --help          Show this help message
 
@@ -140,7 +142,7 @@ PERFORM_BUILD=true
 BUILD_RUBY=false
 BUILD_PYTHON=false
 BINDINGS_ONLY=false
-PACKAGE_RUBY=false
+PACKAGE_RUBY=true
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -184,6 +186,10 @@ while [[ $# -gt 0 ]]; do
         --package-ruby)
             BUILD_RUBY=true
             PACKAGE_RUBY=true
+            shift
+            ;;
+        --skip-ruby-package)
+            PACKAGE_RUBY=false
             shift
             ;;
         --bindings-only)

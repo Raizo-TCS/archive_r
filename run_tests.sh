@@ -23,6 +23,8 @@ PERF_RATIO=""
 PERF_ARCHIVE_PATH="$TEST_DATA_DIR/test_perf.zip"
 RUBY_GEM_HOME="$BUILD_DIR/ruby_gem_home"
 RUBY_TEST_ENV=()
+LOG_DIR="$BUILD_DIR/logs"
+RUBY_GEM_INSTALL_LOG="$LOG_DIR/ruby_gem_install.log"
 
 # Color codes
 RED='\033[0;31m'
@@ -157,20 +159,13 @@ prepare_ruby_gem_env() {
     gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name 'archive_r-*.gem' -printf '%f\n' | sort | tail -n 1)
 
     if [ -z "$gem_file" ]; then
-        log_info "Ruby gem not found in build cache - packaging before tests..."
-        if ! "$ROOT_DIR/build.sh" --bindings-only --package-ruby; then
-            log_error "Failed to package Ruby gem for tests"
-            return 1
-        fi
-        gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name 'archive_r-*.gem' -printf '%f\n' | sort | tail -n 1)
-        if [ -z "$gem_file" ]; then
-            log_error "Ruby gem packaging did not produce archive_r-*.gem"
-            return 1
-        fi
+        log_error "Ruby gem not found in $gem_cache_dir. Please run ./build.sh --with-ruby first."
+        return 1
     fi
 
     rm -rf "$RUBY_GEM_HOME"
     mkdir -p "$RUBY_GEM_HOME"
+    mkdir -p "$LOG_DIR"
     local ruby_system_paths
     ruby_system_paths="$(ruby -rrubygems -e 'puts Gem.path.join(":")' 2>/dev/null || true)"
 
@@ -184,7 +179,12 @@ prepare_ruby_gem_env() {
         install_env+=("ARCHIVE_R_CORE_ROOT=$BUILD_DIR")
     fi
 
-    if ! env "${install_env[@]}" gem install --local --no-document --install-dir "$RUBY_GEM_HOME" "$gem_cache_dir/$gem_file" >/dev/null; then
+    : > "$RUBY_GEM_INSTALL_LOG"
+    log_info "Installing Ruby gem from $gem_cache_dir/$gem_file (log: $RUBY_GEM_INSTALL_LOG)"
+
+    if ! env "${install_env[@]}" \
+        gem install --local --no-document --install-dir "$RUBY_GEM_HOME" "$gem_cache_dir/$gem_file" \
+        2>&1 | tee "$RUBY_GEM_INSTALL_LOG"; then
         log_error "Failed to install Ruby gem for tests"
         return 1
     fi
