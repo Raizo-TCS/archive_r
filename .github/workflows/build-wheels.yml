@@ -119,14 +119,14 @@ jobs:
               find dist -maxdepth 2 -type f -name '*.whl' || true && \
               find /io/bindings/python -maxdepth 4 -type f -name '*.whl' || true && \
               if compgen -G "\${TARGET_DIR}/*.whl" >/dev/null; then \
-                echo "Wheels located in \${TARGET_DIR}"; \
+                echo \"Wheels located in \${TARGET_DIR}\"; \
               else \
-                echo "No wheels under \${TARGET_DIR}; scanning fallback roots"; \
+                echo \"No wheels under \${TARGET_DIR}; scanning fallback roots\"; \
                 mapfile -t alt_wheels < <(find /io /tmp /root -maxdepth 6 -type f -name 'archive_r*.whl' 2>/dev/null) && \
                 if [ "\${#alt_wheels[@]}" -gt 0 ]; then \
                   mkdir -p "\${TARGET_DIR}"; \
                   for wheel_path in "\${alt_wheels[@]}"; do \
-                    echo "Copying \${wheel_path} -> \${TARGET_DIR}"; \
+                    echo \"Copying \${wheel_path} -> \${TARGET_DIR}\"; \
                     cp "\${wheel_path}" "\${TARGET_DIR}/"; \
                   done; \
                 else \
