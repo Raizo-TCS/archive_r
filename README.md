@@ -4,12 +4,6 @@
 
 > ⚠️ **Development Status**: This library is currently under development. The API may change without notice.
 
-## CI/CD Status
-
-- `ci.yml` (badge above) builds the core library plus Python/Ruby bindings on Ubuntu 24.04, runs `./run_tests.sh`, and uploads build logs and packaged artifacts for every push/PR targeting `main`.
-- `build-wheels.yml` (drafted) runs manylinux_2_28 Docker builds for CPython 3.9–3.12, repairs wheels via `auditwheel`, and stores the artifacts for release candidates. Ruby artifacts are produced by a separate workflow, so this job now drives a **Python-only** rebuild via `./build.sh --rebuild-all --python-only` before packaging wheels.
-- Phase 3 (release automation) will extend this pipeline with GitHub Releases + PyPI/RubyGems publishing once manylinux validation is complete.
-
 ## Overview
 
 archive_r is a recursive archive reading library using libarchive. It provides direct streaming access to nested archives without extracting them to temporary files.
@@ -413,6 +407,14 @@ archive_r/
 # Build with bindings
 ./build.sh --with-python --with-ruby
 ```
+
+---
+
+## CI/CD and Release Workflows
+
+- `ci.yml` runs on Ubuntu 24.04 for every push/PR to `main`, executes `./build.sh --rebuild-all` followed by `./run_tests.sh`, and publishes the resulting logs plus Python/Ruby artifacts as workflow artifacts.
+- `build-wheels.yml` produces manylinux_2_28 wheels for CPython 3.9–3.12 inside Docker, relying on `./build.sh --rebuild-all --python-only` before repairing wheels with `auditwheel`.
+- `release.yml` ties everything together: it re-runs the full build, downloads the wheel/SDist artifacts, creates a GitHub Release, and publishes Python packages to PyPI (RubyGems publishing remains optional and requires a token when enabled).
 
 ---
 
