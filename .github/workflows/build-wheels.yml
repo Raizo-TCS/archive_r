@@ -33,12 +33,27 @@ jobs:
       - name: Build wheel for ${{ matrix.python-tag }}
         run: |
           set -euo pipefail
+          HOST_UID="$(id -u)"
+          HOST_GID="$(id -g)"
           docker run --rm \
+            -e HOST_UID="${HOST_UID}" \
+            -e HOST_GID="${HOST_GID}" \
             -e PYTHON_TAG=${{ matrix.python-tag }} \
             -e LIBARCHIVE_VERSION=${{ env.LIBARCHIVE_VERSION }} \
             -v "${{ github.workspace }}:/io" \
             ${{ env.MANYLINUX_IMAGE }} \
             /bin/bash -c "set -euo pipefail && \
+              set -x && \
+              echo '--- Container context ---' && \
+              id && \
+              pwd && \
+              ls -al && \
+              echo '--- /io mount overview ---' && \
+              stat -c '%A %U:%G %n' /io && \
+              ls -al /io && \
+              ls -al /io/bindings || true && \
+              ls -al /io/bindings/python || true && \
+              touch /io/.docker_write_test && rm -f /io/.docker_write_test && \
               yum install -y \
                 cmake \
                 gcc-c++ \
@@ -96,9 +111,34 @@ jobs:
               auditwheel repair dist_temp/*.whl --plat manylinux_2_28_x86_64 -w "\${TARGET_DIR}/" >/dev/null && \
               \${PYBIN}/pip install --no-index "\${TARGET_DIR}"/*.whl >/dev/null && \
               \${PYBIN}/python -c \"import archive_r; print(f'validated {archive_r.__version__}')\" && \
+              echo '--- Dist inspection (container) ---' && \
+              pwd && \
               ls -al dist || true && \
               ls -al dist_temp || true && \
+              ls -al "\${TARGET_DIR}" || true && \
               find dist -maxdepth 2 -type f -name '*.whl' || true && \
+              find /io/bindings/python -maxdepth 4 -type f -name '*.whl' || true && \
+              if compgen -G "\${TARGET_DIR}/*.whl" >/dev/null; then \
+                echo "Wheels located in \${TARGET_DIR}"; \
+              else \
+                echo "No wheels under \${TARGET_DIR}; scanning fallback roots"; \
+                mapfile -t alt_wheels < <(find /io /tmp /root -maxdepth 6 -type f -name 'archive_r*.whl' 2>/dev/null) && \
+                if [ "\${#alt_wheels[@]}" -gt 0 ]; then \
+                  mkdir -p "\${TARGET_DIR}"; \
+                  for wheel_path in "\${alt_wheels[@]}"; do \
+                    echo "Copying \${wheel_path} -> \${TARGET_DIR}"; \
+                    cp "\${wheel_path}" "\${TARGET_DIR}/"; \
+                  done; \
+                else \
+                  echo 'No archive_r wheels found in fallback search'; \
+                fi; \
+              fi && \
+              if compgen -G "\${TARGET_DIR}/*.whl" >/dev/null; then \
+                ls -al "\${TARGET_DIR}"; \
+              fi && \
+              if [ -n "\${HOST_UID:-}" ] && [ -n "\${HOST_GID:-}" ]; then \
+                chown -R "\${HOST_UID}:\${HOST_GID}" /io/bindings/python/dist || true; \
+              fi && \
               find /io -maxdepth 6 -type f -name '*.whl' || true"
 
       - name: List built wheels for ${{ matrix.python-tag }}
