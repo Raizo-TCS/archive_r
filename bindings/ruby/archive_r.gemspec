@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "archive_r_ruby"
-  spec.version       = "0.1.0"
+  spec.version       = "0.1.1"
   spec.authors       = ["raiso.tcs"]
   spec.email         = ["raiso.tcs@users.noreply.github.com"]
   
