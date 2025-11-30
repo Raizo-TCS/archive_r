@@ -103,6 +103,7 @@ jobs:
           ls -al bindings/python
           ls -al bindings/python/dist || true
           find bindings/python/dist -maxdepth 2 -type f -name '*.whl' || true
+          find . -maxdepth 6 -type f -name '*.whl'
 
       - name: Upload wheels for ${{ matrix.python-tag }}
         uses: actions/upload-artifact@v4
