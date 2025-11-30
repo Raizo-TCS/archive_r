@@ -18,6 +18,7 @@
 #include <variant>
 #include <vector>
 #include <limits>
+#include <optional>
 
 using namespace archive_r;
 
@@ -26,15 +27,25 @@ static VALUE mArchive_r;
 static VALUE cTraverser;
 static VALUE cEntry;
 static ID rb_id_read_method;
-static ID rb_id_rewind_method;
 static ID rb_id_seek_method;
 static ID rb_id_tell_method;
 static ID rb_id_eof_method;
+static ID rb_id_close_method;
+static ID rb_id_size_method;
 static ID rb_id_call_method;
+static ID rb_id_open_part_method;
+static ID rb_id_close_part_method;
+static ID rb_id_read_part_method;
+static ID rb_id_seek_part_method;
+static ID rb_id_part_size_method;
+static ID rb_id_open_part_io_method;
+static ID rb_id_close_part_io_method;
 struct RubyCallbackHolder;
 static std::shared_ptr<RubyCallbackHolder> g_stream_factory_callback;
 
 // Helper: Convert Ruby string to C++ string
+static VALUE cStream;
+static PathHierarchy rb_value_to_path_hierarchy(VALUE value);
 static std::string rb_string_to_cpp(VALUE rb_str) {
   Check_Type(rb_str, T_STRING);
   return std::string(RSTRING_PTR(rb_str), RSTRING_LEN(rb_str));
@@ -87,74 +98,89 @@ struct RubyCallbackHolder {
   VALUE proc_value;
 };
 
-class RubyMultiVolumeStream : public MultiVolumeStreamBase {
+class RubyUserStream : public MultiVolumeStreamBase {
 public:
-  RubyMultiVolumeStream(std::vector<VALUE> ios, PathHierarchy hierarchy)
-      : MultiVolumeStreamBase(std::move(hierarchy), determine_seek_support(ios))
-      , _part_ios(std::move(ios))
-      , _part_info(_part_ios.size())
-      , _single_part_hierarchies(_part_ios.size())
-      , _active_index(kInvalidIndex) {
-    if (_part_ios.empty()) {
-      rb_raise(rb_eArgError, "multi-volume streams require at least one IO");
-    }
-
-    for (std::size_t i = 0; i < _part_ios.size(); ++i) {
-      VALUE io = _part_ios[i];
-      if (!rb_respond_to(io, rb_id_read_method)) {
-        rb_raise(rb_eTypeError, "multi-volume stream parts must respond to #read");
-      }
-      bool rewindable = rb_respond_to(io, rb_id_rewind_method);
-      bool seekable = rb_respond_to(io, rb_id_seek_method);
-      if (!rewindable && !seekable) {
-        rb_raise(rb_eTypeError, "multi-volume stream parts must respond to #rewind or #seek");
-      }
-      rb_gc_register_address(&_part_ios[i]);
-      const bool tellable = rb_respond_to(io, rb_id_tell_method);
-      const bool has_eof = rb_respond_to(io, rb_id_eof_method);
-      _part_info[i] = PartInfo{ rewindable, seekable, tellable, has_eof };
-      _single_part_hierarchies[i] = pathhierarchy_select_single_part(_logical_path, i);
-    }
+  RubyUserStream(VALUE ruby_stream, PathHierarchy hierarchy, std::optional<bool> seekable_override)
+      : MultiVolumeStreamBase(std::move(hierarchy), determine_seek_support(ruby_stream, seekable_override))
+      , _ruby_stream(ruby_stream)
+      , _has_close(rb_respond_to(ruby_stream, rb_id_close_part_method))
+      , _has_seek(rb_respond_to(ruby_stream, rb_id_seek_part_method))
+      , _has_size(rb_respond_to(ruby_stream, rb_id_part_size_method))
+      , _has_open_part_io(rb_respond_to(ruby_stream, rb_id_open_part_io_method))
+      , _has_close_part_io(rb_respond_to(ruby_stream, rb_id_close_part_io_method))
+      , _active_io(Qnil)
+      , _active_io_seekable(false)
+      , _active_io_tellable(false)
+      , _active_io_has_close(false)
+      , _active_io_has_size(false) {
+    ensure_required_methods(ruby_stream);
+    rb_gc_register_address(&_ruby_stream);
   }
 
-  ~RubyMultiVolumeStream() override {
-    for (auto &io : _part_ios) {
-      rb_gc_unregister_address(&io);
-    }
+  ~RubyUserStream() override {
+    release_active_io();
+    rb_gc_unregister_address(&_ruby_stream);
   }
 
 protected:
   void open_single_part(const PathHierarchy &single_part) override {
-    const std::size_t index = locate_part(single_part);
-    PartInfo &info = _part_info[index];
-    VALUE io = _part_ios[index];
-    if (info.rewindable) {
-      rb_funcall(io, rb_id_rewind_method, 0);
-    } else {
-      rb_funcall(io, rb_id_seek_method, 2, LL2NUM(0), INT2NUM(SEEK_SET));
+    if (_has_open_part_io) {
+      VALUE arg = path_hierarchy_to_rb(single_part);
+      VALUE io = rb_funcall(_ruby_stream, rb_id_open_part_io_method, 1, arg);
+      if (NIL_P(io)) {
+        rb_raise(rb_eRuntimeError, "open_part_io must return an IO-like object");
+      }
+      activate_io(io);
+      return;
     }
-    _active_index = index;
+
+    VALUE arg = path_hierarchy_to_rb(single_part);
+    rb_funcall(_ruby_stream, rb_id_open_part_method, 1, arg);
   }
 
-  void close_single_part() override { _active_index = kInvalidIndex; }
+  void close_single_part() override {
+    if (_has_open_part_io) {
+      release_active_io();
+      if (_has_close_part_io) {
+        rb_funcall(_ruby_stream, rb_id_close_part_io_method, 0);
+      }
+      return;
+    }
+
+    if (_has_close) {
+      rb_funcall(_ruby_stream, rb_id_close_part_method, 0);
+    }
+  }
 
   ssize_t read_from_single_part(void *buffer, size_t size) override {
-    if (size == 0 || _active_index == kInvalidIndex) {
+    if (size == 0) {
       return 0;
     }
-    VALUE result = rb_funcall(_part_ios[_active_index], rb_id_read_method, 1, SIZET2NUM(size));
+
+    if (_has_open_part_io) {
+      if (_active_io == Qnil) {
+        rb_raise(rb_eRuntimeError, "open_part_io must return an IO before reading");
+      }
+      VALUE result = rb_funcall(_active_io, rb_id_read_method, 1, SIZET2NUM(size));
+      if (NIL_P(result)) {
+        return 0;
+      }
+      Check_Type(result, T_STRING);
+      const ssize_t length = static_cast<ssize_t>(RSTRING_LEN(result));
+      if (length <= 0) {
+        return 0;
+      }
+      std::memcpy(buffer, RSTRING_PTR(result), static_cast<size_t>(length));
+      return length;
+    }
+
+    VALUE result = rb_funcall(_ruby_stream, rb_id_read_part_method, 1, SIZET2NUM(size));
     if (NIL_P(result)) {
       return 0;
     }
     Check_Type(result, T_STRING);
     const ssize_t length = static_cast<ssize_t>(RSTRING_LEN(result));
     if (length <= 0) {
-      if (_part_info[_active_index].has_eof) {
-        VALUE eof_val = rb_funcall(_part_ios[_active_index], rb_id_eof_method, 0);
-        if (!RTEST(eof_val)) {
-          return 0;
-        }
-      }
       return 0;
     }
     std::memcpy(buffer, RSTRING_PTR(result), static_cast<size_t>(length));
@@ -162,63 +188,166 @@ protected:
   }
 
   int64_t seek_within_single_part(int64_t offset, int whence) override {
-    if (_active_index == kInvalidIndex || !_part_info[_active_index].seekable) {
+    if (_has_open_part_io && _active_io != Qnil && _active_io_seekable) {
+      VALUE result = rb_funcall(_active_io, rb_id_seek_method, 2, LL2NUM(offset), INT2NUM(whence));
+      return NUM2LL(result);
+    }
+
+    if (!_has_seek) {
       return -1;
     }
-    VALUE result = rb_funcall(_part_ios[_active_index], rb_id_seek_method, 2, LL2NUM(offset), INT2NUM(whence));
+    VALUE result = rb_funcall(_ruby_stream, rb_id_seek_part_method, 2, LL2NUM(offset), INT2NUM(whence));
     return NUM2LL(result);
   }
 
   int64_t size_of_single_part(const PathHierarchy &single_part) override {
-    const std::size_t index = locate_part(single_part);
-    PartInfo &info = _part_info[index];
-    if (!info.seekable || !info.tellable) {
+    if (_has_open_part_io && _active_io != Qnil) {
+      if (_active_io_has_size) {
+        VALUE result = rb_funcall(_active_io, rb_id_size_method, 0);
+        return NUM2LL(result);
+      }
+      if (_active_io_seekable && _active_io_tellable) {
+        VALUE current = rb_funcall(_active_io, rb_id_tell_method, 0);
+        rb_funcall(_active_io, rb_id_seek_method, 2, LL2NUM(0), INT2NUM(SEEK_END));
+        VALUE end_pos = rb_funcall(_active_io, rb_id_tell_method, 0);
+        rb_funcall(_active_io, rb_id_seek_method, 2, current, INT2NUM(SEEK_SET));
+        return NUM2LL(end_pos);
+      }
+    }
+
+    if (!_has_size) {
       return -1;
     }
-    VALUE io = _part_ios[index];
-    VALUE current = rb_funcall(io, rb_id_tell_method, 0);
-    rb_funcall(io, rb_id_seek_method, 2, LL2NUM(0), INT2NUM(SEEK_END));
-    VALUE end_pos = rb_funcall(io, rb_id_tell_method, 0);
-    rb_funcall(io, rb_id_seek_method, 2, current, INT2NUM(SEEK_SET));
-    return NUM2LL(end_pos);
+    VALUE arg = path_hierarchy_to_rb(single_part);
+    VALUE result = rb_funcall(_ruby_stream, rb_id_part_size_method, 1, arg);
+    return NUM2LL(result);
   }
 
 private:
-  struct PartInfo {
-    bool rewindable = false;
-    bool seekable = false;
-    bool tellable = false;
-    bool has_eof = false;
-  };
-
-  static constexpr std::size_t kInvalidIndex = std::numeric_limits<std::size_t>::max();
-
-  static bool determine_seek_support(const std::vector<VALUE> &ios) {
-    if (ios.empty()) {
-      return false;
+  static bool determine_seek_support(VALUE ruby_stream, const std::optional<bool> &override_flag) {
+    if (override_flag.has_value()) {
+      return *override_flag;
     }
-    for (VALUE io : ios) {
-      if (!rb_respond_to(io, rb_id_seek_method)) {
-        return false;
-      }
+    if (rb_respond_to(ruby_stream, rb_id_seek_part_method)) {
+      return true;
     }
-    return true;
+    if (rb_respond_to(ruby_stream, rb_id_open_part_io_method)) {
+      return true;
+    }
+    return false;
   }
 
-  std::size_t locate_part(const PathHierarchy &single_part) const {
-    for (std::size_t i = 0; i < _single_part_hierarchies.size(); ++i) {
-      if (hierarchies_equal(_single_part_hierarchies[i], single_part)) {
-        return i;
-      }
+  static void ensure_required_methods(VALUE ruby_stream) {
+    if (!rb_respond_to(ruby_stream, rb_id_open_part_method) && !rb_respond_to(ruby_stream, rb_id_open_part_io_method)) {
+      rb_raise(rb_eNotImpError, "Stream subclasses must implement #open_part_io or #open_part");
     }
-    rb_raise(rb_eArgError, "unknown multi-volume part requested");
+    if (!rb_respond_to(ruby_stream, rb_id_read_part_method) && !rb_respond_to(ruby_stream, rb_id_open_part_io_method)) {
+      rb_raise(rb_eNotImpError, "Stream subclasses must implement #open_part_io or #read_part");
+    }
   }
 
-  std::vector<VALUE> _part_ios;
-  std::vector<PartInfo> _part_info;
-  std::vector<PathHierarchy> _single_part_hierarchies;
-  std::size_t _active_index;
+  void activate_io(VALUE io) {
+    if (!rb_respond_to(io, rb_id_read_method)) {
+      rb_raise(rb_eTypeError, "open_part_io must return an object responding to #read");
+    }
+    release_active_io();
+    _active_io = io;
+    rb_gc_register_address(&_active_io);
+    _active_io_seekable = rb_respond_to(io, rb_id_seek_method);
+    _active_io_tellable = rb_respond_to(io, rb_id_tell_method);
+    _active_io_has_close = rb_respond_to(io, rb_id_close_method);
+    _active_io_has_size = rb_respond_to(io, rb_id_size_method);
+  }
+
+  void release_active_io() {
+    if (_active_io == Qnil) {
+      return;
+    }
+    if (_active_io_has_close) {
+      rb_funcall(_active_io, rb_id_close_method, 0);
+    }
+    rb_gc_unregister_address(&_active_io);
+    _active_io = Qnil;
+    _active_io_seekable = false;
+    _active_io_tellable = false;
+    _active_io_has_close = false;
+    _active_io_has_size = false;
+  }
+
+  VALUE _ruby_stream;
+  bool _has_close;
+  bool _has_seek;
+  bool _has_size;
+  bool _has_open_part_io;
+  bool _has_close_part_io;
+  VALUE _active_io;
+  bool _active_io_seekable;
+  bool _active_io_tellable;
+  bool _active_io_has_close;
+  bool _active_io_has_size;
 };
+
+struct RubyStreamWrapper {
+  std::shared_ptr<RubyUserStream> stream;
+};
+
+static void stream_wrapper_free(void *ptr) {
+  auto *wrapper = static_cast<RubyStreamWrapper *>(ptr);
+  delete wrapper;
+}
+
+static size_t stream_wrapper_memsize(const void *ptr) {
+  return sizeof(RubyStreamWrapper);
+}
+
+static const rb_data_type_t stream_wrapper_type = {
+  "ArchiveR::Stream",
+  {
+    nullptr,
+    stream_wrapper_free,
+    stream_wrapper_memsize,
+  },
+  nullptr,
+  nullptr,
+  RUBY_TYPED_FREE_IMMEDIATELY,
+};
+
+static RubyStreamWrapper *get_stream_wrapper(VALUE self) {
+  RubyStreamWrapper *wrapper = nullptr;
+  TypedData_Get_Struct(self, RubyStreamWrapper, &stream_wrapper_type, wrapper);
+  if (!wrapper) {
+    rb_raise(rb_eRuntimeError, "invalid Stream wrapper");
+  }
+  return wrapper;
+}
+
+static VALUE stream_allocate(VALUE klass) {
+  auto *wrapper = new RubyStreamWrapper();
+  wrapper->stream.reset();
+  return TypedData_Wrap_Struct(klass, &stream_wrapper_type, wrapper);
+}
+
+static VALUE stream_initialize(int argc, VALUE *argv, VALUE self) {
+  RubyStreamWrapper *wrapper = get_stream_wrapper(self);
+  if (wrapper->stream) {
+    rb_raise(rb_eRuntimeError, "Stream already initialized");
+  }
+  VALUE hierarchy_value = Qnil;
+  VALUE opts = Qnil;
+  rb_scan_args(argc, argv, "11", &hierarchy_value, &opts);
+  PathHierarchy hierarchy = rb_value_to_path_hierarchy(hierarchy_value);
+  std::optional<bool> seekable_override;
+  if (!NIL_P(opts)) {
+    Check_Type(opts, T_HASH);
+    static ID id_seekable = rb_intern("seekable");
+    VALUE seekable_value = rb_hash_aref(opts, ID2SYM(id_seekable));
+    if (!NIL_P(seekable_value)) {
+      seekable_override = RTEST(seekable_value);
+    }
+  }
+  wrapper->stream = std::make_shared<RubyUserStream>(self, std::move(hierarchy), seekable_override);
+  return self;
+}
 
 static VALUE entry_fault_to_rb(const EntryFault &fault) {
   VALUE hash = rb_hash_new();
@@ -435,15 +564,23 @@ static VALUE invoke_ruby_stream_factory(const std::shared_ptr<RubyCallbackHolder
   return result;
 }
 
-static VALUE stream_from_single_part_factory(const std::shared_ptr<RubyCallbackHolder> &holder, const PathHierarchy &single_part) {
-  VALUE value = invoke_ruby_stream_factory(holder, single_part);
+static std::shared_ptr<IDataStream> stream_from_ruby_value(VALUE value, const PathHierarchy &requested) {
   if (NIL_P(value)) {
-    return Qnil;
+    return nullptr;
   }
-  if (!rb_respond_to(value, rb_id_read_method)) {
-    rb_raise(rb_eTypeError, "stream factory result must respond to #read");
+
+  if (rb_obj_is_kind_of(value, cStream)) {
+    RubyStreamWrapper *wrapper = get_stream_wrapper(value);
+    if (!wrapper->stream) {
+      rb_raise(rb_eRuntimeError, "Stream instance is not initialized");
+    }
+    if (!hierarchies_equal(wrapper->stream->source_hierarchy(), requested)) {
+      rb_raise(rb_eArgError, "Stream instance must be created with the same hierarchy passed to the factory");
+    }
+    return wrapper->stream;
   }
-  return value;
+
+  rb_raise(rb_eTypeError, "stream factory must return nil or an Archive_r::Stream instance");
 }
 
 // Helper: Convert EntryMetadataValue to Ruby object
@@ -558,28 +695,8 @@ static VALUE archive_r_register_stream_factory(int argc, VALUE *argv, VALUE self
   auto holder = std::make_shared<RubyCallbackHolder>(callable);
 
   RootStreamFactory factory = [holder](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
-    if (pathhierarchy_is_multivolume(hierarchy)) {
-      const std::size_t parts = pathhierarchy_volume_size(hierarchy);
-      std::vector<VALUE> ios;
-      ios.reserve(parts);
-      for (std::size_t index = 0; index < parts; ++index) {
-        PathHierarchy single_part = pathhierarchy_select_single_part(hierarchy, index);
-        VALUE stream_value = stream_from_single_part_factory(holder, single_part);
-        if (NIL_P(stream_value)) {
-          return nullptr;
-        }
-        ios.push_back(stream_value);
-      }
-      return std::make_shared<RubyMultiVolumeStream>(std::move(ios), hierarchy);
-    }
-
-    VALUE single_value = stream_from_single_part_factory(holder, hierarchy);
-    if (NIL_P(single_value)) {
-      return nullptr;
-    }
-    std::vector<VALUE> single_part;
-    single_part.push_back(single_value);
-    return std::make_shared<RubyMultiVolumeStream>(std::move(single_part), hierarchy);
+    VALUE result = invoke_ruby_stream_factory(holder, hierarchy);
+    return stream_from_ruby_value(result, hierarchy);
   };
 
   set_root_stream_factory(factory);
@@ -935,13 +1052,24 @@ static VALUE traverser_s_open(int argc, VALUE *argv, VALUE klass) {
 extern "C" void Init_archive_r() {
   // Define module Archive_r
   mArchive_r = rb_define_module("Archive_r");
+  cStream = rb_define_class_under(mArchive_r, "Stream", rb_cObject);
+  rb_define_alloc_func(cStream, stream_allocate);
+  rb_define_method(cStream, "initialize", RUBY_METHOD_FUNC(stream_initialize), -1);
 
   rb_id_read_method = rb_intern("read");
-  rb_id_rewind_method = rb_intern("rewind");
   rb_id_seek_method = rb_intern("seek");
   rb_id_tell_method = rb_intern("tell");
   rb_id_eof_method = rb_intern("eof?");
+  rb_id_close_method = rb_intern("close");
+  rb_id_size_method = rb_intern("size");
   rb_id_call_method = rb_intern("call");
+  rb_id_open_part_method = rb_intern("open_part");
+  rb_id_close_part_method = rb_intern("close_part");
+  rb_id_read_part_method = rb_intern("read_part");
+  rb_id_seek_part_method = rb_intern("seek_part");
+  rb_id_part_size_method = rb_intern("part_size");
+  rb_id_open_part_io_method = rb_intern("open_part_io");
+  rb_id_close_part_io_method = rb_intern("close_part_io");
 
   // Define Entry class
   cEntry = rb_define_class_under(mArchive_r, "Entry", rb_cObject);

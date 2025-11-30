@@ -24,15 +24,16 @@ import archive_r
 class TestTraverser(unittest.TestCase):
     DEFAULT_FORMATS = tuple(list(archive_r.STANDARD_FORMATS) + ["mtree"])
 
-    class MinimalStream:
-        def __init__(self, payload: bytes):
-            self._buffer = io.BytesIO(payload)
+    class PayloadStream(archive_r.Stream):
+        def __init__(self, hierarchy, payload: bytes, *, supports_seek: bool | None = None):
+            if supports_seek is None:
+                super().__init__(hierarchy)
+            else:
+                super().__init__(hierarchy, supports_seek=supports_seek)
+            self._payload = payload
 
-        def read(self, length: int = -1) -> bytes:
-            return self._buffer.read(length)
-
-        def rewind(self) -> None:
-            self._buffer.seek(0)
+        def open_part_io(self, _part_hierarchy):
+            return io.BytesIO(self._payload)
 
     @classmethod
     def setUpClass(cls):
@@ -337,7 +338,7 @@ class TestTraverser(unittest.TestCase):
         def factory(hierarchy):
             calls["count"] += 1
             if hierarchy[0] == os.path.abspath(self.simple_archive):
-                return io.BytesIO(payload)
+                return self.PayloadStream(hierarchy, payload)
             return None
 
         archive_r.register_stream_factory(factory)
@@ -354,7 +355,7 @@ class TestTraverser(unittest.TestCase):
 
         def factory(hierarchy):
             if hierarchy[0] == os.path.abspath(virtual):
-                return open(self.simple_archive, "rb")
+                return self.PayloadStream(hierarchy, Path(self.simple_archive).read_bytes())
             return None
 
         archive_r.register_stream_factory(factory)
@@ -371,29 +372,45 @@ class TestTraverser(unittest.TestCase):
             if hierarchy[0] != absolute:
                 return None
             calls["count"] += 1
-            return self.MinimalStream(payload)
+            return self.PayloadStream(hierarchy, payload)
 
         archive_r.register_stream_factory(factory)
         actual = self._collect_paths(self.simple_archive)
         self.assertEqual(expected, actual)
         self.assertEqual(1, calls["count"])
 
-    def test_stream_factory_multi_volume_requests_single_parts(self):
+    def test_stream_factory_multi_volume_custom_stream(self):
+        class RecordingStream(archive_r.Stream):
+            def __init__(self, hierarchy):
+                super().__init__(hierarchy, supports_seek=True)
+                self.requests = []
+
+            def open_part_io(self, part_hierarchy):
+                head = part_hierarchy[0]
+                self.requests.append(head)
+                return open(head, 'rb')
+
         parts_hierarchy = [[part for part in self.multi_volume_parts]]
+        archive_r.register_stream_factory(None)
         expected = self._collect_paths(parts_hierarchy)
-        requests = []
+
+        streams = []
 
         def factory(hierarchy):
-            head = hierarchy[0] if hierarchy else None
-            if head in self.multi_volume_parts:
-                requests.append(head)
-                return open(head, 'rb')
-            return None
+            head = hierarchy[0]
+            self.assertIsInstance(head, list)
+            stream = RecordingStream(hierarchy)
+            streams.append(stream)
+            return stream
 
-        archive_r.register_stream_factory(factory)
-        actual = self._collect_paths(parts_hierarchy)
-        self.assertEqual(expected, actual)
-        self.assertEqual(self.multi_volume_parts, requests)
+        try:
+            archive_r.register_stream_factory(factory)
+            actual = self._collect_paths(parts_hierarchy)
+            self.assertEqual(expected, actual)
+            self.assertTrue(streams)
+            self.assertEqual(self.multi_volume_parts, streams[0].requests)
+        finally:
+            archive_r.register_stream_factory(None)
 
     def test_stream_factory_requires_callable(self):
         """register_stream_factory should reject non-callables"""
@@ -406,24 +423,27 @@ class TestTraverser(unittest.TestCase):
         payload = Path(self.simple_archive).read_bytes()
         streams = []
 
-        class SeekableOnlyStream:
-            def __init__(self, data: bytes):
-                self._buffer = io.BytesIO(data)
+        class TrackingBuffer(io.BytesIO):
+            def __init__(self, owner, data: bytes):
+                super().__init__(data)
+                self._owner = owner
+
+            def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+                self._owner.seek_calls += 1
+                return super().seek(offset, whence)
+
+        class SeekableOnlyStream(archive_r.Stream):
+            def __init__(self, hierarchy, data: bytes):
+                super().__init__(hierarchy, supports_seek=True)
+                self._data = data
                 self.seek_calls = 0
 
-            def read(self, length: int = -1) -> bytes:
-                return self._buffer.read(length)
-
-            def seek(self, offset: int, whence: int = 0) -> int:
-                self.seek_calls += 1
-                return self._buffer.seek(offset, whence)
-
-            def tell(self) -> int:
-                return self._buffer.tell()
+            def open_part_io(self, _hierarchy):
+                return TrackingBuffer(self, self._data)
 
         def factory(hierarchy):
             if hierarchy[0] == os.path.abspath(self.simple_archive):
-                stream = SeekableOnlyStream(payload)
+                stream = SeekableOnlyStream(hierarchy, payload)
                 streams.append(stream)
                 return stream
             return None
@@ -433,6 +453,14 @@ class TestTraverser(unittest.TestCase):
         self.assertEqual(expected, actual)
         self.assertTrue(streams)
         self.assertTrue(any(stream.seek_calls >= 1 for stream in streams))
+
+    def test_stream_factory_rejects_plain_io(self):
+        def factory(hierarchy):
+            if hierarchy[0] == head:
+                stream = RecordingStream(hierarchy)
+                streams.append(stream)
+                return stream
+            self._collect_paths(self.simple_archive)
 
     def test_multi_volume_grouping(self):
         """Verify multi-volume archives can be grouped and traversed"""
