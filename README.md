@@ -141,6 +141,122 @@ For Python and Ruby usage guides (installation, API references, practical sample
 
 ---
 
+## PathHierarchy Concept
+
+### Overview
+
+`PathHierarchy` is the core abstraction representing a path through nested or multi-volume archives. Instead of using simple string paths, archive_r models each traversal step as a sequence of **path entries**, where each entry can be:
+
+1. **Single-volume entry**: A regular file or directory (e.g., `"archive.tar"`, `"dir/file.txt"`)
+2. **Multi-volume entry**: A split archive group (e.g., `{"vol.part1", "vol.part2", "vol.part3"}`)
+3. **Nested entry**: A hierarchy within a hierarchy (representing recursive archive structures)
+
+This design enables archive_r to represent complex archive structures uniformly, supporting operations like path comparison, ordering, and display.
+
+### PathEntry Structure
+
+A `PathEntry` is a variant type that can hold three forms:
+
+```cpp
+// include/archive_r/path_hierarchy.h
+using PathEntry = std::variant<
+    std::string,        // Single-volume path component
+    Parts,              // Multi-volume parts list
+    NodeList            // Nested hierarchy (recursive structure)
+>;
+```
+
+- **Single** (`std::string`): Represents a single path component (e.g., `"archive.zip"`, `"dir/file.txt"`)
+- **Multi-volume** (`Parts`): Holds a list of volume paths plus an ordering flag:
+  - `Natural` ordering: Sorted by natural numeric ordering (e.g., `["vol.part1", "vol.part10", "vol.part2"]` → `["vol.part1", "vol.part2", "vol.part10"]`)
+  - `Given` ordering: Preserves the order specified by the user
+- **Nested** (`NodeList`): Contains a child `PathHierarchy`, enabling recursive representation of archives within archives
+
+### PathHierarchy Type
+
+```cpp
+using PathHierarchy = std::vector<PathEntry>;
+```
+
+A `PathHierarchy` is a sequence of `PathEntry` elements representing the full path from the root to a target entry. For example:
+
+- `{"archive.tar", "dir/subdir/file.txt"}` — regular nested path
+- `{{"vol.part1", "vol.part2"}, "inner.zip", "data.csv"}` — multi-volume archive containing nested archive with CSV file
+
+### Ordering and Comparison
+
+PathHierarchy defines strict ordering rules to enable consistent path comparison:
+
+1. **Type-based ordering**: `Single < Multi-volume < Nested`
+2. **Within-type ordering**:
+   - **Single**: Lexicographic string comparison
+   - **Multi-volume**: First by ordering mode (`Natural < Given`), then lexicographic comparison of part lists
+   - **Nested**: Recursive comparison of child hierarchies
+3. **Hierarchy comparison**: Compare entries level-by-level until a difference is found
+
+This ordering ensures that archive paths can be sorted, deduplicated, and indexed consistently across all archive types.
+
+### Helper Functions
+
+archive_r provides convenience builders for common cases:
+
+```cpp
+// Create a single-entry hierarchy from a filesystem path
+PathHierarchy single_path = make_single_path("archive.tar.gz");
+// Result: {PathEntry("archive.tar.gz")}
+
+// Create a multi-volume hierarchy from a list of parts
+PathHierarchy multi_volume = make_multi_volume_path(
+    {"archive.part1", "archive.part2", "archive.part3"},
+    PartOrdering::Natural  // or PartOrdering::Given
+);
+// Result: {PathEntry(Parts{{"archive.part1", "archive.part2", "archive.part3"}, Natural})}
+```
+
+When constructing a `Traverser`, wrap top-level paths using these helpers:
+
+```cpp
+// Single archive
+Traverser tr1({make_single_path("archive.tar")});
+
+// Multiple archives
+Traverser tr2({
+    make_single_path("first.zip"),
+    make_single_path("second.tar.gz")
+});
+
+// Multi-volume archive
+Traverser tr3({
+    make_multi_volume_path({"vol.part1", "vol.part2"}, PartOrdering::Natural)
+});
+```
+
+### Usage in Entry API
+
+The `Entry` class exposes PathHierarchy through several methods:
+
+- `entry.path_hierarchy()` — Returns the full `PathHierarchy` for the current entry
+- `entry.path()` — Flattens the hierarchy into a single string (e.g., `"archive.tar/dir/file.txt"`)
+- `entry.name()` — Returns the last component of the hierarchy (e.g., `"file.txt"`)
+
+For custom display formats or deep path analysis, use `path_hierarchy()` directly:
+
+```cpp
+PathHierarchy hier = entry.path_hierarchy();
+for (const PathEntry& step : hier) {
+    if (std::holds_alternative<std::string>(step)) {
+        std::cout << "Single: " << std::get<std::string>(step) << "\n";
+    } else if (std::holds_alternative<Parts>(step)) {
+        const Parts& parts = std::get<Parts>(step);
+        std::cout << "Multi-volume (" << parts.parts.size() << " parts)\n";
+    } else {
+        std::cout << "Nested hierarchy\n";
+    }
+}
+```
+
+---
+
 ## Behavioral Details
 
 ### Automatic Archive Expansion
