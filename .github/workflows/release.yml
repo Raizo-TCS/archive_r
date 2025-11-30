@@ -82,10 +82,10 @@ jobs:
       - name: Build core library and bindings
         run: ./build.sh --rebuild-all
 
-      - name: Build Python sdist/wheel
+      - name: Build Python sdist
         run: |
           cd bindings/python
-          python3 -m build --wheel --sdist --outdir dist
+          python3 -m build --sdist --outdir dist
 
       - name: Upload local artifacts
         uses: actions/upload-artifact@v4
@@ -96,7 +96,6 @@ jobs:
             build/libarchive_r_core.a
             build/bindings/ruby/*.gem
             bindings/python/dist/*.tar.gz
-            bindings/python/dist/*.whl
             build/logs/*.log
 
   build-manylinux-wheels:
