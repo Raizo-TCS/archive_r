@@ -4,10 +4,12 @@
 #include "archive_r/data_stream.h"
 #include "archive_r/entry.h"
 #include "archive_r/entry_fault.h"
+#include "archive_r/multi_volume_stream_base.h"
 #include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/traverser.h"
 #include "archive_stack_orchestrator.h"
 #include <cctype>
+#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <memory>
@@ -66,6 +68,96 @@ py::list path_hierarchy_to_python(const PathHierarchy &hierarchy) {
   return result;
 }
 
+PathEntry python_path_entry_from_object(const py::handle &obj) {
+  if (py::isinstance<py::str>(obj)) {
+    return PathEntry::single(obj.cast<std::string>());
+  }
+
+  py::list sequence;
+  try {
+    sequence = py::list(py::reinterpret_borrow<py::object>(obj));
+  } catch (const py::cast_error &) {
+    throw std::invalid_argument("PathEntry must be string or nested sequence");
+  }
+
+  if (sequence.size() == 0) {
+    throw std::invalid_argument("PathEntry sequence cannot be empty");
+  }
+
+  bool all_strings = true;
+  for (py::handle item : sequence) {
+    if (!py::isinstance<py::str>(item)) {
+      all_strings = false;
+      break;
+    }
+  }
+
+  if (all_strings) {
+    std::vector<std::string> parts;
+    parts.reserve(static_cast<size_t>(sequence.size()));
+    for (py::handle item : sequence) {
+      parts.emplace_back(item.cast<std::string>());
+    }
+    return PathEntry::multi_volume(std::move(parts));
+  }
+
+  PathEntry::NodeList nodes;
+  nodes.reserve(static_cast<size_t>(sequence.size()));
+  for (py::handle item : sequence) {
+    nodes.emplace_back(python_path_entry_from_object(item));
+  }
+  return PathEntry::nested(std::move(nodes));
+}
+
+PathHierarchy python_path_hierarchy_from_object(const py::handle &obj) {
+  if (py::isinstance<py::str>(obj)) {
+    return make_single_path(obj.cast<std::string>());
+  }
+
+  py::list sequence;
+  try {
+    sequence = py::list(py::reinterpret_borrow<py::object>(obj));
+  } catch (const py::cast_error &) {
+    throw std::invalid_argument("path hierarchy must be string or sequence");
+  }
+
+  if (sequence.size() == 0) {
+    throw std::invalid_argument("path hierarchy cannot be empty");
+  }
+
+  PathHierarchy hierarchy;
+  hierarchy.reserve(static_cast<size_t>(sequence.size()));
+  for (py::handle component : sequence) {
+    hierarchy.emplace_back(python_path_entry_from_object(component));
+  }
+  return hierarchy;
+}
+
+std::vector<PathHierarchy> python_normalize_paths(const py::object &paths_obj) {
+  if (py::isinstance<py::str>(paths_obj)) {
+    return { make_single_path(paths_obj.cast<std::string>()) };
+  }
+
+  py::list path_list;
+  try {
+    path_list = py::list(paths_obj);
+  } catch (const py::cast_error &) {
+    throw std::invalid_argument("paths must be a string or a sequence of path hierarchies");
+  }
+
+  if (path_list.size() == 0) {
+    throw std::invalid_argument("paths cannot be empty");
+  }
+
+  std::vector<PathHierarchy> result;
+  result.reserve(static_cast<size_t>(path_list.size()));
+  for (py::handle item : path_list) {
+    result.emplace_back(python_path_hierarchy_from_object(item));
+  }
+
+  return result;
+}
+
 py::dict entry_fault_to_python(const EntryFault &fault) {
   py::dict result;
   result[py::str("message")] = py::str(fault.message);
@@ -93,42 +185,98 @@ FaultCallback make_python_fault_callback(const py::object &callable) {
   };
 }
 
-class PyObjectStream : public IDataStream {
+class PyUserStream : public MultiVolumeStreamBase {
 public:
-  PyObjectStream(py::object io, PathHierarchy hierarchy)
-      : io_(std::move(io))
-      , hierarchy_(std::move(hierarchy))
-      , at_end_(false)
-      , seekable_(py::hasattr(io_, "seek"))
-      , tellable_(py::hasattr(io_, "tell"))
-      , has_custom_rewind_(py::hasattr(io_, "rewind")) {
-    if (!py::hasattr(io_, "read")) {
-      throw py::type_error("stream objects must provide a read() method");
-    }
-    if (!has_custom_rewind_ && !seekable_) {
-      throw py::type_error("stream objects must provide either rewind() or seek()");
-    }
-  }
-
-  ~PyObjectStream() override {
-    py::gil_scoped_acquire gil;
-    if (py::hasattr(io_, "close")) {
-      try {
-        io_.attr("close")();
-      } catch (const py::error_already_set &) {
-        PyErr_Clear();
+  PyUserStream(PathHierarchy hierarchy, bool supports_seek)
+      : MultiVolumeStreamBase(std::move(hierarchy), supports_seek)
+      , active_io_(py::none())
+      , io_seekable_(false)
+      , io_tellable_(false)
+      , io_closeable_(false)
+      , self_reference_(nullptr) {}
+  
+    ~PyUserStream() override {
+      py::gil_scoped_acquire gil;
+      release_active_io();
+      if (self_reference_ != nullptr) {
+        Py_DECREF(self_reference_);
+        self_reference_ = nullptr;
       }
     }
+
+    void retain_python_owner(const py::object &owner) {
+      PyObject *new_owner = owner.ptr();
+      if (new_owner == self_reference_) {
+        return;
+      }
+      Py_XINCREF(new_owner);
+      if (self_reference_ != nullptr) {
+        Py_DECREF(self_reference_);
+      }
+      self_reference_ = new_owner;
+    }
+
+protected:
+  void open_single_part(const PathHierarchy &single_part) override {
+    py::gil_scoped_acquire gil;
+    py::object open_io = py::get_override(this, "open_part_io");
+    if (open_io) {
+      py::object result = open_io(path_hierarchy_to_python(single_part));
+      if (result.is_none()) {
+        throw py::value_error("open_part_io must return an IO-like object");
+      }
+      activate_io(std::move(result));
+      return;
+    }
+
+    py::object override = py::get_override(this, "open_part");
+    if (!override) {
+      throw py::type_error("Stream subclasses must implement open_part_io() or open_part()");
+    }
+    override(path_hierarchy_to_python(single_part));
   }
 
-  ssize_t read(void *buffer, size_t size) override {
+  void close_single_part() override {
+    py::gil_scoped_acquire gil;
+    release_active_io();
+    py::object override = py::get_override(this, "close_part");
+    if (override) {
+      override();
+    }
+  }
+
+  ssize_t read_from_single_part(void *buffer, size_t size) override {
     if (size == 0) {
       return 0;
     }
     py::gil_scoped_acquire gil;
-    py::object result = io_.attr("read")(py::int_(size));
+    if (!active_io_.is_none()) {
+      py::object result = active_io_.attr("read")(py::int_(size));
+      if (result.is_none()) {
+        return 0;
+      }
+      py::bytes data = py::reinterpret_borrow<py::bytes>(py::bytes(result));
+      Py_ssize_t length = PyBytes_Size(data.ptr());
+      if (length < 0) {
+        throw py::error_already_set();
+      }
+      if (length == 0) {
+        return 0;
+      }
+      char *raw = PyBytes_AsString(data.ptr());
+      if (!raw) {
+        throw py::error_already_set();
+      }
+      std::memcpy(buffer, raw, static_cast<size_t>(length));
+      return static_cast<ssize_t>(length);
+    }
+
+    py::object override = py::get_override(this, "read_part");
+    if (!override) {
+      throw py::type_error("Stream subclasses must implement open_part_io() or read_part(size)");
+    }
+    py::object result = override(py::int_(size));
     if (result.is_none()) {
-      at_end_ = true;
       return 0;
     }
     py::bytes data = py::reinterpret_borrow<py::bytes>(py::bytes(result));
@@ -137,7 +285,6 @@ public:
       throw py::error_already_set();
     }
     if (length == 0) {
-      at_end_ = true;
       return 0;
     }
     char *raw = PyBytes_AsString(data.ptr());
@@ -148,61 +295,82 @@ public:
     return static_cast<ssize_t>(length);
   }
 
-  void rewind() override {
+  int64_t seek_within_single_part(int64_t offset, int whence) override {
     py::gil_scoped_acquire gil;
-    if (has_custom_rewind_) {
-      io_.attr("rewind")();
-    } else if (seekable_) {
-      io_.attr("seek")(py::int_(0));
-    } else {
-      throw py::type_error("stream object does not support rewind");
+    if (!active_io_.is_none() && io_seekable_) {
+      py::object result = active_io_.attr("seek")(py::int_(offset), py::int_(whence));
+      return result.cast<int64_t>();
     }
-    at_end_ = false;
-  }
-
-  bool at_end() const override { return at_end_; }
-
-  int64_t seek(int64_t offset, int whence) override {
-    if (!seekable_) {
+    py::object override = py::get_override(this, "seek_part");
+    if (!override) {
       return -1;
     }
-    py::gil_scoped_acquire gil;
-    py::object result = io_.attr("seek")(py::int_(offset), py::int_(whence));
-    at_end_ = false;
+    py::object result = override(py::int_(offset), py::int_(whence));
     return result.cast<int64_t>();
   }
 
-  int64_t tell() const override {
-    if (!tellable_) {
+  int64_t size_of_single_part(const PathHierarchy &single_part) override {
+    py::gil_scoped_acquire gil;
+    if (!active_io_.is_none()) {
+      if (io_seekable_ && io_tellable_) {
+        py::object current = active_io_.attr("tell")();
+        active_io_.attr("seek")(py::int_(0), py::int_(SEEK_END));
+        py::object end_pos = active_io_.attr("tell")();
+        active_io_.attr("seek")(current, py::int_(SEEK_SET));
+        return end_pos.cast<int64_t>();
+      }
+    }
+
+    py::object override = py::get_override(this, "part_size");
+    if (!override) {
       return -1;
     }
-    py::gil_scoped_acquire gil;
-    py::object result = io_.attr("tell")();
+    py::object result = override(path_hierarchy_to_python(single_part));
     return result.cast<int64_t>();
   }
-
-  bool can_seek() const override { return seekable_; }
-
-  PathHierarchy source_hierarchy() const override { return hierarchy_; }
 
 private:
-  py::object io_;
-  PathHierarchy hierarchy_;
-  mutable bool at_end_;
-  bool seekable_;
-  bool tellable_;
-  bool has_custom_rewind_;
-};
+  void activate_io(py::object io) {
+    if (!py::hasattr(io, "read")) {
+      throw py::type_error("open_part_io must return an object with read()");
+    }
+    release_active_io();
+    active_io_ = std::move(io);
+    io_seekable_ = py::hasattr(active_io_, "seek");
+    io_tellable_ = py::hasattr(active_io_, "tell");
+    io_closeable_ = py::hasattr(active_io_, "close");
+    if (can_seek() && io_seekable_) {
+      try {
+        active_io_.attr("seek")(py::int_(0), py::int_(SEEK_CUR));
+      } catch (const py::error_already_set &) {
+        PyErr_Clear();
+      }
+    }
+  }
 
-std::shared_ptr<IDataStream> stream_from_python_result(const py::object &result, const PathHierarchy &requested) {
-  if (result.is_none()) {
-    return nullptr;
+  void release_active_io() {
+    if (active_io_.is_none()) {
+      return;
+    }
+    if (io_closeable_) {
+      try {
+        active_io_.attr("close")();
+      } catch (const py::error_already_set &) {
+        PyErr_Clear();
+      }
+    }
+    active_io_ = py::none();
+    io_seekable_ = false;
+    io_tellable_ = false;
+    io_closeable_ = false;
   }
-  if (!py::hasattr(result, "read")) {
-    throw py::type_error("stream factory must return None or an object with read()");
-  }
-  return std::make_shared<PyObjectStream>(result, requested);
-}
+
+  py::object active_io_;
+  bool io_seekable_;
+  bool io_tellable_;
+  bool io_closeable_;
+  PyObject *self_reference_;
+};
 
 void register_python_stream_factory(const py::object &callable) {
   if (callable.is_none()) {
@@ -217,7 +385,18 @@ void register_python_stream_factory(const py::object &callable) {
   RootStreamFactory factory = [func](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
     py::gil_scoped_acquire gil;
     py::object result = func(path_hierarchy_to_python(hierarchy));
-    return stream_from_python_result(result, hierarchy);
+    if (result.is_none()) {
+      return nullptr;
+    }
+    if (!py::isinstance<PyUserStream>(result)) {
+      throw py::type_error("stream factory must return None or an archive_r.Stream instance");
+    }
+    auto stream = result.cast<std::shared_ptr<PyUserStream>>();
+    stream->retain_python_owner(result);
+    if (!hierarchies_equal(stream->source_hierarchy(), hierarchy)) {
+      throw py::value_error("Stream subclass must be initialized with the hierarchy provided to the factory");
+    }
+    return stream;
   };
 
   set_root_stream_factory(factory);
@@ -475,7 +654,7 @@ public:
               std::optional<std::vector<std::string>> metadata_keys = std::nullopt, std::optional<bool> descend_archives = std::nullopt)
       : traverser_options_(build_options(passphrases, formats, metadata_keys, descend_archives))
       , archive_options_snapshot_(to_archive_option(traverser_options_))
-      , traverser(normalize_paths(paths), traverser_options_)
+      , traverser(python_normalize_paths(paths), traverser_options_)
       , it(traverser.end()) {
   }
 
@@ -551,96 +730,6 @@ private:
     return options;
   }
 
-  static PathEntry py_to_path_entry(const py::handle &obj) {
-    if (py::isinstance<py::str>(obj)) {
-      return PathEntry::single(obj.cast<std::string>());
-    }
-
-    py::list sequence;
-    try {
-      sequence = py::list(py::reinterpret_borrow<py::object>(obj));
-    } catch (const py::cast_error &) {
-      throw std::invalid_argument("PathEntry must be string or nested sequence");
-    }
-
-    if (sequence.size() == 0) {
-      throw std::invalid_argument("PathEntry sequence cannot be empty");
-    }
-
-    bool all_strings = true;
-    for (py::handle item : sequence) {
-      if (!py::isinstance<py::str>(item)) {
-        all_strings = false;
-        break;
-      }
-    }
-
-    if (all_strings) {
-      std::vector<std::string> parts;
-      parts.reserve(static_cast<size_t>(sequence.size()));
-      for (py::handle item : sequence) {
-        parts.emplace_back(item.cast<std::string>());
-      }
-      return PathEntry::multi_volume(std::move(parts));
-    }
-
-    PathEntry::NodeList nodes;
-    nodes.reserve(static_cast<size_t>(sequence.size()));
-    for (py::handle item : sequence) {
-      nodes.emplace_back(py_to_path_entry(item));
-    }
-    return PathEntry::nested(std::move(nodes));
-  }
-
-  static PathHierarchy py_to_path_hierarchy(const py::handle &obj) {
-    if (py::isinstance<py::str>(obj)) {
-      return make_single_path(obj.cast<std::string>());
-    }
-
-    py::list sequence;
-    try {
-      sequence = py::list(py::reinterpret_borrow<py::object>(obj));
-    } catch (const py::cast_error &) {
-      throw std::invalid_argument("path hierarchy must be string or sequence");
-    }
-
-    if (sequence.size() == 0) {
-      throw std::invalid_argument("path hierarchy cannot be empty");
-    }
-
-    PathHierarchy hierarchy;
-    hierarchy.reserve(static_cast<size_t>(sequence.size()));
-    for (py::handle component : sequence) {
-      hierarchy.emplace_back(py_to_path_entry(component));
-    }
-    return hierarchy;
-  }
-
-  static std::vector<PathHierarchy> normalize_paths(const py::object &paths_obj) {
-    if (py::isinstance<py::str>(paths_obj)) {
-      return { make_single_path(paths_obj.cast<std::string>()) };
-    }
-
-    py::list path_list;
-    try {
-      path_list = py::list(paths_obj);
-    } catch (const py::cast_error &) {
-      throw std::invalid_argument("paths must be a string or a sequence of path hierarchies");
-    }
-
-    if (path_list.size() == 0) {
-      throw std::invalid_argument("paths cannot be empty");
-    }
-
-    std::vector<PathHierarchy> result;
-    result.reserve(static_cast<size_t>(path_list.size()));
-    for (py::handle item : path_list) {
-      result.emplace_back(py_to_path_hierarchy(item));
-    }
-
-    return result;
-  }
-
   TraverserOptions traverser_options_;
   ArchiveOption archive_options_snapshot_;
   Traverser traverser;
@@ -680,12 +769,21 @@ PYBIND11_MODULE(archive_r, m) {
   m.attr("STANDARD_FORMATS") = formats_tuple;
   m.attr("SAFE_FORMATS") = formats_tuple;
 
-      m.def("register_stream_factory", &register_python_stream_factory, py::arg("factory") = py::none(),
-        "Register a callable returning a file-like object for custom root streams. Pass None to reset.");
+    m.def("register_stream_factory", &register_python_stream_factory, py::arg("factory") = py::none(),
+      "Register a callable returning archive_r.Stream instances for custom root streams. Pass None to reset.");
 
-      m.def("on_fault",
+  m.def("on_fault",
         [](const py::object &callback) { register_fault_callback(make_python_fault_callback(callback)); }, py::arg("callback") = py::none(),
         "Register or clear the global EntryFault callback (None clears)");
+
+  py::class_<PyUserStream, std::shared_ptr<PyUserStream>>(m, "Stream")
+      .def(py::init([](py::object hierarchy, py::object supports_seek_obj) {
+             auto path = python_path_hierarchy_from_object(hierarchy);
+             bool supports_seek = supports_seek_obj.is_none() ? true : supports_seek_obj.cast<bool>();
+             return std::make_shared<PyUserStream>(std::move(path), supports_seek);
+           }),
+           py::arg("hierarchy"), py::arg("supports_seek") = py::none(),
+           "Base class for custom multi-volume streams returned from register_stream_factory.");
 
   // Entry class
   py::class_<PyEntry, std::shared_ptr<PyEntry>>(m, "Entry")

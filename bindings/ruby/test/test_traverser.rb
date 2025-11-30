@@ -8,22 +8,14 @@ require 'archive_r'
 class TestTraverser < Minitest::Test
   DEFAULT_FORMATS = (Archive_r::STANDARD_FORMATS + ['mtree']).freeze
 
-  # Minimal stream wrapper used to verify custom objects without #seek/#tell work
-  class MinimalStream
-    def initialize(payload)
-      @io = StringIO.new(payload)
+  class PayloadStream < Archive_r::Stream
+    def initialize(hierarchy, payload, seekable: false)
+      super(hierarchy, seekable: seekable)
+      @payload = payload
     end
 
-    def read(length = nil)
-      @io.read(length)
-    end
-
-    def rewind
-      @io.rewind
-    end
-
-    def eof?
-      @io.eof?
+    def open_part_io(_hierarchy)
+      StringIO.new(@payload.dup)
     end
   end
 
@@ -87,7 +79,7 @@ class TestTraverser < Minitest::Test
     Archive_r.register_stream_factory(lambda do |hierarchy|
       calls += 1
       next unless hierarchy.first == File.expand_path(@simple_archive)
-      StringIO.new(payload.dup)
+      PayloadStream.new(hierarchy, payload)
     end)
 
     actual = collect_paths(@simple_archive)
@@ -101,7 +93,7 @@ class TestTraverser < Minitest::Test
 
     Archive_r.register_stream_factory(lambda do |hierarchy|
       if hierarchy.first == File.expand_path(virtual_path)
-        File.open(@simple_archive, 'rb')
+        PayloadStream.new(hierarchy, File.binread(@simple_archive))
       end
     end)
 
@@ -118,12 +110,60 @@ class TestTraverser < Minitest::Test
       normalized = File.expand_path(@simple_archive)
       next unless hierarchy.first == normalized
       calls += 1
-      MinimalStream.new(payload.dup)
+      PayloadStream.new(hierarchy, payload)
     end)
 
     actual = collect_paths(@simple_archive)
     assert_equal expected, actual
     assert_equal 1, calls
+  end
+
+  def test_stream_factory_rejects_plain_io_results
+    Archive_r.register_stream_factory(lambda do |_hierarchy|
+      StringIO.new('payload')
+    end)
+
+    assert_raises(TypeError) { collect_paths(@simple_archive) }
+  ensure
+    Archive_r.register_stream_factory(nil)
+  end
+
+  def test_stream_factory_multi_volume_stream_via_custom_class
+    parts = @test_input_parts.map { |path| File.expand_path(path) }
+    multi_path = [parts]
+    Archive_r.register_stream_factory(nil)
+    expected = collect_paths(multi_path)
+
+    stream_class = Class.new(Archive_r::Stream) do
+      attr_reader :requests
+
+      def initialize(hierarchy)
+        super(hierarchy, seekable: true)
+        @requests = []
+      end
+
+      def open_part_io(part_hierarchy)
+        head = part_hierarchy.first
+        @requests << head
+        File.open(head, 'rb')
+      end
+    end
+
+    streams = []
+    Archive_r.register_stream_factory(lambda do |hierarchy|
+      head = hierarchy.first
+      assert_kind_of Array, head
+      stream = stream_class.new(hierarchy)
+      streams << stream
+      stream
+    end)
+
+    actual = collect_paths(multi_path)
+    assert_equal expected, actual
+    refute_empty streams
+    assert_equal parts, streams.first.requests
+  ensure
+    Archive_r.register_stream_factory(nil)
   end
   
   def test_root_entry_exposed
