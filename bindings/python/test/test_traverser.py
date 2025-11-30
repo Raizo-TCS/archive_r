@@ -44,6 +44,7 @@ class TestTraverser(unittest.TestCase):
         cls.directory_path = str(test_data_dir / 'directory_test')
         cls.broken_archive = str(test_data_dir / 'broken_nested.tar')
         cls.stress_archive = str(test_data_dir / 'stress_test_ultimate.tar.gz')
+        cls.multi_volume_parts = sorted(str(path.resolve()) for path in test_data_dir.glob('test_input.tar.gz.part*'))
         
         if not os.path.exists(cls.simple_archive):
             raise FileNotFoundError(f"Test archive not found: {cls.simple_archive}")
@@ -57,6 +58,8 @@ class TestTraverser(unittest.TestCase):
             raise FileNotFoundError(f"Broken archive not found: {cls.broken_archive}")
         if not os.path.exists(cls.stress_archive):
             raise FileNotFoundError(f"Stress archive not found: {cls.stress_archive}")
+        if not cls.multi_volume_parts:
+            raise FileNotFoundError('Multi-volume parts test_input.tar.gz.part* not found')
 
     def _normalized_options(self, **kwargs):
         options = dict(kwargs)
@@ -374,6 +377,23 @@ class TestTraverser(unittest.TestCase):
         actual = self._collect_paths(self.simple_archive)
         self.assertEqual(expected, actual)
         self.assertEqual(1, calls["count"])
+
+    def test_stream_factory_multi_volume_requests_single_parts(self):
+        parts_hierarchy = [[part for part in self.multi_volume_parts]]
+        expected = self._collect_paths(parts_hierarchy)
+        requests = []
+
+        def factory(hierarchy):
+            head = hierarchy[0] if hierarchy else None
+            if head in self.multi_volume_parts:
+                requests.append(head)
+                return open(head, 'rb')
+            return None
+
+        archive_r.register_stream_factory(factory)
+        actual = self._collect_paths(parts_hierarchy)
+        self.assertEqual(expected, actual)
+        self.assertEqual(self.multi_volume_parts, requests)
 
     def test_stream_factory_requires_callable(self):
         """register_stream_factory should reject non-callables"""

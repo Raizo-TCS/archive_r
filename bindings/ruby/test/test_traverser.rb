@@ -125,6 +125,25 @@ class TestTraverser < Minitest::Test
     assert_equal expected, actual
     assert_equal 1, calls
   end
+
+  def test_stream_factory_multi_volume_requests_single_parts
+    parts = @test_input_parts.map { |path| File.expand_path(path) }
+    multi_path = [parts]
+    expected = collect_paths(multi_path)
+    requested = []
+
+    Archive_r.register_stream_factory(lambda do |hierarchy|
+      head = hierarchy.first
+      expected_head = parts[requested.length]
+      assert_equal expected_head, head
+      requested << head
+      File.open(head, 'rb')
+    end)
+
+    actual = collect_paths(multi_path)
+    assert_equal expected, actual
+    assert_equal parts, requested
+  end
   
   def test_root_entry_exposed
     entry = nil

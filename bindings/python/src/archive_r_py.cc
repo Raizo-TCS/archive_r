@@ -4,10 +4,12 @@
 #include "archive_r/data_stream.h"
 #include "archive_r/entry.h"
 #include "archive_r/entry_fault.h"
+#include "archive_r/multi_volume_stream_base.h"
 #include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/traverser.h"
 #include "archive_stack_orchestrator.h"
 #include <cctype>
+#include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <memory>
@@ -93,42 +95,73 @@ FaultCallback make_python_fault_callback(const py::object &callable) {
   };
 }
 
-class PyObjectStream : public IDataStream {
+class PyMultiVolumeStream : public MultiVolumeStreamBase {
 public:
-  PyObjectStream(py::object io, PathHierarchy hierarchy)
-      : io_(std::move(io))
-      , hierarchy_(std::move(hierarchy))
-      , at_end_(false)
-      , seekable_(py::hasattr(io_, "seek"))
-      , tellable_(py::hasattr(io_, "tell"))
-      , has_custom_rewind_(py::hasattr(io_, "rewind")) {
-    if (!py::hasattr(io_, "read")) {
-      throw py::type_error("stream objects must provide a read() method");
+  PyMultiVolumeStream(std::vector<py::object> part_streams, PathHierarchy logical_path)
+      : MultiVolumeStreamBase(std::move(logical_path), determine_seek_support(part_streams))
+      , part_infos_(part_streams.size())
+      , single_part_hierarchies_(part_streams.size())
+      , active_index_(kInvalidIndex) {
+    if (part_streams.empty()) {
+      throw py::value_error("multi-volume streams require at least one part");
     }
-    if (!has_custom_rewind_ && !seekable_) {
-      throw py::type_error("stream objects must provide either rewind() or seek()");
+
+    for (std::size_t i = 0; i < part_streams.size(); ++i) {
+      py::object current = std::move(part_streams[i]);
+      if (!py::hasattr(current, "read")) {
+        throw py::type_error("each multi-volume part must expose read()");
+      }
+      PartInfo info;
+      info.stream = std::move(current);
+      info.seekable = py::hasattr(info.stream, "seek");
+      info.tellable = py::hasattr(info.stream, "tell");
+      info.has_rewind = py::hasattr(info.stream, "rewind");
+      info.has_close = py::hasattr(info.stream, "close");
+      if (!info.has_rewind && !info.seekable) {
+        throw py::type_error("each multi-volume part must provide rewind() or seek()");
+      }
+      part_infos_[i] = std::move(info);
+      single_part_hierarchies_[i] = pathhierarchy_select_single_part(_logical_path, i);
     }
   }
 
-  ~PyObjectStream() override {
+  ~PyMultiVolumeStream() override {
     py::gil_scoped_acquire gil;
-    if (py::hasattr(io_, "close")) {
-      try {
-        io_.attr("close")();
-      } catch (const py::error_already_set &) {
-        PyErr_Clear();
+    for (auto &part : part_infos_) {
+      if (part.has_close && PyObject_HasAttrString(part.stream.ptr(), "close")) {
+        try {
+          part.stream.attr("close")();
+        } catch (const py::error_already_set &) {
+          PyErr_Clear();
+        }
       }
     }
   }
 
-  ssize_t read(void *buffer, size_t size) override {
-    if (size == 0) {
+protected:
+  void open_single_part(const PathHierarchy &single_part) override {
+    const std::size_t index = locate_part(single_part);
+    PartInfo &info = part_infos_[index];
+    py::gil_scoped_acquire gil;
+    if (info.has_rewind) {
+      info.stream.attr("rewind")();
+    } else if (info.seekable) {
+      info.stream.attr("seek")(py::int_(0));
+    } else {
+      throw py::type_error("multi-volume part cannot be rewound");
+    }
+    active_index_ = index;
+  }
+
+  void close_single_part() override { active_index_ = kInvalidIndex; }
+
+  ssize_t read_from_single_part(void *buffer, size_t size) override {
+    if (size == 0 || active_index_ == kInvalidIndex) {
       return 0;
     }
     py::gil_scoped_acquire gil;
-    py::object result = io_.attr("read")(py::int_(size));
+    py::object result = part_infos_[active_index_].stream.attr("read")(py::int_(size));
     if (result.is_none()) {
-      at_end_ = true;
       return 0;
     }
     py::bytes data = py::reinterpret_borrow<py::bytes>(py::bytes(result));
@@ -137,7 +170,6 @@ public:
       throw py::error_already_set();
     }
     if (length == 0) {
-      at_end_ = true;
       return 0;
     }
     char *raw = PyBytes_AsString(data.ptr());
@@ -148,61 +180,64 @@ public:
     return static_cast<ssize_t>(length);
   }
 
-  void rewind() override {
-    py::gil_scoped_acquire gil;
-    if (has_custom_rewind_) {
-      io_.attr("rewind")();
-    } else if (seekable_) {
-      io_.attr("seek")(py::int_(0));
-    } else {
-      throw py::type_error("stream object does not support rewind");
-    }
-    at_end_ = false;
-  }
-
-  bool at_end() const override { return at_end_; }
-
-  int64_t seek(int64_t offset, int whence) override {
-    if (!seekable_) {
+  int64_t seek_within_single_part(int64_t offset, int whence) override {
+    if (active_index_ == kInvalidIndex || !part_infos_[active_index_].seekable) {
       return -1;
     }
     py::gil_scoped_acquire gil;
-    py::object result = io_.attr("seek")(py::int_(offset), py::int_(whence));
-    at_end_ = false;
+    py::object result = part_infos_[active_index_].stream.attr("seek")(py::int_(offset), py::int_(whence));
     return result.cast<int64_t>();
   }
 
-  int64_t tell() const override {
-    if (!tellable_) {
+  int64_t size_of_single_part(const PathHierarchy &single_part) override {
+    const std::size_t index = locate_part(single_part);
+    PartInfo &info = part_infos_[index];
+    if (!info.seekable || !info.tellable) {
       return -1;
     }
     py::gil_scoped_acquire gil;
-    py::object result = io_.attr("tell")();
-    return result.cast<int64_t>();
+    py::object current_pos = info.stream.attr("tell")();
+    py::object end_pos = info.stream.attr("seek")(py::int_(0), py::int_(SEEK_END));
+    info.stream.attr("seek")(current_pos, py::int_(SEEK_SET));
+    return end_pos.cast<int64_t>();
   }
-
-  bool can_seek() const override { return seekable_; }
-
-  PathHierarchy source_hierarchy() const override { return hierarchy_; }
 
 private:
-  py::object io_;
-  PathHierarchy hierarchy_;
-  mutable bool at_end_;
-  bool seekable_;
-  bool tellable_;
-  bool has_custom_rewind_;
-};
+  struct PartInfo {
+    py::object stream;
+    bool seekable = false;
+    bool tellable = false;
+    bool has_rewind = false;
+    bool has_close = false;
+  };
 
-std::shared_ptr<IDataStream> stream_from_python_result(const py::object &result, const PathHierarchy &requested) {
-  if (result.is_none()) {
-    return nullptr;
+  static constexpr std::size_t kInvalidIndex = std::numeric_limits<std::size_t>::max();
+
+  static bool determine_seek_support(const std::vector<py::object> &streams) {
+    if (streams.empty()) {
+      return false;
+    }
+    for (const auto &obj : streams) {
+      if (!py::hasattr(obj, "seek")) {
+        return false;
+      }
+    }
+    return true;
   }
-  if (!py::hasattr(result, "read")) {
-    throw py::type_error("stream factory must return None or an object with read()");
+
+  std::size_t locate_part(const PathHierarchy &single_part) const {
+    for (std::size_t i = 0; i < single_part_hierarchies_.size(); ++i) {
+      if (hierarchies_equal(single_part_hierarchies_[i], single_part)) {
+        return i;
+      }
+    }
+    throw std::runtime_error("requested part not found in multi-volume stream");
   }
-  return std::make_shared<PyObjectStream>(result, requested);
-}
+
+  std::vector<PartInfo> part_infos_;
+  std::vector<PathHierarchy> single_part_hierarchies_;
+  std::size_t active_index_;
+};
 
 void register_python_stream_factory(const py::object &callable) {
   if (callable.is_none()) {
@@ -216,8 +251,40 @@ void register_python_stream_factory(const py::object &callable) {
   py::function func = py::reinterpret_borrow<py::function>(callable);
   RootStreamFactory factory = [func](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
     py::gil_scoped_acquire gil;
-    py::object result = func(path_hierarchy_to_python(hierarchy));
-    return stream_from_python_result(result, hierarchy);
+
+    auto request_single_part = [&](const PathHierarchy &single_part) -> py::object {
+      py::object result = func(path_hierarchy_to_python(single_part));
+      if (result.is_none()) {
+        return py::none();
+      }
+      if (!py::hasattr(result, "read")) {
+        throw py::type_error("stream factory must return None or an object with read()");
+      }
+      return result;
+    };
+
+    if (pathhierarchy_is_multivolume(hierarchy)) {
+      const std::size_t parts = pathhierarchy_volume_size(hierarchy);
+      std::vector<py::object> streams;
+      streams.reserve(parts);
+      for (std::size_t index = 0; index < parts; ++index) {
+        PathHierarchy single_part = pathhierarchy_select_single_part(hierarchy, index);
+        py::object stream_obj = request_single_part(single_part);
+        if (stream_obj.is_none()) {
+          return {};
+        }
+        streams.emplace_back(std::move(stream_obj));
+      }
+      return std::make_shared<PyMultiVolumeStream>(std::move(streams), hierarchy);
+    }
+
+    py::object stream_obj = request_single_part(hierarchy);
+    if (stream_obj.is_none()) {
+      return {};
+    }
+    std::vector<py::object> single_part;
+    single_part.emplace_back(std::move(stream_obj));
+    return std::make_shared<PyMultiVolumeStream>(std::move(single_part), hierarchy);
   };
 
   set_root_stream_factory(factory);
