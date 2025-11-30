@@ -135,41 +135,9 @@ int main() {
 > - `entry.name()` returns the last element of `path_hierarchy()` (e.g., `"dir/subdir/file.txt"`).
 > - `entry.path_hierarchy()` returns each step as an array (e.g., `{"outer/archive.zip", "dir/subdir/file.txt"}`). Useful for representing the full path with custom separators.
 
-### Python
-
-The Python bindings provide a Pythonic iterator API with context manager support for traversing nested archives. For complete usage documentation, installation instructions, API reference, and examples, see [`bindings/python/README.md`](bindings/python/README.md).
-
-**Quick Example**:
-
-```python
-import archive_r
-
-# Context manager ensures proper resource cleanup
-with archive_r.Traverser("test.zip") as traverser:
-    for entry in traverser:
-        print(f"Path: {entry.path} (depth={entry.depth})")
-        
-        # Search text files
-        if entry.is_file and entry.path.endswith('.txt'):
-            content = entry.read()
-            if b"search_keyword" in content:
-                print(f"  Found keyword in: {entry.path}")
-        
-        # Don't expand Office files (they are ZIP internally)
-        if entry.path.endswith(('.docx', '.xlsx', '.pptx')):
-            entry.set_descent(False)
-```
-
-> ℹ️ **Entry Path Representation (Python)**
-> - `entry.path` returns the full path including the top-level archive (e.g., `"outer.zip/inner.tar/file.txt"`).
-> - `entry.name` returns the last element (e.g., `"inner.tar/file.txt"`).
-> - `entry.path_hierarchy` returns a list of path components (e.g., `["outer.zip", "inner.tar/file.txt"]`).
-
-**Thread Safety**: Python bindings follow the same thread safety constraints as C++. Each thread can create its own `Traverser` instance, but a single instance must not be shared across threads. See [`bindings/python/README.md`](bindings/python/README.md#thread-safety) for details.
-
-### Ruby
-
-Ruby-specific build, installation, and usage guidance now lives in [`bindings/ruby/README.md`](bindings/ruby/README.md). The document covers gem packaging via `build.sh`, Rake workflows, and practical traversal examples.
+For Python and Ruby usage guides (installation, API references, practical samples), see the dedicated binding documents:
+- Python: [`bindings/python/README.md`](bindings/python/README.md)
+- Ruby: [`bindings/ruby/README.md`](bindings/ruby/README.md)
 
 ---
 

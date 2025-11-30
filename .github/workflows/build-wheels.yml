@@ -44,7 +44,7 @@ jobs:
             -e LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION}" \
             -v "${{ github.workspace }}:/io" \
             ${{ env.MANYLINUX_IMAGE }} \
-            /bin/bash -c "/io/scripts/ci/build_manylinux_wheels.sh"
+            /bin/bash -c "/io/.github/scripts/ci/build_manylinux_wheels.sh"
 
       - name: List built wheels for ${{ matrix.python-tag }}
         run: |
