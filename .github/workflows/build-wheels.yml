@@ -31,6 +31,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build wheel for ${{ matrix.python-tag }}
+        env:
+          PYTHON_TAG: ${{ matrix.python-tag }}
         run: |
           set -euo pipefail
           HOST_UID="$(id -u)"
@@ -38,108 +40,11 @@ jobs:
           docker run --rm \
             -e HOST_UID="${HOST_UID}" \
             -e HOST_GID="${HOST_GID}" \
-            -e PYTHON_TAG=${{ matrix.python-tag }} \
-            -e LIBARCHIVE_VERSION=${{ env.LIBARCHIVE_VERSION }} \
+            -e PYTHON_TAG="${PYTHON_TAG}" \
+            -e LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION}" \
             -v "${{ github.workspace }}:/io" \
             ${{ env.MANYLINUX_IMAGE }} \
-            /bin/bash -c "set -euo pipefail && \
-              set -x && \
-              echo '--- Container context ---' && \
-              id && \
-              pwd && \
-              ls -al && \
-              echo '--- /io mount overview ---' && \
-              stat -c '%A %U:%G %n' /io && \
-              ls -al /io && \
-              ls -al /io/bindings || true && \
-              ls -al /io/bindings/python || true && \
-              touch /io/.docker_write_test && rm -f /io/.docker_write_test && \
-              yum install -y \
-                cmake \
-                gcc-c++ \
-                make \
-                curl \
-                tar \
-                xz \
-                autoconf \
-                automake \
-                libtool \
-                pkgconfig \
-                openssl-devel \
-                zlib-devel \
-                bzip2-devel \
-                xz-devel \
-                libxml2-devel \
-                python3 \
-                python3-pip \
-                python3-devel \
-                rust \
-                cargo >/dev/null && \
-              mkdir -p /tmp/libarchive && \
-              curl -sSL "https://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VERSION}.tar.xz" -o /tmp/libarchive.tar.xz && \
-              tar -xf /tmp/libarchive.tar.xz -C /tmp/libarchive --strip-components=1 && \
-              cd /tmp/libarchive && \
-              ./configure --prefix=/opt/libarchive-custom >/dev/null && \
-              make -j\$(nproc) >/dev/null && \
-              make install >/dev/null && \
-              echo '/opt/libarchive-custom/lib' > /etc/ld.so.conf.d/libarchive_custom.conf && \
-              ldconfig && \
-              python3 -m pip install --upgrade pip >/dev/null && \
-              python3 -m pip install --upgrade build twine virtualenv pybind11 >/dev/null && \
-              export PKG_CONFIG_PATH=/opt/libarchive-custom/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}} && \
-              export LD_LIBRARY_PATH=/opt/libarchive-custom/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}} && \
-              export LIBRARY_PATH=/opt/libarchive-custom/lib${LIBRARY_PATH:+:${LIBRARY_PATH}} && \
-              export CMAKE_PREFIX_PATH=/opt/libarchive-custom${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}} && \
-              export LibArchive_ROOT=/opt/libarchive-custom && \
-              export CPPFLAGS="${CPPFLAGS:+${CPPFLAGS} }-I/opt/libarchive-custom/include" && \
-              export CXXFLAGS="${CXXFLAGS:+${CXXFLAGS} }-pthread -I/opt/libarchive-custom/include" && \
-              export LDFLAGS="${LDFLAGS:+${LDFLAGS} }-pthread -L/opt/libarchive-custom/lib" && \
-              export CC=/opt/rh/gcc-toolset-14/root/usr/bin/gcc && \
-              export CXX=/opt/rh/gcc-toolset-14/root/usr/bin/g++ && \
-              cd /io && \
-              ./build.sh --rebuild-all --python-only && \
-              cd bindings/python && \
-              rm -rf dist_temp && \
-              mkdir -p dist dist_temp && \
-              PYBIN=/opt/python/\${PYTHON_TAG}/bin && \
-              TARGET_DIR="dist/\${PYTHON_TAG}" && \
-              rm -rf "\${TARGET_DIR}" && \
-              mkdir -p "\${TARGET_DIR}" && \
-              \${PYBIN}/pip install --upgrade pip setuptools wheel pybind11 >/dev/null && \
-              \${PYBIN}/pip wheel . -w dist_temp/ --no-deps >/dev/null && \
-              \${PYBIN}/pip install auditwheel >/dev/null && \
-              auditwheel repair dist_temp/*.whl --plat manylinux_2_28_x86_64 -w "\${TARGET_DIR}/" >/dev/null && \
-              \${PYBIN}/pip install --no-index "\${TARGET_DIR}"/*.whl >/dev/null && \
-              \${PYBIN}/python -c \"import archive_r; print(f'validated {archive_r.__version__}')\" && \
-              echo '--- Dist inspection (container) ---' && \
-              pwd && \
-              ls -al dist || true && \
-              ls -al dist_temp || true && \
-              ls -al "\${TARGET_DIR}" || true && \
-              find dist -maxdepth 2 -type f -name '*.whl' || true && \
-              find /io/bindings/python -maxdepth 4 -type f -name '*.whl' || true && \
-              if compgen -G "\${TARGET_DIR}/*.whl" >/dev/null; then \
-                echo \"Wheels located in \${TARGET_DIR}\"; \
-              else \
-                echo \"No wheels under \${TARGET_DIR}; scanning fallback roots\"; \
-                mapfile -t alt_wheels < <(find /io /tmp /root -maxdepth 6 -type f -name 'archive_r*.whl' 2>/dev/null) && \
-                if [ "\${#alt_wheels[@]}" -gt 0 ]; then \
-                  mkdir -p "\${TARGET_DIR}"; \
-                  for wheel_path in "\${alt_wheels[@]}"; do \
-                    echo \"Copying \${wheel_path} -> \${TARGET_DIR}\"; \
-                    cp "\${wheel_path}" "\${TARGET_DIR}/"; \
-                  done; \
-                else \
-                  echo 'No archive_r wheels found in fallback search'; \
-                fi; \
-              fi && \
-              if compgen -G "\${TARGET_DIR}/*.whl" >/dev/null; then \
-                ls -al "\${TARGET_DIR}"; \
-              fi && \
-              if [ -n "\${HOST_UID:-}" ] && [ -n "\${HOST_GID:-}" ]; then \
-                chown -R "\${HOST_UID}:\${HOST_GID}" /io/bindings/python/dist || true; \
-              fi && \
-              find /io -maxdepth 6 -type f -name '*.whl' || true"
+            /bin/bash -c "/io/scripts/ci/build_manylinux_wheels.sh"
 
       - name: List built wheels for ${{ matrix.python-tag }}
         run: |
