@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-set -x
 
 : "${PYTHON_TAG:?PYTHON_TAG must be set}" 
 : "${LIBARCHIVE_VERSION:?LIBARCHIVE_VERSION must be set}" 
@@ -9,20 +8,6 @@ WORKSPACE_DIR="/io"
 PYTHON_BINDINGS_DIR="${WORKSPACE_DIR}/bindings/python"
 TARGET_DIR="dist/${PYTHON_TAG}"
 TARGET_PATH="${PYTHON_BINDINGS_DIR}/${TARGET_DIR}"
-
-log_mount_context() {
-  echo '--- Container context ---'
-  id
-  pwd
-  ls -al
-  echo '--- /io mount overview ---'
-  stat -c '%A %U:%G %n' "${WORKSPACE_DIR}" || true
-  ls -al "${WORKSPACE_DIR}"
-  ls -al "${WORKSPACE_DIR}/bindings" || true
-  ls -al "${PYTHON_BINDINGS_DIR}" || true
-  touch "${WORKSPACE_DIR}/.docker_write_test"
-  rm -f "${WORKSPACE_DIR}/.docker_write_test"
-}
 
 install_build_dependencies() {
   yum install -y \
@@ -93,16 +78,6 @@ build_python_bindings() {
   "${PYBIN}/python" -c "import archive_r; print(f'validated {archive_r.__version__}')"
 }
 
-inspect_artifacts() {
-  echo '--- Dist inspection (container) ---'
-  pwd
-  ls -al dist || true
-  ls -al dist_temp || true
-  ls -al "${TARGET_PATH}" || true
-  find dist -maxdepth 2 -type f -name '*.whl' || true
-  find "${WORKSPACE_DIR}/bindings/python" -maxdepth 4 -type f -name '*.whl' || true
-}
-
 ensure_target_wheels() {
   if compgen -G "${TARGET_PATH}/*.whl" >/dev/null; then
     echo "Wheels located in ${TARGET_PATH}"
@@ -124,23 +99,19 @@ ensure_target_wheels() {
 
 finalize_artifacts() {
   if compgen -G "${TARGET_PATH}/*.whl" >/dev/null; then
-    ls -al "${TARGET_PATH}"
+    echo "Wheels ready under ${TARGET_PATH}"
   fi
 
   if [[ -n "${HOST_UID:-}" && -n "${HOST_GID:-}" ]]; then
     chown -R "${HOST_UID}:${HOST_GID}" "${PYTHON_BINDINGS_DIR}/dist" || true
   fi
-
-  find "${WORKSPACE_DIR}" -maxdepth 6 -type f -name '*.whl' || true
 }
 
-log_mount_context
 install_build_dependencies
 build_custom_libarchive
 python3 -m pip install --upgrade pip >/dev/null
 python3 -m pip install --upgrade build twine virtualenv pybind11 >/dev/null
 configure_toolchain_env
 build_python_bindings
-inspect_artifacts
 ensure_target_wheels
 finalize_artifacts
