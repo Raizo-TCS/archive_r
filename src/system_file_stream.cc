@@ -3,10 +3,12 @@
 
 #include "system_file_stream.h"
 #include "archive_r/path_hierarchy_utils.h"
+#include "archive_r/platform_compat.h"
 #include "entry_fault_error.h"
 
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
 #include <filesystem>
 #include <stdexcept>
 #include <sys/stat.h>
@@ -57,14 +59,6 @@ static bool lookup_groupname(gid_t gid, std::string &name_out) {
     name_out.assign(result->gr_name);
     return true;
   }
-  return false;
-}
-#else
-static bool lookup_username(uid_t, std::string &) {
-  return false;
-}
-
-static bool lookup_groupname(gid_t, std::string &) {
   return false;
 }
 #endif
@@ -125,10 +119,16 @@ ssize_t SystemFileStream::read_from_single_part(void *buffer, size_t size) {
 }
 
 int64_t SystemFileStream::seek_within_single_part(int64_t offset, int whence) {
-  if (fseeko(_handle, offset, whence) != 0) {
-    return -1;
+  int64_t position = -1;
+#if defined(_WIN32)
+  if (_fseeki64(_handle, offset, whence) == 0) {
+    position = _ftelli64(_handle);
   }
-  const auto position = ftello(_handle);
+#else
+  if (fseeko(_handle, offset, whence) == 0) {
+    position = ftello(_handle);
+  }
+#endif
   return position >= 0 ? position : -1;
 }
 
@@ -188,7 +188,9 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       ec.clear();
       const bool is_symlink = entry.is_symlink(ec);
       if (!ec && is_symlink) {
+#ifdef S_IFLNK
         filetype = S_IFLNK;
+#endif
       }
     }
   }
@@ -224,11 +226,22 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
     }
 
     const bool wants_size = wants("size");
+  #if defined(_WIN32)
+    const bool wants_uid = false;
+    const bool wants_gid = false;
+    const bool wants_uname = false;
+    const bool wants_gname = false;
+  #else
     const bool wants_uid = wants("uid");
     const bool wants_gid = wants("gid");
     const bool wants_uname = wants("uname");
     const bool wants_gname = wants("gname");
-    const bool needs_stat = (wants_size && size == 0) || wants_uid || wants_gid || wants_uname || wants_gname;
+  #endif
+    const bool needs_stat = (wants_size && size == 0)
+  #if !defined(_WIN32)
+      || wants_uid || wants_gid || wants_uname || wants_gname
+  #endif
+      ;
 
     struct stat stat_buffer;
     bool have_stat = false;
@@ -247,6 +260,7 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       }
     }
 
+#if !defined(_WIN32)
     if (have_stat) {
       if (wants_uid) {
         metadata["uid"] = static_cast<int64_t>(stat_buffer.st_uid);
@@ -267,6 +281,7 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
         }
       }
     }
+#endif
   }
 
   info.metadata = std::move(metadata);
