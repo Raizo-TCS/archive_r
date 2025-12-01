@@ -7,11 +7,11 @@
 #include <filesystem>
 #include <memory>
 #include <string>
-#include <sys/types.h>
 #include <vector>
 
 #include "archive_r/entry_fault.h"
 #include "archive_r/entry_metadata.h"
+#include "archive_r/platform_compat.h"
 #include "archive_r/path_hierarchy.h"
 
 namespace archive_r {

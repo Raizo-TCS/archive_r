@@ -4,6 +4,7 @@
 #pragma once
 
 #include "archive_r/path_hierarchy.h"
+#include "archive_r/platform_compat.h"
 #include "archive_type.h"
 #include "archive_stack_cursor.h"
 #include "entry_fault_error.h"
@@ -11,7 +12,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <sys/types.h>
 #include <unordered_set>
 
 namespace archive_r {

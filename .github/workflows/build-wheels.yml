@@ -98,14 +98,19 @@ jobs:
           cd bindings/python
           python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
           export MACOSX_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET}"
+          deployment_tag="${MACOS_DEPLOYMENT_TARGET//./_}"
           if [[ "$RUNNER_FLAVOR" == "macos-13" ]]; then
             export ARCHFLAGS="-arch x86_64"
+            export _PYTHON_HOST_PLATFORM="macosx-${MACOS_DEPLOYMENT_TARGET}-x86_64"
+            plat_name="macosx_${deployment_tag}_x86_64"
           else
             export ARCHFLAGS="-arch arm64"
+            export _PYTHON_HOST_PLATFORM="macosx-${MACOS_DEPLOYMENT_TARGET}-arm64"
+            plat_name="macosx_${deployment_tag}_arm64"
           fi
           target_dir="dist/macos-${RUNNER_FLAVOR}-${PY_VERSION}"
           mkdir -p "$target_dir"
-          python -m pip wheel . -w "$target_dir" --no-deps
+          python -m pip wheel . -w "$target_dir" --no-deps --config-settings="--build-option=--plat-name=${plat_name}"
           original_wheel=$(ls "$target_dir"/*.whl | head -n 1)
           repair_dir=$(mktemp -d)
           delocate-wheel -v -w "$repair_dir" "$original_wheel"

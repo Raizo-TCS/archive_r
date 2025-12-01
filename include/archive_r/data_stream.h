@@ -7,7 +7,8 @@
 
 #include <functional>
 #include <memory>
-#include <sys/types.h>
+
+#include "archive_r/platform_compat.h"
 
 namespace archive_r {
 
