@@ -66,11 +66,11 @@ jobs:
           - runner: macos-13
             arch: x86_64
             python-version: '3.11'
-            deployment-target: '11.0'
+            deployment-target: '13.0'
           - runner: macos-14
             arch: arm64
             python-version: '3.11'
-            deployment-target: '11.0'
+            deployment-target: '14.0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -85,7 +85,12 @@ jobs:
           set -euo pipefail
           brew update
           brew install libarchive
-          echo "LIBARCHIVE_ROOT=$(brew --prefix libarchive)" >> "$GITHUB_ENV"
+          LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
+          echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - name: Build and validate ${{ matrix.arch }} wheel
         env:
@@ -195,12 +200,28 @@ jobs:
           $ErrorActionPreference = 'Stop'
           cd bindings\python
           python -m pip install --upgrade pip setuptools wheel pybind11 build delvewheel
-          python -m pip wheel . -w dist\windows-ci --no-deps
-          $original = Get-ChildItem dist\windows-ci -Filter *.whl | Select-Object -First 1
-          delvewheel repair $original.FullName -w dist\windows-ci --add-path "$env:LIBARCHIVE_ROOT\bin"
+          $wheelDir = "dist\windows-ci"
+          $repairedDir = Join-Path $wheelDir 'repaired'
+          python -m pip wheel . -w $wheelDir --no-deps
+          $original = Get-ChildItem $wheelDir -Filter *.whl | Select-Object -First 1
+          if (-not $original) {
+            throw 'Wheel build did not produce an artifact'
+          }
+          New-Item -ItemType Directory -Force -Path $repairedDir | Out-Null
+          delvewheel repair $original.FullName -w $repairedDir --add-path "$env:LIBARCHIVE_ROOT\bin"
           Remove-Item $original.FullName
+          $repaired = Get-ChildItem $repairedDir -Filter *.whl | Select-Object -First 1
+          if (-not $repaired) {
+            throw 'delvewheel did not emit a repaired wheel'
+          }
+          Move-Item $repaired.FullName $wheelDir
+          Remove-Item $repairedDir -Recurse -Force
+          $finalWheel = Get-ChildItem $wheelDir -Filter *.whl | Select-Object -First 1
+          if (-not $finalWheel) {
+            throw 'Repaired wheel not found after delvewheel move'
+          }
           python -m venv .venv
-          .\.venv\Scripts\pip install dist\windows-ci\*.whl
+          .\.venv\Scripts\pip install $finalWheel.FullName
           .\.venv\Scripts\python -c "import archive_r; print(\"windows wheel ok {0}\" -f (archive_r.__version__))"
 
   test-macos:
@@ -224,6 +245,12 @@ jobs:
           set -euo pipefail
           brew update
           brew install cmake ninja libarchive
+          LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
+          echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - name: Install Python build dependencies
         run: |
@@ -272,7 +299,14 @@ jobs:
           vcpkg install libarchive:x64-windows
           $prefix = Join-Path $env:VCPKG_INSTALLATION_ROOT 'installed\\x64-windows'
           $binPath = Join-Path $prefix 'bin'
+          $includePath = Join-Path $prefix 'include'
+          $libPath = Join-Path $prefix 'lib'
+          $pkgConfigPath = Join-Path $libPath 'pkgconfig'
           Add-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_PREFIX_PATH=$prefix" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "CPPFLAGS=-I$includePath" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "LDFLAGS=-L$libPath" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$pkgConfigPath" -Encoding utf8
           Add-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8
 
       - name: Install Python build dependencies

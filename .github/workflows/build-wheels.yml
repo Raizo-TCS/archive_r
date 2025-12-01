@@ -73,10 +73,10 @@ jobs:
         include:
           - runner: macos-13
             arch: x86_64
-            deployment-target: '11.0'
+            deployment-target: '13.0'
           - runner: macos-14
             arch: arm64
-            deployment-target: '11.0'
+            deployment-target: '14.0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -93,6 +93,10 @@ jobs:
           brew install libarchive
           LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+          echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >> "$GITHUB_ENV"
+          echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >> "$GITHUB_ENV"
+          echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - name: Build and validate ${{ matrix.arch }} wheel
         env:
@@ -209,9 +213,15 @@ jobs:
           vcpkg integrate install
           vcpkg install libarchive:x64-windows
           $prefix = Join-Path $env:VCPKG_INSTALLATION_ROOT 'installed\x64-windows'
-          $env:LIBARCHIVE_ROOT = $prefix
           $binPath = Join-Path $prefix 'bin'
+          $includePath = Join-Path $prefix 'include'
+          $libPath = Join-Path $prefix 'lib'
+          $pkgConfigPath = Join-Path $libPath 'pkgconfig'
           Add-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_PREFIX_PATH=$prefix" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "CPPFLAGS=-I$includePath" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "LDFLAGS=-L$libPath" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$pkgConfigPath" -Encoding utf8
           Add-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8
 
       - name: Build and repair Windows wheel
