@@ -62,7 +62,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  build-macos-wheels:
+  build-macos-arch-wheels:
     runs-on: ${{ matrix.runner }}
     needs: []
     strategy:
@@ -70,6 +70,13 @@ jobs:
       matrix:
         runner: [macos-13, macos-14]
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        include:
+          - runner: macos-13
+            arch: x86_64
+            deployment-target: '11.0'
+          - runner: macos-14
+            arch: arm64
+            deployment-target: '11.0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -87,31 +94,20 @@ jobs:
           LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
 
-      - name: Build and repair macOS wheel
+      - name: Build and validate ${{ matrix.arch }} wheel
         env:
+          ARCH_NAME: ${{ matrix.arch }}
+          DEPLOYMENT_TARGET: ${{ matrix['deployment-target'] }}
           PY_VERSION: ${{ matrix.python-version }}
-          RUNNER_FLAVOR: ${{ matrix.runner }}
         run: |
           set -euo pipefail
           cd bindings/python
           python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
-          deployment_target="13.0"
-          if [[ "$RUNNER_FLAVOR" == "macos-14" ]]; then
-            deployment_target="14.0"
-          fi
-          export MACOS_DEPLOYMENT_TARGET="${deployment_target}"
-          export MACOSX_DEPLOYMENT_TARGET="${deployment_target}"
-          deployment_tag="${deployment_target//./_}"
-          if [[ "$RUNNER_FLAVOR" == "macos-13" ]]; then
-            export ARCHFLAGS="-arch x86_64"
-            export _PYTHON_HOST_PLATFORM="macosx-${MACOS_DEPLOYMENT_TARGET}-x86_64"
-            plat_name="macosx_${deployment_tag}_x86_64"
-          else
-            export ARCHFLAGS="-arch arm64"
-            export _PYTHON_HOST_PLATFORM="macosx-${MACOS_DEPLOYMENT_TARGET}-arm64"
-            plat_name="macosx_${deployment_tag}_arm64"
-          fi
-          target_dir="dist/macos-${RUNNER_FLAVOR}-${PY_VERSION}"
+          export MACOSX_DEPLOYMENT_TARGET="${DEPLOYMENT_TARGET}"
+          deployment_tag="${DEPLOYMENT_TARGET//./_}"
+          export ARCHFLAGS="-arch ${ARCH_NAME}"
+          plat_name="macosx_${deployment_tag}_${ARCH_NAME}"
+          target_dir="dist/macos-${ARCH_NAME}-${PY_VERSION}"
           mkdir -p "$target_dir"
           python -m pip wheel . -w "$target_dir" --no-deps --config-settings="--build-option=--plat-name=${plat_name}"
           original_wheel=$(ls "$target_dir"/*.whl | head -n 1)
@@ -123,13 +119,67 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install --no-index "$repaired_wheel"
-          python -c "import archive_r; print(f'validated {archive_r.__version__}')"
+          python -c "import archive_r; print(f'${ARCH_NAME} validated {archive_r.__version__}')"
 
-      - name: Upload macOS wheels
+      - name: Upload ${{ matrix.arch }} wheels
         uses: actions/upload-artifact@v4
         with:
-          name: macos-wheels-${{ matrix.runner }}-py${{ matrix.python-version }}-${{ github.sha }}
-          path: bindings/python/dist/macos-${{ matrix.runner }}-${{ matrix.python-version }}/*.whl
+          name: macos-wheels-${{ matrix.arch }}-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/macos-${{ matrix.arch }}-${{ matrix.python-version }}/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-macos-universal-wheels:
+    runs-on: macos-14
+    needs: build-macos-arch-wheels
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Download arm64 wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-wheels-arm64-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/universal-input/arm64
+
+      - name: Download x86_64 wheel
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-wheels-x86_64-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/universal-input/x86_64
+
+      - name: Fuse wheels into universal2
+        env:
+          PY_VERSION: ${{ matrix.python-version }}
+        run: |
+          set -euo pipefail
+          cd bindings/python
+          python -m pip install --upgrade pip delocate wheel
+          arm_wheel=$(ls dist/universal-input/arm64/*.whl | head -n 1)
+          x86_wheel=$(ls dist/universal-input/x86_64/*.whl | head -n 1)
+          universal_dir="dist/macos-universal-${PY_VERSION}"
+          mkdir -p "$universal_dir"
+          delocate-fuse -w "$universal_dir" "$arm_wheel" "$x86_wheel"
+          universal_wheel=$(ls "$universal_dir"/*.whl | head -n 1)
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --no-index "$universal_wheel"
+          python -c "import archive_r; print(f'universal validated {archive_r.__version__}')"
+
+      - name: Upload universal macOS wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-wheels-universal-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/macos-universal-${{ matrix.python-version }}/*.whl
           if-no-files-found: error
           retention-days: 7
 
