@@ -18,6 +18,72 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+PYTHON_CMD=""
+CMAKE_GENERATOR_ARGS=()
+DEFAULT_BUILD_JOBS=1
+
+detect_python_command() {
+    if [ -n "${ARCHIVE_R_PYTHON:-}" ]; then
+        PYTHON_CMD="$ARCHIVE_R_PYTHON"
+        return
+    fi
+
+    for candidate in python3 python; do
+        if command -v "$candidate" >/dev/null 2>&1; then
+            PYTHON_CMD="$candidate"
+            return
+        fi
+    done
+
+    PYTHON_CMD=""
+}
+
+detect_parallel_jobs() {
+    if [ -n "${ARCHIVE_R_BUILD_JOBS:-}" ]; then
+        echo "$ARCHIVE_R_BUILD_JOBS"
+        return
+    fi
+
+    if command -v nproc >/dev/null 2>&1; then
+        nproc
+        return
+    fi
+
+    if command -v sysctl >/dev/null 2>&1; then
+        sysctl -n hw.logicalcpu 2>/dev/null && return
+    fi
+
+    if command -v getconf >/dev/null 2>&1; then
+        getconf _NPROCESSORS_ONLN 2>/dev/null && return
+    fi
+
+    echo 1
+}
+
+configure_cmake_generator() {
+    if [ -n "${ARCHIVE_R_CMAKE_GENERATOR:-}" ]; then
+        CMAKE_GENERATOR_ARGS=("-G" "$ARCHIVE_R_CMAKE_GENERATOR")
+        return
+    fi
+
+    if [ -n "${CMAKE_GENERATOR:-}" ]; then
+        # Respect user-provided CMAKE_GENERATOR without overriding it.
+        CMAKE_GENERATOR_ARGS=()
+        return
+    fi
+
+    if command -v ninja >/dev/null 2>&1; then
+        CMAKE_GENERATOR_ARGS=("-G" "Ninja")
+        return
+    fi
+
+    CMAKE_GENERATOR_ARGS=()
+}
+
+detect_python_command
+DEFAULT_BUILD_JOBS="$(detect_parallel_jobs)"
+configure_cmake_generator
+
 # === Utility Functions ===
 log_info() {
     echo -e "${BLUE}▶${NC} $1"
@@ -293,10 +359,15 @@ if [ "$BINDINGS_ONLY" = false ]; then
 
     log_info "Configuring with CMake..."
     cd "$BUILD_DIR"
-    cmake .. -DCMAKE_BUILD_TYPE=Release
+    cmake .. -DCMAKE_BUILD_TYPE=Release "${CMAKE_GENERATOR_ARGS[@]}"
 
-    log_info "Building core library..."
-    make -j$(nproc)
+    build_jobs="$DEFAULT_BUILD_JOBS"
+    if ! [[ "$build_jobs" =~ ^[0-9]+$ ]] || [ "$build_jobs" -lt 1 ]; then
+        build_jobs=1
+    fi
+
+    log_info "Building core library (parallel jobs: $build_jobs)..."
+    cmake --build . --config Release --parallel "$build_jobs"
 
     if [ -f "$BUILD_DIR/libarchive_r_core.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
         echo ""
@@ -393,7 +464,12 @@ package_ruby_binding() {
     if [ -n "$gem_version" ] && [ -f "${gem_name}-${gem_version}.gem" ]; then
         gem_file="${gem_name}-${gem_version}.gem"
     else
-        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
+        local gem_pattern="${gem_name}-*.gem"
+        if compgen -G "$gem_pattern" >/dev/null 2>&1; then
+            gem_file=$(compgen -G "$gem_pattern" | sort | tail -n 1)
+        else
+            gem_file=""
+        fi
     fi
 
     if [ -z "$gem_file" ] || [ ! -f "$gem_file" ]; then
@@ -417,19 +493,19 @@ package_ruby_binding() {
 build_python_binding() {
     log_info "Building Python binding..."
     
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_warning "Python3 not found - skipping Python binding"
+    if [ -z "$PYTHON_CMD" ]; then
+        log_warning "Python interpreter not found - skipping Python binding"
         return 1
     fi
     
     cd "$ROOT_DIR/bindings/python"
     
     # Build extension in-place
-    python3 setup.py build_ext --inplace
+    "$PYTHON_CMD" setup.py build_ext --inplace
     
-    if ls *.so 1>/dev/null 2>&1; then
+    if compgen -G "*.so" >/dev/null 2>&1 || compgen -G "*.pyd" >/dev/null 2>&1; then
         log_success "Python binding built successfully"
-        log_success "  Extension: $ROOT_DIR/bindings/python/*.so"
+        log_success "  Extension: $ROOT_DIR/bindings/python/*.so|*.pyd"
         cd "$ROOT_DIR"
         return 0
     else
@@ -444,27 +520,32 @@ create_python_virtualenv() {
 
     rm -rf "$venv_dir"
 
-    if python3 -m venv "$venv_dir"; then
+    if [ -z "$PYTHON_CMD" ]; then
+        log_error "Python interpreter not found. Install Python 3.x to use virtual environments."
+        return 1
+    fi
+
+    if "$PYTHON_CMD" -m venv "$venv_dir"; then
         if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
             return 0
         fi
         log_warning "Virtual environment created without pip; retrying with virtualenv module"
         rm -rf "$venv_dir"
     else
-        log_warning "python3 -m venv failed. Trying virtualenv module if available..."
+        log_warning "${PYTHON_CMD} -m venv failed. Trying virtualenv module if available..."
     fi
 
-    if python3 -c "import virtualenv" >/dev/null 2>&1; then
-        if python3 -m virtualenv "$venv_dir"; then
+    if "$PYTHON_CMD" -c "import virtualenv" >/dev/null 2>&1; then
+        if "$PYTHON_CMD" -m virtualenv "$venv_dir"; then
             if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
                 return 0
             fi
         fi
     else
-        log_warning "Python module 'virtualenv' not found. Install it via: python3 -m pip install --user --upgrade --break-system-packages virtualenv"
+        log_warning "Python module 'virtualenv' not found. Install it via: ${PYTHON_CMD} -m pip install --user --upgrade virtualenv"
     fi
 
-    log_error "Unable to create virtual environment at $venv_dir. Install python3-venv or the virtualenv package."
+    log_error "Unable to create virtual environment at $venv_dir. Install python3-venv (or ensure ${PYTHON_CMD} -m venv works)."
     return 1
 }
 
@@ -502,18 +583,18 @@ verify_python_package_installation() {
 package_python_binding() {
     log_info "Packaging Python binding (wheel + sdist)..."
 
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_error "Python3 not found - cannot package Python binding"
+    if [ -z "$PYTHON_CMD" ]; then
+        log_error "Python interpreter not found - cannot package Python binding"
         return 1
     fi
 
-    if ! python3 -c "import build" >/dev/null 2>&1; then
-        log_error "Python module 'build' is required. Install it via: python3 -m pip install --upgrade build"
+    if ! "$PYTHON_CMD" -c "import build" >/dev/null 2>&1; then
+        log_error "Python module 'build' is required. Install it via: ${PYTHON_CMD} -m pip install --upgrade build"
         return 1
     fi
 
-    if ! python3 -c "import twine" >/dev/null 2>&1; then
-        log_error "Python module 'twine' is required. Install it via: python3 -m pip install --upgrade twine"
+    if ! "$PYTHON_CMD" -c "import twine" >/dev/null 2>&1; then
+        log_error "Python module 'twine' is required. Install it via: ${PYTHON_CMD} -m pip install --upgrade twine"
         return 1
     fi
 
@@ -525,17 +606,20 @@ package_python_binding() {
 
     pushd "$python_root" >/dev/null
     rm -rf dist/ build/ *.egg-info
-    python3 -m build --sdist --wheel --outdir "$dist_dir"
+    "$PYTHON_CMD" -m build --sdist --wheel --outdir "$dist_dir"
     popd >/dev/null
 
-    mapfile -t dist_artifacts < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
+    dist_artifacts=()
+    while IFS= read -r artifact; do
+        dist_artifacts+=("$artifact")
+    done < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
     if [ "${#dist_artifacts[@]}" -eq 0 ]; then
         log_error "No distribution artifacts produced for Python binding"
         return 1
     fi
 
     log_info "Running twine check on built artifacts..."
-    python3 -m twine check "${dist_artifacts[@]}"
+    "$PYTHON_CMD" -m twine check "${dist_artifacts[@]}"
 
     verify_python_package_installation "$dist_dir" || return 1
 

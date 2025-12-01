@@ -141,3 +141,79 @@ jobs:
           python -m venv .venv
           .\.venv\Scripts\pip install dist\windows-ci\*.whl
           .\.venv\Scripts\python -c "import archive_r; print(\"windows wheel ok {0}\" -f (archive_r.__version__))"
+
+  test-macos:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-13, macos-14]
+        python-version: ['3.11']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          brew update
+          brew install cmake ninja libarchive
+
+      - name: Install Python build dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip setuptools wheel pybind11
+
+      - name: Build archive_r (macOS)
+        run: |
+          set -euo pipefail
+          ./build.sh --python-only --rebuild-all
+
+      - name: Run test suite (macOS)
+        run: |
+          set -euo pipefail
+          python .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
+
+  test-windows:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Install build prerequisites
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          choco install ninja --no-progress -y
+
+      - name: Install Python build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip setuptools wheel pybind11
+
+      - name: Build archive_r (Windows)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build.sh --python-only --rebuild-all
+
+      - name: Run test suite (Windows)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
