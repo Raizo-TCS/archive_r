@@ -222,7 +222,7 @@ jobs:
           }
           python -m venv .venv
           .\.venv\Scripts\pip install $finalWheel.FullName
-          .\.venv\Scripts\python -c "import archive_r; print(\"windows wheel ok {0}\" -f (archive_r.__version__))"
+          .\.venv\Scripts\python -c 'import archive_r; print(f"windows wheel ok {archive_r.__version__}")'
 
   test-macos:
     runs-on: ${{ matrix.runner }}
