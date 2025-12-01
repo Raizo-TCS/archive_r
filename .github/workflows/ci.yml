@@ -327,4 +327,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python .github/scripts/ci/run_with_timeout.py 120 bash ./run_tests.sh
+          BASH_POSIX_PATH="$(type -p bash)"
+          if [[ -z "$BASH_POSIX_PATH" ]]; then
+            echo "Failed to locate bash executable" >&2
+            exit 1
+          fi
+
+          BASH_WINDOWS_PATH="$BASH_POSIX_PATH"
+          if command -v cygpath >/dev/null 2>&1; then
+            BASH_WINDOWS_PATH="$(cygpath -w "$BASH_POSIX_PATH")"
+            BASH_WINDOWS_PATH="${BASH_WINDOWS_PATH%$'\r'}"
+          fi
+
+          if [[ ! -f "$BASH_WINDOWS_PATH" && -f "${BASH_WINDOWS_PATH}.exe" ]]; then
+            BASH_WINDOWS_PATH="${BASH_WINDOWS_PATH}.exe"
+          fi
+
+          python .github/scripts/ci/run_with_timeout.py 120 "$BASH_WINDOWS_PATH" ./run_tests.sh
