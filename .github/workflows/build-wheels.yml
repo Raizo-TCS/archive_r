@@ -70,8 +70,6 @@ jobs:
       matrix:
         runner: [macos-13, macos-14]
         python-version: ['3.9', '3.10', '3.11', '3.12']
-    env:
-      MACOS_DEPLOYMENT_TARGET: '11.0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -97,8 +95,13 @@ jobs:
           set -euo pipefail
           cd bindings/python
           python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
-          export MACOSX_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET}"
-          deployment_tag="${MACOS_DEPLOYMENT_TARGET//./_}"
+          deployment_target="13.0"
+          if [[ "$RUNNER_FLAVOR" == "macos-14" ]]; then
+            deployment_target="14.0"
+          fi
+          export MACOS_DEPLOYMENT_TARGET="${deployment_target}"
+          export MACOSX_DEPLOYMENT_TARGET="${deployment_target}"
+          deployment_tag="${deployment_target//./_}"
           if [[ "$RUNNER_FLAVOR" == "macos-13" ]]; then
             export ARCHFLAGS="-arch x86_64"
             export _PYTHON_HOST_PLATFORM="macosx-${MACOS_DEPLOYMENT_TARGET}-x86_64"
