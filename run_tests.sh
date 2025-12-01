@@ -253,7 +253,23 @@ prepare_ruby_gem_env() {
     fi
 
     local install_env=("GEM_HOME=$RUBY_GEM_HOME" "GEM_PATH=$ruby_gem_path")
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
+    local core_lib_found=false
+    local core_candidates=(
+        "$BUILD_DIR/libarchive_r_core.a"
+        "$BUILD_DIR/libarchive_r_core.lib"
+        "$BUILD_DIR/archive_r_core.lib"
+        "$BUILD_DIR/Release/libarchive_r_core.lib"
+        "$BUILD_DIR/Release/archive_r_core.lib"
+    )
+
+    for candidate in "${core_candidates[@]}"; do
+        if [ -f "$candidate" ]; then
+            core_lib_found=true
+            break
+        fi
+    done
+
+    if [ "$core_lib_found" = true ]; then
         install_env+=("ARCHIVE_R_CORE_ROOT=$BUILD_DIR")
     fi
 

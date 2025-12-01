@@ -20,7 +20,10 @@ NC='\033[0m' # No Color
 
 PYTHON_CMD=""
 CMAKE_GENERATOR_ARGS=()
+CMAKE_PLATFORM_ARGS=()
 DEFAULT_BUILD_JOBS=1
+CORE_LIBRARY_PATH=""
+FIND_AND_TRAVERSE_PATH=""
 
 detect_python_command() {
     if [ -n "${ARCHIVE_R_PYTHON:-}" ]; then
@@ -80,9 +83,63 @@ configure_cmake_generator() {
     CMAKE_GENERATOR_ARGS=()
 }
 
+configure_cmake_platform() {
+    if [ -n "${ARCHIVE_R_CMAKE_GENERATOR_PLATFORM:-}" ]; then
+        CMAKE_PLATFORM_ARGS=("-A" "$ARCHIVE_R_CMAKE_GENERATOR_PLATFORM")
+        return
+    fi
+
+    if [ -n "${CMAKE_GENERATOR_PLATFORM:-}" ]; then
+        CMAKE_PLATFORM_ARGS=("-A" "$CMAKE_GENERATOR_PLATFORM")
+        return
+    fi
+
+    CMAKE_PLATFORM_ARGS=()
+}
+
 detect_python_command
 DEFAULT_BUILD_JOBS="$(detect_parallel_jobs)"
 configure_cmake_generator
+configure_cmake_platform
+
+detect_core_library_path() {
+    local candidates=(
+        "$BUILD_DIR/libarchive_r_core.a"
+        "$BUILD_DIR/libarchive_r_core.lib"
+        "$BUILD_DIR/archive_r_core.lib"
+        "$BUILD_DIR/Release/libarchive_r_core.lib"
+        "$BUILD_DIR/Release/archive_r_core.lib"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [ -f "$candidate" ]; then
+            CORE_LIBRARY_PATH="$candidate"
+            return 0
+        fi
+    done
+
+    CORE_LIBRARY_PATH=""
+    return 1
+}
+
+detect_find_and_traverse_path() {
+    local candidates=(
+        "$BUILD_DIR/find_and_traverse"
+        "$BUILD_DIR/find_and_traverse.exe"
+        "$BUILD_DIR/Release/find_and_traverse"
+        "$BUILD_DIR/Release/find_and_traverse.exe"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [ -f "$candidate" ]; then
+            FIND_AND_TRAVERSE_PATH="$candidate"
+            return 0
+        fi
+    done
+
+    FIND_AND_TRAVERSE_PATH=""
+    return 1
+}
 
 # === Utility Functions ===
 log_info() {
@@ -359,7 +416,7 @@ if [ "$BINDINGS_ONLY" = false ]; then
 
     log_info "Configuring with CMake..."
     cd "$BUILD_DIR"
-    cmake .. -DCMAKE_BUILD_TYPE=Release "${CMAKE_GENERATOR_ARGS[@]}"
+    cmake .. -DCMAKE_BUILD_TYPE=Release "${CMAKE_GENERATOR_ARGS[@]}" "${CMAKE_PLATFORM_ARGS[@]}"
 
     build_jobs="$DEFAULT_BUILD_JOBS"
     if ! [[ "$build_jobs" =~ ^[0-9]+$ ]] || [ "$build_jobs" -lt 1 ]; then
@@ -369,16 +426,21 @@ if [ "$BINDINGS_ONLY" = false ]; then
     log_info "Building core library (parallel jobs: $build_jobs)..."
     cmake --build . --config Release --parallel "$build_jobs"
 
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
-        echo ""
-        log_success "Core build completed"
-        log_success "  Library: $BUILD_DIR/libarchive_r_core.a"
-        log_success "  Example: $BUILD_DIR/find_and_traverse"
-        echo ""
-    else
-        log_error "Core build failed - expected files not found"
+    if ! detect_core_library_path; then
+        log_error "Core build failed - archive_r_core library not found"
         exit 1
     fi
+
+    if ! detect_find_and_traverse_path; then
+        log_error "Core build failed - find_and_traverse example not found"
+        exit 1
+    fi
+
+    echo ""
+    log_success "Core build completed"
+    log_success "  Library: $CORE_LIBRARY_PATH"
+    log_success "  Example: $FIND_AND_TRAVERSE_PATH"
+    echo ""
 
     cd "$ROOT_DIR"
 fi

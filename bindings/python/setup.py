@@ -181,9 +181,26 @@ core_include_dir, core_src_dir = resolve_core_paths()
 sources = ['src/archive_r_py.cc']
 
 # Try to use pre-built library first
+
+def find_prebuilt_library() -> Optional[Path]:
+    candidates = [
+        archive_r_build / 'libarchive_r_core.lib',
+        archive_r_build / 'libarchive_r_core.a',
+        archive_r_build / 'archive_r_core.lib',
+        archive_r_build / 'Release' / 'libarchive_r_core.lib',
+        archive_r_build / 'Release' / 'archive_r_core.lib',
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return None
+
+
 extra_objects: List[str] = []
-static_lib = archive_r_build / 'libarchive_r_core.a'
-if static_lib.exists():
+static_lib = find_prebuilt_library()
+if static_lib:
     extra_objects = [str(static_lib)]
     print(f"Using pre-built archive_r library: {static_lib}")
 else:

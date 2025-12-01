@@ -269,6 +269,9 @@ jobs:
 
   test-windows:
     runs-on: windows-2022
+    env:
+      ARCHIVE_R_CMAKE_GENERATOR: "Visual Studio 17 2022"
+      ARCHIVE_R_CMAKE_GENERATOR_PLATFORM: "x64"
     strategy:
       matrix:
         python-version: ['3.11']
@@ -282,11 +285,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
-      - name: Install build prerequisites
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          choco install ninja --no-progress -y
+      - name: Set up MSVC developer environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Install libarchive via vcpkg
         shell: pwsh
@@ -325,4 +327,4 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
+          python .github/scripts/ci/run_with_timeout.py 120 bash ./run_tests.sh
