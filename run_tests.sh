@@ -26,6 +26,8 @@ RUBY_TEST_ENV=()
 LOG_DIR="$BUILD_DIR/logs"
 RUBY_GEM_INSTALL_LOG="$LOG_DIR/ruby_gem_install.log"
 
+mkdir -p "$LOG_DIR"
+
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -818,11 +820,13 @@ if [ -f "$ROOT_DIR/bindings/ruby/archive_r.gemspec" ]; then
         TESTS_RUN=$((TESTS_RUN + 1))
 
         pushd "$ROOT_DIR/bindings/ruby" >/dev/null
-        if env "${RUBY_TEST_ENV[@]}" ruby test/test_traverser.rb > /dev/null 2>&1; then
-            log_success "Test PASSED: ruby_binding"
+        ruby_test_log="$LOG_DIR/ruby_binding_test.log"
+        if env "${RUBY_TEST_ENV[@]}" ruby test/test_traverser.rb >"$ruby_test_log" 2>&1; then
+            log_success "Test PASSED: ruby_binding (log: $ruby_test_log)"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
-            log_error "Test FAILED: ruby_binding"
+            log_error "Test FAILED: ruby_binding (see $ruby_test_log for details)"
+            tail -n 200 "$ruby_test_log" || true
             TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         popd >/dev/null
@@ -850,12 +854,16 @@ if [ $PYTHON_BINDING_AVAILABLE -eq 1 ]; then
     cd "$ROOT_DIR/bindings/python"
     if [ -z "$PYTHON_EXECUTABLE" ]; then
         log_warning "Python interpreter not found - skipping Python binding tests"
-    elif "$PYTHON_EXECUTABLE" test/test_traverser.py > /dev/null 2>&1; then
-        log_success "Test PASSED: python_binding"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        log_error "Test FAILED: python_binding"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
+        python_test_log="$LOG_DIR/python_binding_test.log"
+        if "$PYTHON_EXECUTABLE" test/test_traverser.py >"$python_test_log" 2>&1; then
+            log_success "Test PASSED: python_binding (log: $python_test_log)"
+            TESTS_PASSED=$((TESTS_PASSED + 1))
+        else
+            log_error "Test FAILED: python_binding (see $python_test_log for details)"
+            tail -n 200 "$python_test_log" || true
+            TESTS_FAILED=$((TESTS_FAILED + 1))
+        fi
     fi
     cd "$ROOT_DIR"
 else

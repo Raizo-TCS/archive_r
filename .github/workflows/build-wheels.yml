@@ -172,7 +172,7 @@ jobs:
           x86_wheel=$(ls dist/universal-input/x86_64/*.whl | head -n 1)
           universal_dir="dist/macos-universal-${PY_VERSION}"
           mkdir -p "$universal_dir"
-          delocate-fuse -w "$universal_dir" "$arm_wheel" "$x86_wheel"
+          delocate-merge -w "$universal_dir" "$arm_wheel" "$x86_wheel"
           universal_wheel=$(ls "$universal_dir"/*.whl | head -n 1)
           python -m venv .venv
           source .venv/bin/activate

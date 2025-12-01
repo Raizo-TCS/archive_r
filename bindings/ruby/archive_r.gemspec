@@ -1,8 +1,8 @@
 Gem::Specification.new do |spec|
   spec.name          = "archive_r_ruby"
   spec.version       = "0.1.1"
-  spec.authors       = ["raiso.tcs"]
-  spec.email         = ["raiso.tcs@users.noreply.github.com"]
+  spec.authors       = ["raizo.tcs"]
+  spec.email         = ["raizo.tcs@users.noreply.github.com"]
   
   spec.summary       = "Ruby bindings for archive_r library"
   spec.description   = "Fast archive traversal library with support for nested archives and multipart files"

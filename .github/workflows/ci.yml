@@ -317,17 +317,31 @@ jobs:
           Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$pkgConfigPath" -Encoding utf8
           Add-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8
 
+      - name: Install Ruby DevKit toolchain
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ridkCmd = (Get-Command ridk -ErrorAction SilentlyContinue).Source
+          if (-not $ridkCmd) {
+            throw 'ridk command not found on PATH'
+          }
+          & $ridkCmd exec pacman -Sy --noconfirm --needed make pkgconf mingw-w64-ucrt-x86_64-toolchain > $null
+          $msysBin = 'C:\msys64\usr\bin'
+          if (Test-Path $msysBin) {
+            Add-Content -Path $env:GITHUB_ENV -Value "PATH=$msysBin;$env:PATH" -Encoding utf8
+          }
+
       - name: Install Python build dependencies
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip setuptools wheel pybind11
+          python -m pip install --upgrade pip setuptools wheel pybind11 build twine
 
       - name: Build archive_r (Windows)
         shell: bash
         run: |
           set -euo pipefail
-          ./build.sh --python-only --rebuild-all
+          ./build.sh --rebuild-all --package-python --package-ruby
 
       - name: Run test suite (Windows)
         shell: bash
@@ -350,3 +364,13 @@ jobs:
           fi
 
           python .github/scripts/ci/run_with_timeout.py 120 "$BASH_WINDOWS_PATH" ./run_tests.sh
+
+      - name: Upload Windows test logs
+        if: ${{ always() && env.ACT != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-windows-logs-${{ github.run_id }}
+          path: |
+            build/logs/*.log
+          if-no-files-found: ignore
+          retention-days: 7
