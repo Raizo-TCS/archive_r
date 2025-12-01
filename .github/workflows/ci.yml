@@ -60,6 +60,10 @@ jobs:
 
   python-macos-build:
     runs-on: ${{ matrix.runner }}
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
     strategy:
       matrix:
         include:
@@ -83,7 +87,6 @@ jobs:
       - name: Install libarchive
         run: |
           set -euo pipefail
-          brew update
           brew install libarchive
           LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
@@ -226,6 +229,10 @@ jobs:
 
   test-macos:
     runs-on: ${{ matrix.runner }}
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -243,7 +250,6 @@ jobs:
       - name: Install system dependencies
         run: |
           set -euo pipefail
-          brew update
           brew install cmake ninja libarchive
           LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"

@@ -73,6 +73,25 @@ detect_python_command() {
 detect_timeout_helper
 detect_python_command
 
+resolve_executable_path() {
+    local candidates=(
+        "$EXECUTABLE"
+        "${EXECUTABLE}.exe"
+        "$BUILD_DIR/find_and_traverse.exe"
+        "$BUILD_DIR/Release/find_and_traverse"
+        "$BUILD_DIR/Release/find_and_traverse.exe"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [ -f "$candidate" ]; then
+            EXECUTABLE="$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 # === Argument Parsing ===
 print_usage() {
     cat <<USAGE
@@ -321,7 +340,7 @@ run_test() {
 }
 
 # === Verification ===
-if [ ! -f "$EXECUTABLE" ]; then
+if ! resolve_executable_path || [ ! -f "$EXECUTABLE" ]; then
     log_error "Executable not found: $EXECUTABLE"
     log_info "Please run ./build.sh first"
     exit 1
