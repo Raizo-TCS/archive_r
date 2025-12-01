@@ -57,3 +57,87 @@ jobs:
             build/logs/*.log
           if-no-files-found: ignore
           retention-days: 7
+
+  python-macos-check:
+    runs-on: macos-14
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install libarchive
+        run: |
+          set -euo pipefail
+          brew update
+          brew install libarchive
+          echo "LIBARCHIVE_ROOT=$(brew --prefix libarchive)" >> "$GITHUB_ENV"
+
+      - name: Build and validate macOS wheel
+        run: |
+          set -euo pipefail
+          cd bindings/python
+          python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
+          export ARCHFLAGS='-arch arm64'
+          python -m pip wheel . -w dist/macos-ci --no-deps
+          original=$(ls dist/macos-ci/*.whl | head -n 1)
+          tmp_dir=$(mktemp -d)
+          delocate-wheel -v -w "$tmp_dir" "$original"
+          rm -f dist/macos-ci/*.whl
+          mv "$tmp_dir"/*.whl dist/macos-ci/
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --no-index dist/macos-ci/*.whl
+          python -c "import archive_r; print(f'macos wheel ok {archive_r.__version__}')"
+
+  python-windows-check:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        python-version: ['3.11']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Install libarchive via vcpkg
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:VCPKG_INSTALLATION_ROOT) {
+            $env:VCPKG_INSTALLATION_ROOT = 'C:\vcpkg'
+          }
+          vcpkg integrate install
+          vcpkg install libarchive:x64-windows
+          $prefix = Join-Path $env:VCPKG_INSTALLATION_ROOT 'installed\x64-windows'
+          $env:LIBARCHIVE_ROOT = $prefix
+          $binPath = Join-Path $prefix 'bin'
+          Add-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8
+
+      - name: Build and validate Windows wheel
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cd bindings\python
+          python -m pip install --upgrade pip setuptools wheel pybind11 build delvewheel
+          python -m pip wheel . -w dist\windows-ci --no-deps
+          $original = Get-ChildItem dist\windows-ci -Filter *.whl | Select-Object -First 1
+          delvewheel repair $original.FullName -w dist\windows-ci --add-path "$env:LIBARCHIVE_ROOT\bin"
+          Remove-Item $original.FullName
+          python -m venv .venv
+          .\.venv\Scripts\pip install dist\windows-ci\*.whl
+          .\.venv\Scripts\python -c "import archive_r; print(\"windows wheel ok {0}\" -f (archive_r.__version__))"

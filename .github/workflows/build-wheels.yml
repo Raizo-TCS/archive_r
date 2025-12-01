@@ -56,9 +56,130 @@ jobs:
 
       - name: Upload wheels for ${{ matrix.python-tag }}
         uses: actions/upload-artifact@v4
-        if: ${{ env.ACT != 'true' }}
         with:
           name: wheels-${{ matrix.python-tag }}-${{ github.sha }}
           path: bindings/python/dist/${{ matrix.python-tag }}/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-macos-wheels:
+    runs-on: ${{ matrix.runner }}
+    needs: []
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-13, macos-14]
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    env:
+      MACOS_DEPLOYMENT_TARGET: '11.0'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install libarchive
+        run: |
+          set -euo pipefail
+          brew update
+          brew install libarchive
+          LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
+          echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >> "$GITHUB_ENV"
+
+      - name: Build and repair macOS wheel
+        env:
+          PY_VERSION: ${{ matrix.python-version }}
+          RUNNER_FLAVOR: ${{ matrix.runner }}
+        run: |
+          set -euo pipefail
+          cd bindings/python
+          python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
+          export MACOSX_DEPLOYMENT_TARGET="${MACOS_DEPLOYMENT_TARGET}"
+          if [[ "$RUNNER_FLAVOR" == "macos-13" ]]; then
+            export ARCHFLAGS="-arch x86_64"
+          else
+            export ARCHFLAGS="-arch arm64"
+          fi
+          target_dir="dist/macos-${RUNNER_FLAVOR}-${PY_VERSION}"
+          mkdir -p "$target_dir"
+          python -m pip wheel . -w "$target_dir" --no-deps
+          original_wheel=$(ls "$target_dir"/*.whl | head -n 1)
+          repair_dir=$(mktemp -d)
+          delocate-wheel -v -w "$repair_dir" "$original_wheel"
+          rm -f "$target_dir"/*.whl
+          mv "$repair_dir"/*.whl "$target_dir"/
+          repaired_wheel=$(ls "$target_dir"/*.whl | head -n 1)
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --no-index "$repaired_wheel"
+          python -c "import archive_r; print(f'validated {archive_r.__version__}')"
+
+      - name: Upload macOS wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-wheels-${{ matrix.runner }}-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/macos-${{ matrix.runner }}-${{ matrix.python-version }}/*.whl
+          if-no-files-found: error
+          retention-days: 7
+
+  build-windows-wheels:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Install libarchive via vcpkg
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not $env:VCPKG_INSTALLATION_ROOT) {
+            $env:VCPKG_INSTALLATION_ROOT = 'C:\\vcpkg'
+          }
+          vcpkg integrate install
+          vcpkg install libarchive:x64-windows
+          $prefix = Join-Path $env:VCPKG_INSTALLATION_ROOT 'installed\x64-windows'
+          $env:LIBARCHIVE_ROOT = $prefix
+          $binPath = Join-Path $prefix 'bin'
+          Add-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8
+          Add-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8
+
+      - name: Build and repair Windows wheel
+        shell: pwsh
+        env:
+          PY_VERSION: ${{ matrix.python-version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          cd bindings\python
+          python -m pip install --upgrade pip setuptools wheel pybind11 build delvewheel
+          $targetDir = "dist\windows-${env:PY_VERSION}"
+          if (Test-Path $targetDir) { Remove-Item $targetDir -Recurse -Force }
+          New-Item -ItemType Directory -Path $targetDir | Out-Null
+          python -m pip wheel . -w $targetDir --no-deps
+          $original = Get-ChildItem $targetDir -Filter *.whl | Select-Object -First 1
+          delvewheel repair $original.FullName -w $targetDir --add-path "$env:LIBARCHIVE_ROOT\bin"
+          $repaired = Get-ChildItem $targetDir -Filter *.whl | Sort-Object LastWriteTime | Select-Object -Last 1
+          Get-ChildItem $targetDir -Filter *.whl | Where-Object { $_.FullName -ne $repaired.FullName } | Remove-Item -Force
+          python -m venv .venv
+          .\.venv\Scripts\pip install $repaired.FullName
+          .\.venv\Scripts\python -c "import archive_r; print(f'validated {archive_r.__version__}')"
+
+      - name: Upload Windows wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-wheels-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/windows-${{ matrix.python-version }}/*.whl
           if-no-files-found: error
           retention-days: 7
