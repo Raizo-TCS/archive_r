@@ -1,5 +1,5 @@
 archive_r License
-Version: 0.1.1 (2025-12-01)
+Version: 0.1.2 (2025-12-02)
 
 ----------------------------------------
 Primary License
@@ -44,43 +44,34 @@ License shown above.
    - Purpose: header-only binding generator for the Python extension module.
    - License: BSD-style License (https://github.com/pybind/pybind11)
 
-3. rake (development dependency for Ruby bindings)
-   - Purpose: build and release tasks for the Ruby gem.
-   - License: MIT License (https://github.com/ruby/rake)
-
-4. minitest (development dependency for Ruby bindings)
-   - Purpose: unit testing framework for the Ruby gem.
-   - License: MIT License (https://github.com/minitest/minitest)
-
 The following components are redistributed only because libarchive (bundled with archive_r) depends on them at runtime:
 
-5. zlib
+3. zlib
    - Purpose: libarchive dependency providing DEFLATE compression; bundled inside archive_r binaries and wheels because libarchive requires it.
    - License: zlib License (https://zlib.net/zlib_license.html)
 
-6. bzip2
+4. bzip2
    - Purpose: libarchive dependency providing bzip2 compression support; distributed with archive_r artifacts.
    - License: BSD-style license (https://sourceware.org/bzip2/)
 
-7. liblzma (XZ Utils)
+5. liblzma (XZ Utils)
    - Purpose: libarchive dependency providing LZMA/XZ compression; included with archive_r packages.
    - License: Public Domain + GNU LGPLv2.1+ (https://tukaani.org/xz/)
 
-8. libxml2
+6. libxml2
    - Purpose: libarchive dependency used for archive formats such as xar; distributed alongside archive_r.
    - License: MIT-style License (http://xmlsoft.org/)
 
-9. zstd
+7. zstd
    - Purpose: libarchive dependency providing Zstandard compression; shipped within archive_r binaries.
    - License: BSD License (https://github.com/facebook/zstd)
 
-10. OpenSSL 3
+8. OpenSSL 3
    - Purpose: libarchive dependency providing cryptographic support for encrypted archives; included with archive_r packages.
-    - License: Apache License 2.0 with OpenSSL exception (https://www.openssl.org/source/license.html)
+   - License: Apache License 2.0 with OpenSSL exception (https://www.openssl.org/source/license.html)
 
-11. libiconv / libcharset
+9. libiconv / libcharset
    - Purpose: libxml2/libarchive dependency for character set conversion; redistributed with archive_r artifacts.
-    - License: GNU LGPLv2.1+ (https://www.gnu.org/software/libiconv/)
-
+   - License: GNU LGPLv2.1+ (https://www.gnu.org/software/libiconv/)
 Users of archive_r should review the linked third-party licenses to ensure
 compliance with their terms when redistributing this software.

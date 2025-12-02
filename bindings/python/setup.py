@@ -98,7 +98,7 @@ def read_readme() -> str:
     for candidate in paths:
         if candidate.exists():
             return candidate.read_text(encoding='utf-8')
-    return 'Fast archive traversal library with support for nested archives and multipart files.'
+    return 'Python bindings for archive_r that recursively traverse nested archives without creating temporary extraction files.'
 
 
 def resolve_core_paths() -> Tuple[Path, Path]:
