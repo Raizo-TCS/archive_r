@@ -73,12 +73,9 @@ jobs:
       - name: Smoke test ${{ matrix.id }} toolchain
         shell: powershell
         run: |
-          $script = @'
-${{ matrix.smoke }}
-'@
           docker run --rm --isolation=process `
             "${{ matrix.image }}:latest" `
-            powershell -NoLogo -NoProfile -Command $script
+            powershell -NoLogo -NoProfile -Command "${{ matrix.smoke }}"
 
       - name: Push ${{ matrix.id }} image
         shell: powershell
