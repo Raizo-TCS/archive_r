@@ -577,6 +577,44 @@ build_python_binding() {
     fi
 }
 
+get_venv_python_path() {
+    local venv_dir="$1"
+    local candidates=(
+        "$venv_dir/bin/python"
+        "$venv_dir/bin/python3"
+        "$venv_dir/Scripts/python.exe"
+        "$venv_dir/Scripts/python"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [ -x "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+get_venv_pip_path() {
+    local venv_dir="$1"
+    local candidates=(
+        "$venv_dir/bin/pip"
+        "$venv_dir/bin/pip3"
+        "$venv_dir/Scripts/pip.exe"
+        "$venv_dir/Scripts/pip"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [ -x "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
 create_python_virtualenv() {
     local venv_dir="$1"
 
@@ -588,7 +626,7 @@ create_python_virtualenv() {
     fi
 
     if "$PYTHON_CMD" -m venv "$venv_dir"; then
-        if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+        if get_venv_python_path "$venv_dir" >/dev/null && get_venv_pip_path "$venv_dir" >/dev/null; then
             return 0
         fi
         log_warning "Virtual environment created without pip; retrying with virtualenv module"
@@ -599,7 +637,7 @@ create_python_virtualenv() {
 
     if "$PYTHON_CMD" -c "import virtualenv" >/dev/null 2>&1; then
         if "$PYTHON_CMD" -m virtualenv "$venv_dir"; then
-            if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+            if get_venv_python_path "$venv_dir" >/dev/null && get_venv_pip_path "$venv_dir" >/dev/null; then
                 return 0
             fi
         fi
@@ -621,8 +659,13 @@ verify_python_package_installation() {
         return 1
     fi
 
-    local venv_python="$venv_dir/bin/python"
-    local venv_pip="$venv_dir/bin/pip"
+    local venv_python
+    local venv_pip
+
+    if ! venv_python=$(get_venv_python_path "$venv_dir") || ! venv_pip=$(get_venv_pip_path "$venv_dir"); then
+        log_error "Unable to locate python/pip executables inside $venv_dir"
+        return 1
+    fi
 
     "$venv_pip" install --upgrade pip
 
