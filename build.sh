@@ -128,6 +128,34 @@ if [ "$IS_WINDOWS_ENV" = true ]; then
     fi
 fi
 
+run_with_ridk_env() {
+    if [ "$RIDK_AVAILABLE" != true ]; then
+        "$@"
+        return $?
+    fi
+
+    # Windows CI injects MSVC-style include/lib vars (CPATH/C_INCLUDE_PATH/...)
+    # with ';' separators, which break GCC's include_next resolution inside
+    # ridk exec. Sanitize them while invoking Ruby toolchain commands so MSYS
+    # paths fall back to their defaults.
+    local env_cmd=(
+        "env"
+        "CPATH="
+        "C_INCLUDE_PATH="
+        "CPLUS_INCLUDE_PATH="
+        "CPPFLAGS="
+        "CFLAGS="
+        "CXXFLAGS="
+        "LDFLAGS="
+        "LIBRARY_PATH="
+        "LIB="
+        "INCLUDE="
+    )
+    env_cmd+=("${RIDK_EXEC_CMD[@]}")
+    env_cmd+=("$@")
+    "${env_cmd[@]}"
+}
+
 detect_core_library_path() {
     local candidates=(
         "$BUILD_DIR/libarchive_r_core.a"
@@ -491,22 +519,15 @@ build_ruby_binding() {
 
     cd "$ext_dir"
     
-    local ruby_cmd=("ruby")
-    local make_cmd=("make")
-    if [ "$RIDK_AVAILABLE" = true ]; then
-        ruby_cmd=("${RIDK_EXEC_CMD[@]}" "ruby")
-        make_cmd=("${RIDK_EXEC_CMD[@]}" "make")
-    fi
-
-    # Run extconf.rb
-    if ! "${ruby_cmd[@]}" extconf.rb; then
+    # Run extconf.rb (ridk exec on Windows needs sanitized env)
+    if ! run_with_ridk_env ruby extconf.rb; then
         log_error "ruby extconf.rb failed"
         cd "$ROOT_DIR"
         return 1
     fi
     
     # Build
-    if ! "${make_cmd[@]}"; then
+    if ! run_with_ridk_env make; then
         log_error "Ruby extension build failed"
         cd "$ROOT_DIR"
         return 1
