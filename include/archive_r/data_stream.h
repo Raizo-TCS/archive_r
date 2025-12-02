@@ -5,6 +5,7 @@
 
 #include "archive_r/path_hierarchy.h"
 
+#include <cstdint>
 #include <functional>
 #include <memory>
 
