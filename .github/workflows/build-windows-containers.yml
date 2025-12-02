@@ -1,0 +1,98 @@
+name: Build Windows Containers
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/pf5-pf6-containers
+    paths:
+      - 'containers/windows/**'
+      - '.github/workflows/build-windows-containers.yml'
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  build-and-push:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        include:
+          - id: pf5
+            dockerfile: containers/windows/Dockerfile.pf5
+            image: ghcr.io/raizo-tcs/archive-r/pf5-windows-msvc
+            smoke: >-
+              cmake --version;
+              ninja --version;
+              python --version;
+              ruby --version;
+              git --version
+          - id: pf6
+            dockerfile: containers/windows/Dockerfile.pf6
+            image: ghcr.io/raizo-tcs/archive-r/pf6-windows-mingw
+            smoke: >-
+              cmake --version;
+              ninja --version;
+              python --version;
+              ruby --version;
+              git --version;
+              bash -lc "which gcc && gcc --version"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Docker info
+        shell: powershell
+        run: |
+          docker version
+          docker info
+
+      - name: Login to GitHub Container Registry
+        shell: powershell
+        env:
+          CR_PAT: ${{ github.token }}
+        run: |
+          echo $env:CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build ${{ matrix.id }} image
+        shell: powershell
+        run: |
+          $tags = @(
+            "${{ matrix.image }}:latest",
+            "${{ matrix.image }}:${{ github.sha }}"
+          )
+          $tagArgs = $tags | ForEach-Object { "-t", $_ }
+          docker build `
+            --file "${{ matrix.dockerfile }}" `
+            $tagArgs `
+            --isolation=process `
+            .
+
+      - name: Smoke test ${{ matrix.id }} toolchain
+        shell: powershell
+        run: |
+          $script = @'
+${{ matrix.smoke }}
+'@
+          docker run --rm --isolation=process `
+            "${{ matrix.image }}:latest" `
+            powershell -NoLogo -NoProfile -Command $script
+
+      - name: Push ${{ matrix.id }} image
+        shell: powershell
+        run: |
+          docker push ${{ matrix.image }}:latest
+          docker push ${{ matrix.image }}:${{ github.sha }}
+
+      - name: Inspect image
+        shell: powershell
+        run: |
+          docker image inspect ${{ matrix.image }}:latest | Out-File -FilePath "${{ runner.temp }}\\${{ matrix.id }}-inspect.json"
+
+      - name: Upload inspect artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.id }}-inspect
+          path: "${{ runner.temp }}\\${{ matrix.id }}-inspect.json"

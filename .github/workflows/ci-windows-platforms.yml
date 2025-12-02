@@ -1,0 +1,100 @@
+name: Windows Platform CI (PF5/PF6)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/pf5-pf6-containers
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  windows-platforms:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: pf5
+            platform: pf5
+            image: ghcr.io/raizo-tcs/archive-r/pf5-windows-msvc
+          - id: pf6
+            platform: pf6
+            image: ghcr.io/raizo-tcs/archive-r/pf6-windows-mingw
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Docker info
+        shell: pwsh
+        run: |
+          docker version
+          docker info
+
+      - name: Login to GitHub Container Registry
+        shell: pwsh
+        env:
+          CR_PAT: ${{ github.token }}
+        run: |
+          $creds = $env:CR_PAT
+          if (-not $creds) {
+            throw "GITHUB_TOKEN not available"
+          }
+          $creds | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Pull ${{ matrix.id }} image
+        id: pull-image
+        shell: pwsh
+        env:
+          IMAGE_NAME: ${{ matrix.image }}
+        run: |
+          $tags = @("${{ github.sha }}", "latest")
+          $selected = $null
+          foreach ($tag in $tags) {
+            try {
+              docker pull "$env:IMAGE_NAME`:$tag"
+              $selected = $tag
+              break
+            } catch {
+              Write-Host "Failed to pull $env:IMAGE_NAME`:$tag"
+            }
+          }
+          if (-not $selected) {
+            throw "Unable to pull any tag for $env:IMAGE_NAME"
+          }
+          "selected_tag=$selected" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+      - name: Run ${{ matrix.id }} build and tests
+        shell: pwsh
+        env:
+          IMAGE_NAME: ${{ matrix.image }}
+          PLATFORM_ID: ${{ matrix.platform }}
+          SELECTED_TAG: ${{ steps.pull-image.outputs.selected_tag }}
+        run: |
+          $workspace = "${{ github.workspace }}"
+          $imageRef = "$env:IMAGE_NAME`:$env:SELECTED_TAG"
+          $runArgs = @(
+            "--rm",
+            "--isolation=process",
+            "-e", "ARCHIVE_R_WORKSPACE=C:\workspace",
+            "-v", "$workspace:C:\workspace"
+          )
+          docker run @runArgs `
+            $imageRef `
+            powershell -NoLogo -ExecutionPolicy Bypass -File C:\workspace\ci\windows\run_platform_ci.ps1 -Platform $env:PLATFORM_ID
+
+      - name: Upload ${{ matrix.id }} artifacts
+        if: ${{ always() && env.ACT != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.id }}-${{ github.sha }}
+          path: |
+            build/bindings/python/dist/*.tar.gz
+            build/bindings/python/dist/*.whl
+            build/bindings/ruby/*.gem
+            build/logs/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
