@@ -102,6 +102,32 @@ DEFAULT_BUILD_JOBS="$(detect_parallel_jobs)"
 configure_cmake_generator
 configure_cmake_platform
 
+UNAME_S="$(uname -s 2>/dev/null || echo "")"
+case "$UNAME_S" in
+    MINGW*|MSYS*|CYGWIN*|Windows_NT*)
+        IS_WINDOWS_ENV=true
+        ;;
+    *)
+        IS_WINDOWS_ENV=false
+        ;;
+esac
+
+RIDK_AVAILABLE=false
+RIDK_EXEC_CMD=()
+if [ "$IS_WINDOWS_ENV" = true ]; then
+    if RIDK_PATH="$(command -v ridk 2>/dev/null)"; then
+        RIDK_EXEC_CMD=("$RIDK_PATH" "exec")
+    elif RIDK_PATH="$(command -v ridk.cmd 2>/dev/null)"; then
+        RIDK_EXEC_CMD=("$RIDK_PATH" "exec")
+    elif RIDK_PATH="$(command -v ridk.bat 2>/dev/null)"; then
+        RIDK_EXEC_CMD=("$RIDK_PATH" "exec")
+    fi
+
+    if [ "${#RIDK_EXEC_CMD[@]}" -gt 0 ]; then
+        RIDK_AVAILABLE=true
+    fi
+fi
+
 detect_core_library_path() {
     local candidates=(
         "$BUILD_DIR/libarchive_r_core.a"
@@ -465,15 +491,22 @@ build_ruby_binding() {
 
     cd "$ext_dir"
     
+    local ruby_cmd=("ruby")
+    local make_cmd=("make")
+    if [ "$RIDK_AVAILABLE" = true ]; then
+        ruby_cmd=("${RIDK_EXEC_CMD[@]}" "ruby")
+        make_cmd=("${RIDK_EXEC_CMD[@]}" "make")
+    fi
+
     # Run extconf.rb
-    if ! ruby extconf.rb; then
+    if ! "${ruby_cmd[@]}" extconf.rb; then
         log_error "ruby extconf.rb failed"
         cd "$ROOT_DIR"
         return 1
     fi
     
     # Build
-    if ! make; then
+    if ! "${make_cmd[@]}"; then
         log_error "Ruby extension build failed"
         cd "$ROOT_DIR"
         return 1
