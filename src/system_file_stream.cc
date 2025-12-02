@@ -225,21 +225,9 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       }
     }
 
-    const bool wants_size = wants("size");
-  #if defined(_WIN32)
-    const bool wants_uid = false;
-    const bool wants_gid = false;
-    const bool wants_uname = false;
-    const bool wants_gname = false;
-  #else
-    const bool wants_uid = wants("uid");
-    const bool wants_gid = wants("gid");
-    const bool wants_uname = wants("uname");
-    const bool wants_gname = wants("gname");
-  #endif
-    const bool needs_stat = (wants_size && size == 0)
+    const bool needs_stat = (wants("size") && size == 0)
   #if !defined(_WIN32)
-      || wants_uid || wants_gid || wants_uname || wants_gname
+      || wants("uid") || wants("gid") || wants("uname") || wants("gname")
   #endif
       ;
 
@@ -250,7 +238,7 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       have_stat = (::stat(native_path.c_str(), &stat_buffer) == 0);
     }
 
-    if (wants_size) {
+    if (wants("size")) {
       uint64_t resolved = size;
       if (resolved == 0 && have_stat) {
         resolved = static_cast<uint64_t>(stat_buffer.st_size);
@@ -262,19 +250,19 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
 
 #if !defined(_WIN32)
     if (have_stat) {
-      if (wants_uid) {
+      if (wants("uid")) {
         metadata["uid"] = static_cast<int64_t>(stat_buffer.st_uid);
       }
-      if (wants_gid) {
+      if (wants("gid")) {
         metadata["gid"] = static_cast<int64_t>(stat_buffer.st_gid);
       }
-      if (wants_uname) {
+      if (wants("uname")) {
         std::string uname;
         if (lookup_username(stat_buffer.st_uid, uname)) {
           metadata["uname"] = std::move(uname);
         }
       }
-      if (wants_gname) {
+      if (wants("gname")) {
         std::string gname;
         if (lookup_groupname(stat_buffer.st_gid, gname)) {
           metadata["gname"] = std::move(gname);
