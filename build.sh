@@ -466,10 +466,18 @@ build_ruby_binding() {
     cd "$ext_dir"
     
     # Run extconf.rb
-    ruby extconf.rb
+    if ! ruby extconf.rb; then
+        log_error "ruby extconf.rb failed"
+        cd "$ROOT_DIR"
+        return 1
+    fi
     
     # Build
-    make
+    if ! make; then
+        log_error "Ruby extension build failed"
+        cd "$ROOT_DIR"
+        return 1
+    fi
 
     if [ ! -f "archive_r.so" ]; then
         cd "$ROOT_DIR"
@@ -734,7 +742,10 @@ package_python_binding() {
 
 # Build requested bindings
 if [ "$BUILD_RUBY" = true ]; then
-    build_ruby_binding || log_warning "Ruby binding build had issues"
+    if ! build_ruby_binding; then
+        log_error "Ruby binding build failed"
+        exit 1
+    fi
 
     if [ "$PACKAGE_RUBY" = true ]; then
         if ! package_ruby_binding; then

@@ -321,14 +321,50 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          function Set-EnvValue {
+            param(
+              [string]$Name,
+              [string]$Value
+            )
+
+            if ([string]::IsNullOrEmpty($Value)) {
+              return
+            }
+
+            Add-Content -Path $env:GITHUB_ENV -Value "$Name=$Value" -Encoding utf8
+          }
           $ridkCmd = (Get-Command ridk -ErrorAction SilentlyContinue).Source
           if (-not $ridkCmd) {
             throw 'ridk command not found on PATH'
           }
-          & $ridkCmd exec pacman -Sy --noconfirm --needed make pkgconf mingw-w64-ucrt-x86_64-toolchain > $null
-          $msysBin = 'C:\msys64\usr\bin'
+          & $ridkCmd exec pacman -Sy --noconfirm --needed make pkgconf mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-libarchive > $null
+          $msysRoot = 'C:\msys64'
+          $msysBin = Join-Path $msysRoot 'usr\bin'
           if (Test-Path $msysBin) {
-            Add-Content -Path $env:GITHUB_ENV -Value "PATH=$msysBin;$env:PATH" -Encoding utf8
+            Set-EnvValue -Name 'PATH' -Value "$msysBin;$env:PATH"
+          }
+          $ucrtRoot = Join-Path $msysRoot 'ucrt64'
+          if (Test-Path $ucrtRoot) {
+            $ucrtBin = Join-Path $ucrtRoot 'bin'
+            $ucrtLib = Join-Path $ucrtRoot 'lib'
+            $ucrtInclude = Join-Path $ucrtRoot 'include'
+            $ucrtPkgConfig = Join-Path $ucrtLib 'pkgconfig'
+
+            if (Test-Path $ucrtBin) {
+              Set-EnvValue -Name 'PATH' -Value "$ucrtBin;$env:PATH"
+            }
+            if (Test-Path $ucrtLib) {
+              Set-EnvValue -Name 'LIBRARY_PATH' -Value "$ucrtLib;$env:LIBRARY_PATH"
+              Set-EnvValue -Name 'LIB' -Value "$ucrtLib;$env:LIB"
+            }
+            if (Test-Path $ucrtInclude) {
+              Set-EnvValue -Name 'CPATH' -Value "$ucrtInclude;$env:CPATH"
+              Set-EnvValue -Name 'C_INCLUDE_PATH' -Value "$ucrtInclude;$env:C_INCLUDE_PATH"
+              Set-EnvValue -Name 'CPLUS_INCLUDE_PATH' -Value "$ucrtInclude;$env:CPLUS_INCLUDE_PATH"
+            }
+            if (Test-Path $ucrtPkgConfig) {
+              Set-EnvValue -Name 'PKG_CONFIG_PATH' -Value "$ucrtPkgConfig;$env:PKG_CONFIG_PATH"
+            }
           }
 
       - name: Install Python build dependencies
