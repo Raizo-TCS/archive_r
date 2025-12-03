@@ -53,7 +53,7 @@ jobs:
         shell: powershell
         env:
           CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
-          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || github.repository_owner }}
+          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || 'raizo-tcs' }}
         run: |
           if (-not $env:CR_PAT -or $env:CR_PAT.Trim().Length -eq 0) {
             throw "CR_PAT is empty. Configure GHCR_PAT (write:packages) or rely on default GITHUB_TOKEN."
