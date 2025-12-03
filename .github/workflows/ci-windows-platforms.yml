@@ -2,9 +2,12 @@ name: Windows Platform CI (PF5/PF6)
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches:
-      - feature/pf5-pf6-containers
+      - main
+    paths:
+      - 'containers/windows/**'
+      - '.github/workflows/ci-windows-platforms.yml'
 
 permissions:
   contents: read
