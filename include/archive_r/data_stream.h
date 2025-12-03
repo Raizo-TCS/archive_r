@@ -9,6 +9,11 @@
 #include <memory>
 #include <sys/types.h>
 
+#ifdef _WIN32
+#include <basetsd.h>
+using ssize_t = SSIZE_T;
+#endif
+
 namespace archive_r {
 
 /**
