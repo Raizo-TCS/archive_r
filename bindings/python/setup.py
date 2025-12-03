@@ -171,6 +171,7 @@ include_dirs = [
 library_dirs = []
 
 libarchive_root = os.environ.get('LIBARCHIVE_ROOT')
+print(f"DEBUG: LIBARCHIVE_ROOT={libarchive_root}")
 if libarchive_root:
     include_dirs.append(os.path.join(libarchive_root, 'include'))
     library_dirs.append(os.path.join(libarchive_root, 'lib'))
