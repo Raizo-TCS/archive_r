@@ -86,7 +86,7 @@ jobs:
           }
           $user = if ($env:CR_USER) { $env:CR_USER.Trim() } else { "${{ github.repository_owner }}" }
           Write-Host "Logging into ghcr.io as $user"
-          echo $env:CR_PAT | docker login ghcr.io -u $user --password-stdin
+          echo $CR_PAT | docker login ghcr.io -u $user --password-stdin
           if ($LASTEXITCODE -ne 0) {
             Write-Error "docker login failed. Ensure GHCR terms are accepted for $user and GHCR_PAT has write:packages scope if required."
             exit $LASTEXITCODE
