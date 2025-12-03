@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build-manylinux-wheels:
@@ -207,20 +208,44 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
-      - name: Install libarchive via vcpkg
+      - name: Login to GitHub Container Registry
+        shell: pwsh
+        env:
+          CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || github.actor }}
+        run: |
+          $creds = $env:CR_PAT
+          if (-not $creds) {
+            throw "CR_PAT (or GITHUB_TOKEN) not available"
+          }
+          $user = $env:CR_USER
+          Write-Host "Logging into ghcr.io as $user"
+          $creds | docker login ghcr.io -u $user --password-stdin
+
+      - name: Extract libarchive from container
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          if (-not $env:VCPKG_INSTALLATION_ROOT) {
-            $env:VCPKG_INSTALLATION_ROOT = 'C:\\vcpkg'
+          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest"
+          Write-Host "Pulling $image..."
+          docker pull $image
+          $id = docker create $image
+          $dest = "${{ runner.temp }}\vcpkg_libarchive"
+          if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
+          mkdir $dest
+          Write-Host "Extracting libarchive from container..."
+          docker cp "$id`:C:\vcpkg\installed\x64-windows" "$dest"
+          docker rm -v $id
+          
+          $prefix = "$dest\x64-windows"
+          if (-not (Test-Path $prefix)) {
+             throw "Failed to extract libarchive: $prefix does not exist"
           }
-          vcpkg integrate install
-          vcpkg install libarchive:x64-windows
-          $prefix = Join-Path $env:VCPKG_INSTALLATION_ROOT 'installed\x64-windows'
           $binPath = Join-Path $prefix 'bin'
           $includePath = Join-Path $prefix 'include'
           $libPath = Join-Path $prefix 'lib'
           $pkgConfigPath = Join-Path $libPath 'pkgconfig'
+          
+          Write-Host "Setting environment variables..."
           Add-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8
           Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_PREFIX_PATH=$prefix" -Encoding utf8
           Add-Content -Path $env:GITHUB_ENV -Value "CPPFLAGS=-I$includePath" -Encoding utf8
