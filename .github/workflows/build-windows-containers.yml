@@ -8,6 +8,7 @@ on:
     paths:
       - 'containers/windows/**'
       - '.github/workflows/build-windows-containers.yml'
+      - '.github/workflows/test-windows-containers.yml'
 
 permissions:
   contents: read
