@@ -162,15 +162,24 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
+include_dirs = [
+    pybind11_include,
+    str(core_include_dir),
+    str(core_src_dir),
+]
+library_dirs = []
+
+libarchive_root = os.environ.get('LIBARCHIVE_ROOT')
+if libarchive_root:
+    include_dirs.append(os.path.join(libarchive_root, 'include'))
+    library_dirs.append(os.path.join(libarchive_root, 'lib'))
+
 ext_modules = [
     Extension(
         'archive_r',
         sources=sources,
-        include_dirs=[
-            pybind11_include,
-            str(core_include_dir),
-            str(core_src_dir),
-        ],
+        include_dirs=include_dirs,
+        library_dirs=library_dirs,
         libraries=['archive'],
         extra_objects=extra_objects,
         language='c++',
