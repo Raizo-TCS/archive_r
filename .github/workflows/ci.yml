@@ -140,11 +140,11 @@ jobs:
           retention-days: 7
 
   windows-platforms:
-  windows-platforms:
     name: ${{ matrix.display }} Windows Container Build & Test
     runs-on: windows-2022
     timeout-minutes: 120
-    strategy:st: false
+    strategy:
+      fail-fast: false
       matrix:
         include:
           - id: pf5
