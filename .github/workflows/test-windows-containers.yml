@@ -6,6 +6,11 @@ on:
       - Build Windows Containers
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      sha_tag:
+        description: 'SHA tag to test (commit SHA tagged image)'
+        required: true
 
 permissions:
   contents: read
@@ -37,11 +42,23 @@ jobs:
               ruby --version;
               git --version;
               & "$env:MSYS2_ROOT\usr\bin\bash.exe" -lc 'set -euo pipefail; export PATH="/ucrt64/bin:$PATH"; which gcc && gcc --version'
-    env:
-      SHA_TAG: ${{ github.event.workflow_run.head_sha }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Determine SHA tag
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_run") {
+            $sha = "${{ github.event.workflow_run.head_sha }}"
+          } else {
+            $sha = "${{ github.event.inputs.sha_tag }}"
+          }
+          if (-not $sha) {
+            throw "SHA tag is empty. Provide 'sha_tag' input when dispatching manually."
+          }
+          "SHA_TAG=$sha" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Testing container tag: $sha"
 
       - name: Show Docker info
         shell: powershell
