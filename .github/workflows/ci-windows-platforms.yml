@@ -37,13 +37,16 @@ jobs:
       - name: Login to GitHub Container Registry
         shell: pwsh
         env:
-          CR_PAT: ${{ github.token }}
+          CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || github.actor }}
         run: |
           $creds = $env:CR_PAT
           if (-not $creds) {
-            throw "GITHUB_TOKEN not available"
+            throw "CR_PAT (or GITHUB_TOKEN) not available"
           }
-          $creds | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          $user = $env:CR_USER
+          Write-Host "Logging into ghcr.io as $user"
+          $creds | docker login ghcr.io -u $user --password-stdin
 
       - name: Pull ${{ matrix.id }} image
         id: pull-image
