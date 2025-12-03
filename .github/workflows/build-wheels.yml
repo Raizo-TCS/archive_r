@@ -86,10 +86,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install libarchive
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment_target }}
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          HOMEBREW_NO_INSTALL_CLEANUP: "1"
         run: |
           set -euo pipefail
-          brew update
-          brew install libarchive
+          # Force build from source to respect MACOSX_DEPLOYMENT_TARGET
+          brew install --build-from-source libarchive xz lz4 zstd libb2
           LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
           echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
