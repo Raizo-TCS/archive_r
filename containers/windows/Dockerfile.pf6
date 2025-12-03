@@ -23,6 +23,21 @@ RUN Start-Process -FilePath "C:\\tools\\msys64\\usr\\bin\\bash.exe" -Wait -Argum
 ENV MINGW_ROOT=C:\tools\msys64\ucrt64 `
     LIBARCHIVE_ROOT=C:\tools\msys64\ucrt64
 
-ENV PATH=C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\WindowsPowerShell\\v1.0;C:\\ProgramData\\chocolatey\\bin;C:\\Program Files\\CMake\\bin;C:\\Program Files\\Git\\cmd;C:\\Program Files\\Python311;C:\\Program Files\\Python311\\Scripts;C:\\Program Files\\Ruby32-x64\\bin;C:\\tools\\msys64\\ucrt64\\bin;C:\\tools\\msys64\\usr\\bin
+RUN $additionalPaths = @(
+        'C:\Windows\system32',
+        'C:\Windows',
+        'C:\Windows\System32\WindowsPowerShell\v1.0',
+        'C:\ProgramData\chocolatey\bin',
+        'C:\Program Files\CMake\bin',
+        'C:\Program Files\Git\cmd',
+        'C:\Program Files\Python311',
+        'C:\Program Files\Python311\Scripts',
+        'C:\Program Files\Ruby32-x64\bin',
+        'C:\tools\msys64\ucrt64\bin',
+        'C:\tools\msys64\usr\bin'
+    ); `
+    $existing = [Environment]::GetEnvironmentVariable('PATH', 'Machine'); `
+    $newPath = ($additionalPaths + $existing) -join ';'; `
+    [Environment]::SetEnvironmentVariable('PATH', $newPath, 'Machine')
 
 ENTRYPOINT ["C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe", "-NoLogo", "-ExecutionPolicy", "Bypass"]
