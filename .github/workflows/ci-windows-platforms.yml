@@ -54,21 +54,13 @@ jobs:
         env:
           IMAGE_NAME: ${{ matrix.image }}
         run: |
-          $tags = @("${{ github.sha }}", "latest")
-          $selected = $null
-          foreach ($tag in $tags) {
-            try {
-              docker pull "$env:IMAGE_NAME`:$tag"
-              $selected = $tag
-              break
-            } catch {
-              Write-Host "Failed to pull $env:IMAGE_NAME`:$tag"
-            }
+          try {
+            Write-Host "Pulling $env:IMAGE_NAME..."
+            docker pull "$env:IMAGE_NAME"
+            "selected_tag=$env:IMAGE_NAME" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } catch {
+            throw "Failed to pull $env:IMAGE_NAME"
           }
-          if (-not $selected) {
-            throw "Unable to pull any tag for $env:IMAGE_NAME"
-          }
-          "selected_tag=$selected" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Run ${{ matrix.id }} build and tests
         shell: pwsh
