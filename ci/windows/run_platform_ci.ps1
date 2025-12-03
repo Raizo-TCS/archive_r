@@ -51,6 +51,8 @@ switch ($Platform) {
         }
         $env:MSYSTEM = "UCRT64"
         $env:CHERE_INVOKING = "1"
+        # Add UCRT64 bin path to ensure gcc/make/cmake are found
+        $env:PATH = "C:\tools\msys64\ucrt64\bin;C:\tools\msys64\usr\bin;" + $env:PATH
         # Force Unix Makefiles generator (MSYS2 make) to avoid NMake default
         $env:CMAKE_GENERATOR = "Unix Makefiles"
         & $bashExe -lc $scriptBody
