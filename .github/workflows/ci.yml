@@ -78,6 +78,7 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: "1"
       HOMEBREW_NO_INSTALL_CLEANUP: "1"
       HOMEBREW_NO_ANALYTICS: "1"
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - name: Checkout repository
@@ -87,8 +88,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          brew update
-          brew install cmake ninja pkg-config libarchive ruby
+          brew install cmake ninja pkg-config libarchive ruby coreutils
           LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
           echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
@@ -215,7 +215,7 @@ jobs:
             "--rm",
             "--isolation=process",
             "-e", "ARCHIVE_R_WORKSPACE=C:\workspace",
-            "-v", "$workspace:C:\workspace"
+            "--mount", "type=bind,source=$workspace,target=C:\workspace"
           )
           docker run @runArgs `
             $imageRef `

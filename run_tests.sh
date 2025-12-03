@@ -8,8 +8,20 @@
 set -e
 set -o pipefail
 
+detect_timeout_cmd() {
+    if command -v timeout >/dev/null 2>&1; then
+        echo "timeout"
+    elif command -v gtimeout >/dev/null 2>&1; then
+        echo "gtimeout"
+    else
+        echo ""
+    fi
+}
+
+
 # === Configuration ===
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT_DIR" || exit 1
 BUILD_DIR="$ROOT_DIR/build"
 TEST_DATA_DIR="$ROOT_DIR/test_data"
 EXECUTABLE="$BUILD_DIR/find_and_traverse"
@@ -93,10 +105,11 @@ validate_wrapper_timeout() {
 validate_wrapper_timeout "$WRAPPER_TIMEOUT"
 
 if [[ -z "$RUN_TESTS_TIMEOUT_ACTIVE" ]] && [[ "$WRAPPER_TIMEOUT" -gt 0 ]]; then
-    if command -v timeout >/dev/null 2>&1; then
+    TIMEOUT_CMD_GLOBAL=$(detect_timeout_cmd)
+    if [ -n "$TIMEOUT_CMD_GLOBAL" ]; then
         export RUN_TESTS_TIMEOUT_ACTIVE=1
         export RUN_TESTS_WRAPPER_TIMEOUT="$WRAPPER_TIMEOUT"
-        exec timeout "$WRAPPER_TIMEOUT" "$0" "${ORIGINAL_ARGS[@]}"
+        exec "$TIMEOUT_CMD_GLOBAL" "$WRAPPER_TIMEOUT" "$0" "${ORIGINAL_ARGS[@]}"
     else
         echo "Warning: 'timeout' command not found; continuing without global timeout" >&2
     fi
@@ -110,6 +123,19 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # === Utility Functions ===
+
+TIMEOUT_CMD=$(detect_timeout_cmd)
+
+run_with_timeout_cmd() {
+    local duration="$1"
+    shift
+    if [ -n "$TIMEOUT_CMD" ]; then
+        "$TIMEOUT_CMD" "$duration" "$@"
+    else
+        "$@"
+    fi
+}
+
 log_info() {
     echo -e "${BLUE}▶${NC} $1"
 }
@@ -213,7 +239,7 @@ run_test() {
     
     log_info "Running: $EXECUTABLE \"$test_file\""
     
-    if timeout "$TIMEOUT" "$EXECUTABLE" "$test_file"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$EXECUTABLE" "$test_file"; then
         log_success "Test PASSED: $test_name"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         return 0
@@ -258,7 +284,7 @@ log_info "Running iterator and descent regression tests..."
 if [ -f "$BUILD_DIR/test_simple_count" ]; then
     log_test_header "simple_count"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_simple_count" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_simple_count" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
         log_success "Test PASSED: simple_count"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -271,7 +297,7 @@ fi
 if [ -f "$BUILD_DIR/test_iterator" ]; then
     log_test_header "iterator"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_iterator" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_iterator" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
         log_success "Test PASSED: iterator"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -284,7 +310,7 @@ fi
 if [ -f "$BUILD_DIR/test_descent" ]; then
     log_test_header "descent"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_descent" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_descent" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
         log_success "Test PASSED: descent"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -297,7 +323,7 @@ fi
 if [ -f "$BUILD_DIR/test_skip_descent" ]; then
     log_test_header "skip_descent"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_skip_descent" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_skip_descent" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
         log_success "Test PASSED: skip_descent"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -310,7 +336,7 @@ fi
 if [ -f "$BUILD_DIR/test_entry_read" ]; then
     log_test_header "entry_read"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_entry_read"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_entry_read"; then
         log_success "Test PASSED: entry_read"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -323,7 +349,7 @@ fi
 if [ -f "$BUILD_DIR/test_nested_root_acceptance" ]; then
     log_test_header "nested_root_acceptance"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_nested_root_acceptance" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_nested_root_acceptance" "$TEST_DATA_DIR/deeply_nested.tar.gz"; then
         log_success "Test PASSED: nested_root_acceptance"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -338,7 +364,7 @@ log_info "Running Error Handling Step0 tests..."
 if [ -f "$BUILD_DIR/test_error_handling_step0" ]; then
     log_test_header "error_handling_step0"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_error_handling_step0"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_error_handling_step0"; then
         log_success "Test PASSED: error_handling_step0"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -352,7 +378,7 @@ log_info "Running RootStreamFactory tests..."
 if [ -f "$BUILD_DIR/test_custom_root_stream" ]; then
     log_test_header "custom_root_stream"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_custom_root_stream"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_custom_root_stream"; then
         log_success "Test PASSED: custom_root_stream"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -366,7 +392,7 @@ log_info "Running Traverser thread-safety regression..."
 if [ -f "$BUILD_DIR/test_threaded_traverser" ]; then
     log_test_header "threaded_traverser"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_threaded_traverser"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_threaded_traverser"; then
         log_success "Test PASSED: threaded_traverser"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -381,7 +407,7 @@ log_info "Running Multi-Volume functionality test..."
 if [ -f "$BUILD_DIR/test_multi_volume_functionality" ]; then
     log_test_header "multi_volume_functionality"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_functionality" "$TEST_DATA_DIR/multi_volume_test.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_functionality" "$TEST_DATA_DIR/multi_volume_test.tar.gz"; then
         log_success "Test PASSED: multi_volume_functionality"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -395,7 +421,7 @@ log_info "Running Multi-Volume ordering verification..."
 if [ -f "$BUILD_DIR/test_multi_volume_ordering" ]; then
     log_test_header "multi_volume_ordering"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_ordering"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_ordering"; then
         log_success "Test PASSED: multi_volume_ordering"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -409,7 +435,7 @@ log_info "Running Multi-Volume traversal regression..."
 if [ -f "$BUILD_DIR/test_multi_volume_traversal_regression" ]; then
     log_test_header "multi_volume_traversal_regression"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_traversal_regression"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_traversal_regression"; then
         log_success "Test PASSED: multi_volume_traversal_regression"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -423,7 +449,7 @@ log_info "Running Multi-Volume entry persistence test..."
 if [ -f "$BUILD_DIR/test_multi_volume_entry_persistence" ]; then
     log_test_header "multi_volume_entry_persistence"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_entry_persistence"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_entry_persistence"; then
         log_success "Test PASSED: multi_volume_entry_persistence"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -437,7 +463,7 @@ log_info "Running Root File multi-volume activation test..."
 if [ -f "$BUILD_DIR/test_root_file_multi_volume" ]; then
     log_test_header "root_file_multi_volume"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_root_file_multi_volume"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_root_file_multi_volume"; then
         log_success "Test PASSED: root_file_multi_volume"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -451,7 +477,7 @@ log_info "Running additional multi-volume regression tests..."
 if [ -f "$BUILD_DIR/test_multi_volume_input" ]; then
     log_test_header "multi_volume_input"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_input" "$TEST_DATA_DIR/test_input.tar.gz.part00"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_input" "$TEST_DATA_DIR/test_input.tar.gz.part00"; then
         log_success "Test PASSED: multi_volume_input"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -464,7 +490,7 @@ fi
 if [ -f "$BUILD_DIR/test_multi_volume_iterator" ]; then
     log_test_header "multi_volume_iterator"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_iterator" "$TEST_DATA_DIR/multi_volume_test.tar.gz"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_iterator" "$TEST_DATA_DIR/multi_volume_test.tar.gz"; then
         log_success "Test PASSED: multi_volume_iterator"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -477,7 +503,7 @@ fi
 if [ -f "$BUILD_DIR/test_multi_volume_debug" ]; then
     log_test_header "multi_volume_debug"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_debug" "$TEST_DATA_DIR/test_input.tar.gz.part00"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_debug" "$TEST_DATA_DIR/test_input.tar.gz.part00"; then
         log_success "Test PASSED: multi_volume_debug"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -490,7 +516,7 @@ fi
 if [ -f "$BUILD_DIR/test_multi_volume_retry" ]; then
     log_test_header "multi_volume_retry"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_volume_retry"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_volume_retry"; then
         log_success "Test PASSED: multi_volume_retry"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -504,7 +530,7 @@ log_info "Running ArchiveStackOrchestrator read verification..."
 if [ -f "$BUILD_DIR/test_data_source_reader_read" ]; then
     log_test_header "data_source_reader_read"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_data_source_reader_read"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_data_source_reader_read"; then
         log_success "Test PASSED: data_source_reader_read"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -519,7 +545,7 @@ log_info "Running Stress Test Ultimate verification..."
 if [ -f "$BUILD_DIR/test_stress_ultimate_verification" ]; then
     log_test_header "stress_ultimate_verification"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout 60 "$BUILD_DIR/test_stress_ultimate_verification" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz"; then
+    if run_with_timeout_cmd 60 "$BUILD_DIR/test_stress_ultimate_verification" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz"; then
         log_success "Test PASSED: stress_ultimate_verification"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -534,7 +560,7 @@ log_info "Running Stress Test Multi-Volume Source verification..."
 if [ -f "$BUILD_DIR/test_stress_multi_volume_source" ]; then
     log_test_header "stress_multi_volume_source"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout 60 "$BUILD_DIR/test_stress_multi_volume_source" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz.part001"; then
+    if run_with_timeout_cmd 60 "$BUILD_DIR/test_stress_multi_volume_source" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz.part001"; then
         log_success "Test PASSED: stress_multi_volume_source"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -548,7 +574,7 @@ log_info "Running Stress Test Multi-Volume source (legacy traversal)..."
 if [ -f "$BUILD_DIR/test_stress_multipart_source" ]; then
     log_test_header "stress_multipart_source"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout 60 "$BUILD_DIR/test_stress_multipart_source" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz.part001"; then
+    if run_with_timeout_cmd 60 "$BUILD_DIR/test_stress_multipart_source" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz.part001"; then
         log_success "Test PASSED: stress_multipart_source"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -562,7 +588,7 @@ log_info "Running Stress Test Ultimate validation (legacy stack)..."
 if [ -f "$BUILD_DIR/test_stress_ultimate_validation" ]; then
     log_test_header "stress_ultimate_validation"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout 60 "$BUILD_DIR/test_stress_ultimate_validation" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz"; then
+    if run_with_timeout_cmd 60 "$BUILD_DIR/test_stress_ultimate_validation" "$TEST_DATA_DIR/stress_test_ultimate.tar.gz"; then
         log_success "Test PASSED: stress_ultimate_validation"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -577,7 +603,7 @@ log_info "Running metadata option verification..."
 if [ -f "$BUILD_DIR/test_metadata_options" ]; then
     log_test_header "metadata_options"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_metadata_options" \
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_metadata_options" \
         "$TEST_DATA_DIR/deeply_nested.tar.gz" \
         "$TEST_DATA_DIR/no_uid.zip"; then
         log_success "Test PASSED: metadata_options"
@@ -593,7 +619,7 @@ log_info "Running filesystem metadata verification..."
 if [ -f "$BUILD_DIR/test_metadata_filesystem" ]; then
     log_test_header "metadata_filesystem"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_metadata_filesystem" \
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_metadata_filesystem" \
         "$TEST_DATA_DIR/directory_test"; then
         log_success "Test PASSED: metadata_filesystem"
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -609,7 +635,7 @@ log_info "Running Phase 2 tests (Directory support)..."
 if [ -f "$BUILD_DIR/test_directory_container" ]; then
     log_test_header "directory_container_basic"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_directory_container" "$TEST_DATA_DIR/directory_test"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_directory_container" "$TEST_DATA_DIR/directory_test"; then
         log_success "Test PASSED: directory_container_basic"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -621,7 +647,7 @@ fi
 if [ -f "$BUILD_DIR/test_directory_navigation" ]; then
     log_test_header "directory_navigation_state"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_directory_navigation" "$TEST_DATA_DIR/directory_test"; then
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_directory_navigation" "$TEST_DATA_DIR/directory_test"; then
         log_success "Test PASSED: directory_navigation_state"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -633,7 +659,7 @@ fi
 if [ -f "$BUILD_DIR/test_multi_root_traversal" ]; then
     log_test_header "multi_root_traversal"
     TESTS_RUN=$((TESTS_RUN + 1))
-    if timeout "$TIMEOUT" "$BUILD_DIR/test_multi_root_traversal" \
+    if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_multi_root_traversal" \
         "$TEST_DATA_DIR/deeply_nested.tar.gz" \
         "$TEST_DATA_DIR/directory_test"; then
         log_success "Test PASSED: multi_root_traversal"
@@ -654,7 +680,7 @@ if [ -f "$BUILD_DIR/test_performance_compare" ]; then
         echo ""
     else
         perf_tmp="$(mktemp)"
-        if timeout "$TIMEOUT" "$BUILD_DIR/test_performance_compare" "$PERF_ARCHIVE_PATH" | tee "$perf_tmp"; then
+        if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_performance_compare" "$PERF_ARCHIVE_PATH" | tee "$perf_tmp"; then
             log_success "Test PASSED: performance_compare"
             TESTS_PASSED=$((TESTS_PASSED + 1))
             raw_avg=$(sed -n 's/.*libarchive (raw) avg: \([0-9.]*\) s/\1/p' "$perf_tmp" | tail -n 1)
@@ -686,7 +712,7 @@ if [ -f "$BUILD_DIR/test_performance_no_descend" ]; then
         echo ""
     else
         perf_node_tmp="$(mktemp)"
-        if timeout "$TIMEOUT" "$BUILD_DIR/test_performance_no_descend" "$PERF_ARCHIVE_PATH" | tee "$perf_node_tmp"; then
+        if run_with_timeout_cmd "$TIMEOUT" "$BUILD_DIR/test_performance_no_descend" "$PERF_ARCHIVE_PATH" | tee "$perf_node_tmp"; then
             log_success "Test PASSED: performance_no_descend"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
