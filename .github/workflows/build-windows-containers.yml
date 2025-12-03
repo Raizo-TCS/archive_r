@@ -7,8 +7,6 @@ on:
       - feature/pf5-pf6-containers
     paths:
       - 'containers/windows/**'
-      - '.github/workflows/build-windows-containers.yml'
-      - '.github/workflows/test-windows-containers.yml'
 
 permissions:
   contents: read
