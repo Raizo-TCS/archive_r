@@ -30,7 +30,7 @@ if (-not (Test-Path -LiteralPath $workspace)) {
 
 $posixWorkspace = Convert-ToPosixPath -Path $workspace
 $buildCommand = "./build.sh --rebuild-all --package-python --package-ruby"
-$testCommand = "timeout 120 ./run_tests.sh"
+$testCommand = "python3 ./.github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh"
 $scriptBody = "set -euo pipefail; cd $posixWorkspace; $buildCommand; $testCommand"
 
 switch ($Platform) {
