@@ -38,7 +38,7 @@ jobs:
               python --version;
               ruby --version;
               git --version;
-              bash -lc "which gcc && gcc --version"
+              bash -lc 'which gcc && gcc --version'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
