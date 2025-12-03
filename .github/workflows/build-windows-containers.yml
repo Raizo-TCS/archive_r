@@ -49,6 +49,20 @@ jobs:
           docker version
           docker info
 
+      - name: Report registry credential source
+        shell: powershell
+        run: |
+          if ("${{ secrets.GHCR_PAT }}" -ne "") {
+            Write-Host "GHCR_PAT secret is present; workflow will use it."
+          } else {
+            Write-Host "GHCR_PAT secret is NOT set; workflow will fall back to GITHUB_TOKEN."
+          }
+          if ("${{ secrets.GHCR_USER }}" -ne "") {
+            Write-Host "GHCR_USER secret override detected."
+          } else {
+            Write-Host "GHCR_USER secret not set; using default 'raizo-tcs'."
+          }
+
       - name: Login to GitHub Container Registry
         shell: powershell
         env:
