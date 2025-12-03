@@ -151,10 +151,10 @@ jobs:
         include:
           - id: pf5
             display: PF5
-            image: ghcr.io/raizo-tcs/archive-r/pf5-windows-msvc
+            image: ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc
           - id: pf6
             display: PF6
-            image: ghcr.io/raizo-tcs/archive-r/pf6-windows-mingw
+            image: ghcr.io/raizo-tcs/archive_r/pf6-windows-mingw
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
