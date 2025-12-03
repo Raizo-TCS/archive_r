@@ -73,10 +73,10 @@ jobs:
         include:
           - runner: macos-13
             arch: x86_64
-            deployment_target: '11.0'
+            deployment_target: '13.0'
           - runner: macos-14
             arch: arm64
-            deployment_target: '11.0'
+            deployment_target: '14.0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -226,7 +226,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest"
+          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:1197fe6a5b8265d890cf7ddffa5c0d80659ee2a9"
           Write-Host "Pulling $image..."
           docker pull $image
           
