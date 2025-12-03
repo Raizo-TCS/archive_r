@@ -64,19 +64,20 @@ jobs:
           }
 
       - name: Login to GitHub Container Registry
-        shell: powershell
+        shell: pwsh
         env:
           CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
           CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || 'raizo-tcs' }}
         run: |
-          if (-not $env:CR_PAT -or $env:CR_PAT.Trim().Length -eq 0) {
+          $creds = $env:CR_PAT
+          if (-not $creds -or $creds.Trim().Length -eq 0) {
             throw "CR_PAT is empty. Configure GHCR_PAT (write:packages) or rely on default GITHUB_TOKEN."
           }
-          if ($env:CR_PAT.Length -ge 8) {
-            $prefix = $env:CR_PAT.Substring(0, 4)
-            $suffix = $env:CR_PAT.Substring($env:CR_PAT.Length - 4)
+          if ($creds.Length -ge 8) {
+            $prefix = $creds.Substring(0, 4)
+            $suffix = $creds.Substring($creds.Length - 4)
             Write-Host "CR_PAT prefix=$prefix*** suffix=***$suffix"
-            if ($prefix -eq 'ghp_' -and $env:CR_PAT.StartsWith('ghp_TGVb') -and $env:CR_PAT.EndsWith('n0rUDRf')) {
+            if ($prefix -eq 'ghp_' -and $creds.StartsWith('ghp_TGVb') -and $creds.EndsWith('n0rUDRf')) {
               Write-Host "CR_PAT matches expected pattern ghp_TGVb***n0rUDRf"
             } else {
               Write-Host "CR_PAT does NOT match expected pattern ghp_TGVb***n0rUDRf"
@@ -85,8 +86,8 @@ jobs:
             Write-Host "CR_PAT shorter than 8 characters; cannot display prefix/suffix"
           }
           $user = if ($env:CR_USER) { $env:CR_USER.Trim() } else { "${{ github.repository_owner }}" }
-          Write-Host "Logging into ghcr.io as $user"
-          echo $CR_PAT | docker login ghcr.io -u $user --password-stdin
+          Write-Host "Logging into ghcr.io as $user (pwsh pipe)"
+          $creds | docker login ghcr.io -u $user --password-stdin
           if ($LASTEXITCODE -ne 0) {
             Write-Error "docker login failed. Ensure GHCR terms are accepted for $user and GHCR_PAT has write:packages scope if required."
             exit $LASTEXITCODE
