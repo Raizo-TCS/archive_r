@@ -98,9 +98,14 @@ jobs:
       - name: Smoke test ${{ matrix.id }} toolchain
         shell: powershell
         run: |
+          $script = @'
+          ${{ matrix.smoke }}
+          '@
+          $bytes = [System.Text.Encoding]::Unicode.GetBytes($script)
+          $encoded = [Convert]::ToBase64String($bytes)
           docker run --rm --isolation=process `
             "${{ matrix.image }}:latest" `
-            powershell -NoLogo -NoProfile -Command "${{ matrix.smoke }}"
+            powershell -NoLogo -NoProfile -EncodedCommand $encoded
 
       - name: Push ${{ matrix.id }} image
         shell: powershell
