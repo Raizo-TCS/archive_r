@@ -225,16 +225,21 @@ jobs:
       - name: Extract libarchive from container
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
           $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest"
           Write-Host "Pulling $image..."
           docker pull $image
-          $id = docker create $image
+          
           $dest = "${{ runner.temp }}\vcpkg_libarchive"
           if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
           mkdir $dest
-          Write-Host "Extracting libarchive from container..."
-          docker cp "$id`:C:\vcpkg\installed\x64-windows" "$dest"
-          docker rm -v $id
+          
+          Write-Host "Extracting libarchive using docker run..."
+          # Use docker run with volume mount to copy files to avoid docker cp issues
+          docker run --rm `
+            -v "${dest}:C:\out" `
+            $image `
+            powershell -Command "Copy-Item -Path 'C:\vcpkg\installed\x64-windows' -Destination 'C:\out' -Recurse -Force"
           
           $prefix = "$dest\x64-windows"
           if (-not (Test-Path $prefix)) {
