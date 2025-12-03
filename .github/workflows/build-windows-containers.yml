@@ -23,22 +23,9 @@ jobs:
           - id: pf5
             dockerfile: containers/windows/Dockerfile.pf5
             image: ghcr.io/raizo-tcs/archive-r/pf5-windows-msvc
-            smoke: >-
-              cmake --version;
-              ninja --version;
-              python --version;
-              ruby --version;
-              git --version
           - id: pf6
             dockerfile: containers/windows/Dockerfile.pf6
             image: ghcr.io/raizo-tcs/archive-r/pf6-windows-mingw
-            smoke: >-
-              cmake --version;
-              ninja --version;
-              python --version;
-              ruby --version;
-              git --version;
-              & "$env:MSYS2_ROOT\usr\bin\bash.exe" -lc 'which gcc && gcc --version'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -94,18 +81,6 @@ jobs:
             $tagArgs `
             --isolation=process `
             .
-
-      - name: Smoke test ${{ matrix.id }} toolchain
-        shell: powershell
-        run: |
-          $script = @'
-          ${{ matrix.smoke }}
-          '@
-          $bytes = [System.Text.Encoding]::Unicode.GetBytes($script)
-          $encoded = [Convert]::ToBase64String($bytes)
-          docker run --rm --isolation=process `
-            "${{ matrix.image }}:latest" `
-            -NoProfile -EncodedCommand $encoded
 
       - name: Push ${{ matrix.id }} image
         shell: powershell

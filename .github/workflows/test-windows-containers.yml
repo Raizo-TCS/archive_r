@@ -1,0 +1,123 @@
+name: Test Windows Containers
+
+on:
+  workflow_run:
+    workflows:
+      - Build Windows Containers
+    types:
+      - completed
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  test-images:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: pf5
+            image: ghcr.io/raizo-tcs/archive-r/pf5-windows-msvc
+            smoke: >-
+              cmake --version;
+              ninja --version;
+              python --version;
+              ruby --version;
+              git --version
+          - id: pf6
+            image: ghcr.io/raizo-tcs/archive-r/pf6-windows-mingw
+            smoke: >-
+              cmake --version;
+              ninja --version;
+              python --version;
+              ruby --version;
+              git --version;
+              & "$env:MSYS2_ROOT\usr\bin\bash.exe" -lc 'set -euo pipefail; export PATH="/ucrt64/bin:$PATH"; which gcc && gcc --version'
+    env:
+      SHA_TAG: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Show Docker info
+        shell: powershell
+        run: |
+          docker version
+          docker info
+
+      - name: Login to GitHub Container Registry
+        shell: pwsh
+        env:
+          CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || github.repository_owner }}
+        run: |
+          $creds = $env:CR_PAT
+          if (-not $creds -or $creds.Trim().Length -eq 0) {
+            throw "CR_PAT is empty. Configure GHCR_PAT (write:packages) or rely on default GITHUB_TOKEN."
+          }
+          $user = if ($env:CR_USER) { $env:CR_USER.Trim() } else { "${{ github.repository_owner }}" }
+          Write-Host "Logging into ghcr.io as $user"
+          $creds | docker login ghcr.io -u $user --password-stdin
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "docker login failed. Ensure GHCR terms are accepted for $user and GHCR_PAT has write:packages scope if required."
+            exit $LASTEXITCODE
+          }
+
+      - name: Pull ${{ matrix.id }} image
+        shell: powershell
+        run: |
+          docker pull "${{ matrix.image }}:${{ env.SHA_TAG }}"
+
+      - name: Smoke test ${{ matrix.id }} image
+        shell: powershell
+        run: |
+          $script = @'
+          ${{ matrix.smoke }}
+          '@
+          $bytes = [System.Text.Encoding]::Unicode.GetBytes($script)
+          $encoded = [Convert]::ToBase64String($bytes)
+          docker run --rm --isolation=process `
+            "${{ matrix.image }}:${{ env.SHA_TAG }}" `
+            -NoProfile -EncodedCommand $encoded
+
+      - name: Delete ${{ matrix.id }} image on failure
+        if: failure()
+        shell: pwsh
+        env:
+          IMAGE: ${{ matrix.image }}
+          OWNER: ${{ github.repository_owner }}
+          GH_TOKEN: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+        run: |
+          $packagePath = $env:IMAGE -replace '^ghcr\.io/[^/]+/', ''
+          if ([string]::IsNullOrWhiteSpace($packagePath)) {
+            throw "Unable to parse package path from $env:IMAGE"
+          }
+          $encoded = $packagePath -replace '/', '%2F'
+          $owner = $env:OWNER
+          function Remove-GhcrVersion {
+            param(
+              [string]$Scope
+            )
+            $base = "/$Scope/$owner/packages/container/$encoded"
+            try {
+              $json = gh api "$base/versions?per_page=100" 2>$null
+            } catch {
+              return $false
+            }
+            $versions = $json | ConvertFrom-Json
+            foreach ($version in $versions) {
+              if ($version.metadata.container.tags -contains $env:SHA_TAG) {
+                gh api -X DELETE "$base/versions/$($version.id)" | Out-Null
+                Write-Host "Deleted GHCR version $($version.id) containing tag $($env:SHA_TAG)."
+                return $true
+              }
+            }
+            return $false
+          }
+          if (-not (Remove-GhcrVersion -Scope 'orgs') -and -not (Remove-GhcrVersion -Scope 'users')) {
+            Write-Warning "Failed to delete GHCR version for tag $($env:SHA_TAG). Manual cleanup may be required."
+          }
