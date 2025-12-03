@@ -2,6 +2,7 @@
 # Copyright (c) 2025 archive_r Team
 
 import atexit
+import os
 import shutil
 import sys
 from pathlib import Path
