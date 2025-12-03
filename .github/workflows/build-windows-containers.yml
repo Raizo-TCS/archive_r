@@ -52,9 +52,19 @@ jobs:
       - name: Login to GitHub Container Registry
         shell: powershell
         env:
-          CR_PAT: ${{ github.token }}
+          CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || github.repository_owner }}
         run: |
-          echo $env:CR_PAT | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          if (-not $env:CR_PAT -or $env:CR_PAT.Trim().Length -eq 0) {
+            throw "CR_PAT is empty. Configure GHCR_PAT (write:packages) or rely on default GITHUB_TOKEN."
+          }
+          $user = if ($env:CR_USER) { $env:CR_USER.Trim() } else { "${{ github.repository_owner }}" }
+          Write-Host "Logging into ghcr.io as $user"
+          $env:CR_PAT | docker login ghcr.io -u $user --password-stdin
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "docker login failed. Ensure GHCR terms are accepted for $user and GHCR_PAT has write:packages scope if required."
+            exit $LASTEXITCODE
+          }
 
       - name: Build ${{ matrix.id }} image
         shell: powershell
