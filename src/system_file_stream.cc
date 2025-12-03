@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 archive_r Team
 
+#ifdef _WIN32
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "system_file_stream.h"
 #include "archive_r/path_hierarchy_utils.h"
 #include "entry_fault_error.h"
@@ -12,6 +16,13 @@
 #include <grp.h>
 #include <pwd.h>
 #include <unistd.h>
+#else
+#include <io.h>
+#define fseeko _fseeki64
+#define ftello _ftelli64
+#ifndef S_IFLNK
+#define S_IFLNK 0xA000
+#endif
 #endif
 #include <stdexcept>
 #include <sys/stat.h>
