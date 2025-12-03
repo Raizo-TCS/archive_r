@@ -7,6 +7,7 @@ on:
       - main
     paths:
       - 'containers/windows/**'
+      - 'ci/windows/**'
       - '.github/workflows/ci-windows-platforms.yml'
 
 permissions:
