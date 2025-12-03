@@ -11,6 +11,13 @@
 #include <unordered_set>
 #include <vector>
 
+#ifdef _WIN32
+#ifndef _MODE_T_DEFINED_WIN32
+typedef unsigned short mode_t;
+#define _MODE_T_DEFINED_WIN32
+#endif
+#endif
+
 #include "archive_r/multi_volume_stream_base.h"
 #include "archive_r/entry_metadata.h"
 #include "archive_r/path_hierarchy.h"

@@ -15,6 +15,13 @@
 #include <unordered_set>
 #include <vector>
 
+#ifdef _WIN32
+#ifndef _MODE_T_DEFINED_WIN32
+typedef unsigned short mode_t;
+#define _MODE_T_DEFINED_WIN32
+#endif
+#endif
+
 namespace archive_r {
 
 struct archive_deleter {
