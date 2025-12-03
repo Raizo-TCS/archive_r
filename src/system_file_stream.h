@@ -16,6 +16,8 @@
 typedef unsigned short mode_t;
 #define _MODE_T_DEFINED_WIN32
 #endif
+typedef int uid_t;
+typedef int gid_t;
 #endif
 
 #include "archive_r/multi_volume_stream_base.h"

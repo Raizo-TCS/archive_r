@@ -8,13 +8,14 @@
 #include <algorithm>
 #include <cerrno>
 #include <filesystem>
+#ifndef _WIN32
 #include <grp.h>
 #include <pwd.h>
+#include <unistd.h>
+#endif
 #include <stdexcept>
 #include <sys/stat.h>
 #include <system_error>
-#include <string_view>
-#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -22,6 +23,7 @@ namespace archive_r {
 
 namespace {
 
+#ifndef _WIN32
 static long determine_buffer_size(int name) {
   long size = ::sysconf(name);
   if (size < 0) {
@@ -55,6 +57,10 @@ static bool lookup_groupname(gid_t gid, std::string &name_out) {
   }
   return false;
 }
+#else
+static bool lookup_username(uid_t, std::string &) { return false; }
+static bool lookup_groupname(gid_t, std::string &) { return false; }
+#endif
 
 } // namespace
 
