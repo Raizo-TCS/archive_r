@@ -293,10 +293,19 @@ if [ "$BINDINGS_ONLY" = false ]; then
 
     log_info "Configuring with CMake..."
     cd "$BUILD_DIR"
-    cmake .. -DCMAKE_BUILD_TYPE=Release
+    # CMP0074: find_package() uses <PackageName>_ROOT variables
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0074=NEW
 
     log_info "Building core library..."
-    make -j$(nproc)
+    # Use cmake --build for cross-platform compatibility (handles Makefiles, MSVC, Ninja, etc.)
+    # Detect CPU count for parallel build
+    CPU_COUNT=1
+    if command -v nproc >/dev/null 2>&1; then
+        CPU_COUNT=$(nproc)
+    elif command -v sysctl >/dev/null 2>&1; then
+        CPU_COUNT=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+    fi
+    cmake --build . --config Release --parallel "$CPU_COUNT"
 
     if [ -f "$BUILD_DIR/libarchive_r_core.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
         echo ""

@@ -51,6 +51,8 @@ switch ($Platform) {
         }
         $env:MSYSTEM = "UCRT64"
         $env:CHERE_INVOKING = "1"
+        # Force MinGW Makefiles generator to avoid NMake default
+        $env:CMAKE_GENERATOR = "MinGW Makefiles"
         & $bashExe -lc $scriptBody
         if ($LASTEXITCODE -ne 0) {
             throw "Build failed with exit code $LASTEXITCODE"
