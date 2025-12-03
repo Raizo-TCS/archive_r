@@ -78,8 +78,10 @@ jobs:
             "--rm",
             "--isolation=process",
             "-e", "ARCHIVE_R_WORKSPACE=C:\workspace",
-            "-v", "$workspace:C:\workspace"
+            "--mount", "type=bind,source=$workspace,target=C:\workspace"
           )
+          # Ensure imageRef uses the pulled tag (which is just the image name now)
+          $imageRef = "$env:SELECTED_TAG"
           docker run @runArgs `
             $imageRef `
             powershell -NoLogo -ExecutionPolicy Bypass -File C:\workspace\ci\windows\run_platform_ci.ps1 -Platform $env:PLATFORM_ID
