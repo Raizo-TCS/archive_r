@@ -294,7 +294,20 @@ if [ "$BINDINGS_ONLY" = false ]; then
     log_info "Configuring with CMake..."
     cd "$BUILD_DIR"
     # CMP0074: find_package() uses <PackageName>_ROOT variables
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0074=NEW
+    CMAKE_ARGS=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0074=NEW)
+
+    # Detect Windows/MinGW environment and set generator if needed
+    if [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
+        if ! command -v make >/dev/null 2>&1 && command -v mingw32-make >/dev/null 2>&1; then
+            log_info "Detected MinGW environment with mingw32-make. Using 'MinGW Makefiles' generator."
+            CMAKE_ARGS+=(-G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make)
+        elif command -v make >/dev/null 2>&1; then
+            log_info "Detected MinGW/MSYS environment with make. Using 'Unix Makefiles' generator."
+            CMAKE_ARGS+=(-G "Unix Makefiles")
+        fi
+    fi
+
+    cmake .. "${CMAKE_ARGS[@]}"
 
     log_info "Building core library..."
     # Use cmake --build for cross-platform compatibility (handles Makefiles, MSVC, Ninja, etc.)
