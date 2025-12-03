@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Iterable, List, Tuple
 
 from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 
 
 binding_root = Path(__file__).resolve().parent
@@ -146,6 +147,21 @@ else:
     sources.extend([str(unit) for unit in fallback_units])
 
 
+class BuildExt(build_ext):
+    def build_extensions(self):
+        compiler_type = self.compiler.compiler_type
+        opts = []
+        if compiler_type == 'msvc':
+            opts.append('/std:c++17')
+        else:
+            opts.append('-std=c++17')
+
+        for ext in self.extensions:
+            ext.extra_compile_args = opts
+
+        build_ext.build_extensions(self)
+
+
 ext_modules = [
     Extension(
         'archive_r',
@@ -158,7 +174,6 @@ ext_modules = [
         libraries=['archive'],
         extra_objects=extra_objects,
         language='c++',
-        extra_compile_args=['-std=c++17'],
         define_macros=[('ARCHIVE_R_VERSION', f'"{package_version}"')],
     ),
 ]
@@ -167,6 +182,7 @@ ext_modules = [
 setup(
     version=package_version,
     ext_modules=ext_modules,
+    cmdclass={'build_ext': BuildExt},
     long_description=read_readme(),
     long_description_content_type='text/markdown',
     license_files=['LICENSE.txt'],
