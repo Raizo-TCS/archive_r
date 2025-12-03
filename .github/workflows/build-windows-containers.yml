@@ -105,7 +105,7 @@ jobs:
           $encoded = [Convert]::ToBase64String($bytes)
           docker run --rm --isolation=process `
             "${{ matrix.image }}:latest" `
-            powershell -NoLogo -NoProfile -EncodedCommand $encoded
+            -NoProfile -EncodedCommand $encoded
 
       - name: Push ${{ matrix.id }} image
         shell: powershell
