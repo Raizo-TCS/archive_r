@@ -64,7 +64,6 @@ jobs:
     name: ${{ matrix.platform }} macOS Build & Test
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
-    needs: pf1-linux
     strategy:
       fail-fast: false
       matrix:
@@ -141,12 +140,11 @@ jobs:
           retention-days: 7
 
   windows-platforms:
+  windows-platforms:
     name: ${{ matrix.display }} Windows Container Build & Test
     runs-on: windows-2022
     timeout-minutes: 120
-    needs: pf1-linux
-    strategy:
-      fail-fast: false
+    strategy:st: false
       matrix:
         include:
           - id: pf5
@@ -168,13 +166,20 @@ jobs:
       - name: Login to GitHub Container Registry
         shell: pwsh
         env:
-          CR_PAT: ${{ github.token }}
+          CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || 'raizo-tcs' }}
         run: |
           $creds = $env:CR_PAT
-          if (-not $creds) {
-            throw "GITHUB_TOKEN not available"
+          if (-not $creds -or $creds.Trim().Length -eq 0) {
+            throw "CR_PAT is empty. Configure GHCR_PAT (write:packages) or rely on default GITHUB_TOKEN."
           }
-          $creds | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          $user = if ($env:CR_USER) { $env:CR_USER.Trim() } else { "${{ github.repository_owner }}" }
+          Write-Host "Logging into ghcr.io as $user"
+          $creds | docker login ghcr.io -u $user --password-stdin
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "docker login failed. Ensure GHCR terms are accepted for $user and GHCR_PAT has write:packages scope if required."
+            exit $LASTEXITCODE
+          }
 
       - name: Pull ${{ matrix.display }} image
         id: pull-image
