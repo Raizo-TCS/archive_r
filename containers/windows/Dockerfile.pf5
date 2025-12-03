@@ -25,18 +25,18 @@ RUN git clone https://github.com/microsoft/vcpkg.git C:\vcpkg ; `
     .\vcpkg.exe integrate install ; `
     .\vcpkg.exe install libarchive:x64-windows --clean-after-build
 
-RUN $additionalPaths = @(
-        'C:\Windows\system32',
-        'C:\Windows',
-        'C:\Windows\System32\WindowsPowerShell\v1.0',
-        'C:\ProgramData\chocolatey\bin',
-        'C:\Program Files\CMake\bin',
-        'C:\Program Files\Git\cmd',
-        'C:\Program Files\Python311',
-        'C:\Program Files\Python311\Scripts',
-        'C:\Program Files\Ruby32-x64\bin',
-        'C:\vcpkg',
-        'C:\vcpkg\installed\x64-windows\bin'
+RUN $additionalPaths = @(`
+        'C:\Windows\system32',`
+        'C:\Windows',`
+        'C:\Windows\System32\WindowsPowerShell\v1.0',`
+        'C:\ProgramData\chocolatey\bin',`
+        'C:\Program Files\CMake\bin',`
+        'C:\Program Files\Git\cmd',`
+        'C:\Program Files\Python311',`
+        'C:\Program Files\Python311\Scripts',`
+        'C:\Program Files\Ruby32-x64\bin',`
+        'C:\vcpkg',`
+        'C:\vcpkg\installed\x64-windows\bin'`
     ); `
     $existing = [Environment]::GetEnvironmentVariable('PATH', 'Machine'); `
     $newPath = ($additionalPaths + $existing) -join ';'; `
