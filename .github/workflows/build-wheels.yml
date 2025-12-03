@@ -226,11 +226,11 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:d7b891772977deec55c30c21021eca682a7a6acd"
+          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest"
           Write-Host "Pulling $image..."
           docker pull $image
           
-          $dest = "${{ runner.temp }}\vcpkg_libarchive"
+          $dest = "${{ github.workspace }}\vcpkg_libarchive"
           if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
           mkdir $dest
           
