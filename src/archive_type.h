@@ -20,6 +20,8 @@
 typedef unsigned short mode_t;
 #define _MODE_T_DEFINED_WIN32
 #endif
+#include <basetsd.h>
+using ssize_t = SSIZE_T;
 #endif
 
 namespace archive_r {
