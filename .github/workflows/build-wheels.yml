@@ -226,7 +226,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:1197fe6a5b8265d890cf7ddffa5c0d80659ee2a9"
+          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:d7b891772977deec55c30c21021eca682a7a6acd"
           Write-Host "Pulling $image..."
           docker pull $image
           

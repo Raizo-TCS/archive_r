@@ -20,10 +20,10 @@ jobs:
         include:
           - id: pf5
             platform: pf5
-            image: ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:1197fe6a5b8265d890cf7ddffa5c0d80659ee2a9
+            image: ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:d7b891772977deec55c30c21021eca682a7a6acd
           - id: pf6
             platform: pf6
-            image: ghcr.io/raizo-tcs/archive_r/pf6-windows-mingw:1197fe6a5b8265d890cf7ddffa5c0d80659ee2a9
+            image: ghcr.io/raizo-tcs/archive_r/pf6-windows-mingw:d7b891772977deec55c30c21021eca682a7a6acd
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
