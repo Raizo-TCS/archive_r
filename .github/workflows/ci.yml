@@ -185,13 +185,13 @@ jobs:
           $tags = @("${{ github.sha }}", "latest")
           $selected = $null
           foreach ($tag in $tags) {
-            try {
-              docker pull "$env:IMAGE_NAME`:$tag"
+            Write-Host "Attempting to pull $env:IMAGE_NAME`:$tag..."
+            docker pull "$env:IMAGE_NAME`:$tag"
+            if ($LASTEXITCODE -eq 0) {
               $selected = $tag
               break
-            } catch {
-              Write-Host "Failed to pull $env:IMAGE_NAME`:$tag"
             }
+            Write-Host "Failed to pull $env:IMAGE_NAME`:$tag"
           }
           if (-not $selected) {
             throw "Unable to pull any tag for $env:IMAGE_NAME"

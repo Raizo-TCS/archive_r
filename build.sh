@@ -528,7 +528,10 @@ package_python_binding() {
     python3 -m build --sdist --wheel --outdir "$dist_dir"
     popd >/dev/null
 
-    mapfile -t dist_artifacts < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
+    dist_artifacts=()
+    while IFS= read -r line; do
+        dist_artifacts+=("$line")
+    done < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
     if [ "${#dist_artifacts[@]}" -eq 0 ]; then
         log_error "No distribution artifacts produced for Python binding"
         return 1
