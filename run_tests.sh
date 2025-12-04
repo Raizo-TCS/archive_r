@@ -221,15 +221,25 @@ prepare_ruby_gem_env() {
     rm -rf "$RUBY_GEM_HOME"
     mkdir -p "$RUBY_GEM_HOME"
     mkdir -p "$LOG_DIR"
-    local ruby_system_paths
-    ruby_system_paths="$(ruby -rrubygems -e 'puts Gem.path.join(":")' 2>/dev/null || true)"
 
-    local ruby_gem_path="$RUBY_GEM_HOME"
-    if [ -n "$ruby_system_paths" ]; then
-        ruby_gem_path="$ruby_gem_path:$ruby_system_paths"
+    local path_sep
+    path_sep=$(ruby -e 'print File::PATH_SEPARATOR')
+
+    local ruby_gem_home_env="$RUBY_GEM_HOME"
+    # Convert to Windows path format if needed (for MinGW/MSYS2 environments)
+    if [ "$path_sep" = ";" ] && command -v cygpath >/dev/null 2>&1; then
+        ruby_gem_home_env=$(cygpath -m "$RUBY_GEM_HOME")
     fi
 
-    local install_env=("GEM_HOME=$RUBY_GEM_HOME" "GEM_PATH=$ruby_gem_path")
+    local ruby_system_paths
+    ruby_system_paths="$(ruby -rrubygems -e "puts Gem.path.join('$path_sep')" 2>/dev/null || true)"
+
+    local ruby_gem_path="$ruby_gem_home_env"
+    if [ -n "$ruby_system_paths" ]; then
+        ruby_gem_path="${ruby_gem_path}${path_sep}${ruby_system_paths}"
+    fi
+
+    local install_env=("GEM_HOME=$ruby_gem_home_env" "GEM_PATH=$ruby_gem_path")
     if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
         install_env+=("ARCHIVE_R_CORE_ROOT=$BUILD_DIR")
     fi
@@ -244,7 +254,7 @@ prepare_ruby_gem_env() {
         return 1
     fi
 
-    RUBY_TEST_ENV=("GEM_HOME=$RUBY_GEM_HOME" "GEM_PATH=$ruby_gem_path")
+    RUBY_TEST_ENV=("GEM_HOME=$ruby_gem_home_env" "GEM_PATH=$ruby_gem_path")
     return 0
 }
 
