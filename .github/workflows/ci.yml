@@ -139,27 +139,15 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  windows-platforms:
-    name: ${{ matrix.display }} Windows Build & Test
+  pf5-msvc:
+    name: PF5 (MSVC) Windows Build & Test
     runs-on: windows-2022
     timeout-minutes: 60
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - id: pf5
-            display: PF5 (MSVC)
-            type: msvc
-          - id: pf6
-            display: PF6 (MinGW)
-            type: mingw
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- PF5 (MSVC) Steps ---
       - name: Clean PATH (MSVC)
-        if: matrix.type == 'msvc'
         shell: pwsh
         run: |
           # Remove Strawberry Perl and other potential MinGW sources from PATH to ensure MSVC isolation
@@ -168,19 +156,16 @@ jobs:
           echo "PATH=$newPath" >> $env:GITHUB_ENV
 
       - name: Setup Python (MSVC)
-        if: matrix.type == 'msvc'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Setup Ruby (MSVC)
-        if: matrix.type == 'msvc'
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
 
       - name: Install Dependencies (MSVC)
-        if: matrix.type == 'msvc'
         shell: pwsh
         run: |
           vcpkg install libarchive:x64-windows
@@ -190,12 +175,10 @@ jobs:
           echo "PATH=$root\bin;$env:PATH" >> $env:GITHUB_ENV
 
       - name: Install Python Build Deps (MSVC)
-        if: matrix.type == 'msvc'
         run: |
           python -m pip install --upgrade pip setuptools wheel pybind11 build twine
 
       - name: Build and Test (MSVC)
-        if: matrix.type == 'msvc'
         shell: bash
         env:
           CMAKE_GENERATOR: "Visual Studio 17 2022"
@@ -203,9 +186,27 @@ jobs:
           ./build.sh --rebuild-all --package-python --package-ruby
           python .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
 
-      # --- PF6 (MinGW) Steps ---
+      - name: Upload PF5 artifacts
+        if: ${{ always() && env.ACT != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-r-pf5-${{ github.sha }}
+          path: |
+            build/bindings/python/dist/*.whl
+            build/bindings/ruby/*.gem
+            build/logs/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  pf6-mingw:
+    name: PF6 (MinGW) Windows Build & Test
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Setup MSYS2 (MinGW)
-        if: matrix.type == 'mingw'
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -224,24 +225,22 @@ jobs:
             mingw-w64-ucrt-x86_64-python-wheel
 
       - name: Install Python Build Deps (MinGW)
-        if: matrix.type == 'mingw'
         shell: msys2 {0}
         run: |
           python3 -m ensurepip
           python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine
 
       - name: Build and Test (MinGW)
-        if: matrix.type == 'mingw'
         shell: msys2 {0}
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
           python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
 
-      - name: Upload ${{ matrix.display }} artifacts
+      - name: Upload PF6 artifacts
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: archive-r-${{ matrix.id }}-${{ github.sha }}
+          name: archive-r-pf6-${{ github.sha }}
           path: |
             build/bindings/python/dist/*.whl
             build/bindings/ruby/*.gem
@@ -251,6 +250,6 @@ jobs:
 
   build-wheels:
     name: Build Wheels
-    needs: [pf1-linux, macos-platforms, windows-platforms]
+    needs: [pf1-linux, macos-platforms, pf5-msvc, pf6-mingw]
     uses: ./.github/workflows/build-wheels.yml
     secrets: inherit
