@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
 from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
 
 
 binding_root = Path(__file__).resolve().parent
@@ -222,15 +223,21 @@ base_include_dirs = [
 if include_dirs_override:
     base_include_dirs.extend(include_dirs_override)
 
-compile_args: List[str]
-if is_windows:
-    compile_args = ['/std:c++17', '/EHsc', '/DNOMINMAX']
-else:
-    compile_args = ['-std=c++17', '-fvisibility=hidden']
-    if system_name == 'darwin':
-        compile_args.append('-stdlib=libc++')
-
-runtime_dirs = runtime_library_dirs if not is_windows else []
+class BuildExt(build_ext):
+    def build_extensions(self):
+        compiler_type = self.compiler.compiler_type
+        opts = []
+        if compiler_type == 'msvc':
+            opts = ['/std:c++17', '/EHsc', '/DNOMINMAX']
+        else:
+            opts = ['-std=c++17', '-fvisibility=hidden']
+            if system_name == 'darwin':
+                opts.append('-stdlib=libc++')
+        
+        for ext in self.extensions:
+            ext.extra_compile_args = opts
+        
+        build_ext.build_extensions(self)
 
 ext_modules = [
     Extension(
@@ -241,7 +248,6 @@ ext_modules = [
         libraries=libraries,
         extra_objects=extra_objects,
         language='c++',
-        extra_compile_args=compile_args,
         extra_link_args=extra_link_args,
         runtime_library_dirs=runtime_dirs,
         define_macros=[('ARCHIVE_R_VERSION', f'"{package_version}"')],
@@ -251,6 +257,7 @@ ext_modules = [
 
 setup(
     version=package_version,
+    cmdclass={'build_ext': BuildExt},
     ext_modules=ext_modules,
     long_description=read_readme(),
     long_description_content_type='text/markdown',
