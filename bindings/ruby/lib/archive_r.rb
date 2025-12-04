@@ -9,8 +9,13 @@ rescue LoadError
     # Fallback to the local development layout (bindings/ruby/archive_r.so)
     require_relative '../archive_r'
   rescue LoadError
-    # Fallback for Windows/MinGW where extension might be directly in lib/ or current dir
-    require 'archive_r/archive_r'
+    begin
+      # Fallback for Windows/MinGW where extension might be directly in lib/ or current dir
+      require 'archive_r/archive_r'
+    rescue LoadError
+      # Last resort: try requiring without directory prefix (common in some Windows setups)
+      require 'archive_r'
+    end
   end
 end
 
