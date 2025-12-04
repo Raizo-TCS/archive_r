@@ -806,11 +806,14 @@ if [ -f "$ROOT_DIR/bindings/ruby/archive_r.gemspec" ]; then
         TESTS_RUN=$((TESTS_RUN + 1))
 
         pushd "$ROOT_DIR/bindings/ruby" >/dev/null
-        if env "${RUBY_TEST_ENV[@]}" ruby test/test_traverser.rb > /dev/null 2>&1; then
+        if env "${RUBY_TEST_ENV[@]}" ruby test/test_traverser.rb > "$LOG_DIR/ruby_test.log" 2>&1; then
             log_success "Test PASSED: ruby_binding"
             TESTS_PASSED=$((TESTS_PASSED + 1))
         else
             log_error "Test FAILED: ruby_binding"
+            echo "--- Ruby Test Output ---"
+            cat "$LOG_DIR/ruby_test.log"
+            echo "------------------------"
             TESTS_FAILED=$((TESTS_FAILED + 1))
         fi
         popd >/dev/null
@@ -832,11 +835,14 @@ if [ -d "$ROOT_DIR/bindings/python" ] && (ls "$ROOT_DIR/bindings/python"/*.so >/
         python_cmd="python"
     fi
     
-    if $python_cmd test/test_traverser.py > /dev/null 2>&1; then
+    if $python_cmd test/test_traverser.py > "$LOG_DIR/python_test.log" 2>&1; then
         log_success "Test PASSED: python_binding"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
         log_error "Test FAILED: python_binding"
+        echo "--- Python Test Output ---"
+        cat "$LOG_DIR/python_test.log"
+        echo "--------------------------"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     cd "$ROOT_DIR"
