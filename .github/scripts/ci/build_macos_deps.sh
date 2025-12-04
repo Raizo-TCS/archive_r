@@ -56,6 +56,8 @@ export CMAKE_PREFIX_PATH="$INSTALL_PREFIX"
 
 build_cmake "libarchive" "sources/libarchive-${LIBARCHIVE_VERSION}" \
     -DBUILD_SHARED_LIBS=OFF \
+    -DENABLE_SHARED=OFF \
+    -DENABLE_STATIC=ON \
     -DENABLE_TEST=OFF \
     -DENABLE_COVERAGE=OFF \
     -DENABLE_ACL=OFF \
@@ -75,5 +77,8 @@ build_cmake "libarchive" "sources/libarchive-${LIBARCHIVE_VERSION}" \
     -DENABLE_B2=OFF \
     -DENABLE_LZMA=ON \
     -DENABLE_ZSTD=ON
+
+# Ensure no shared libraries are left to confuse the linker
+rm -f "$INSTALL_PREFIX/lib"/*.dylib
 
 echo "Build complete. Libraries installed to $INSTALL_PREFIX"
