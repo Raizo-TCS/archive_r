@@ -98,6 +98,9 @@ jobs:
           echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >>"$GITHUB_ENV"
           echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >>"$GITHUB_ENV"
           echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >>"$GITHUB_ENV"
+          # Link statically against libarchive and its dependencies (zstd, lzma)
+          # We also include system libraries (z, bz2, iconv) that libarchive might use
+          echo "LIBARCHIVE_LIBRARIES=archive,zstd,lzma,z,bz2,iconv" >>"$GITHUB_ENV"
 
       - name: Build and validate ${{ matrix.arch }} wheel
         env:

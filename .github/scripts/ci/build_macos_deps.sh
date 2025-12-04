@@ -55,6 +55,7 @@ tar xf sources/libarchive.tar.xz -C sources
 export CMAKE_PREFIX_PATH="$INSTALL_PREFIX"
 
 build_cmake "libarchive" "sources/libarchive-${LIBARCHIVE_VERSION}" \
+    -DBUILD_SHARED_LIBS=OFF \
     -DENABLE_TEST=OFF \
     -DENABLE_COVERAGE=OFF \
     -DENABLE_ACL=OFF \
