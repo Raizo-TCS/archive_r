@@ -240,8 +240,14 @@ prepare_ruby_gem_env() {
     fi
 
     local install_env=("GEM_HOME=$ruby_gem_home_env" "GEM_PATH=$ruby_gem_path")
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
-        install_env+=("ARCHIVE_R_CORE_ROOT=$BUILD_DIR")
+    
+    local core_root="$BUILD_DIR"
+    if [ "$path_sep" = ";" ] && command -v cygpath >/dev/null 2>&1; then
+        core_root=$(cygpath -m "$BUILD_DIR")
+    fi
+
+    if [ -f "$BUILD_DIR/libarchive_r_core.a" ] || [ -f "$BUILD_DIR/libarchive_r_core.lib" ] || [ -f "$BUILD_DIR/Release/libarchive_r_core.lib" ]; then
+        install_env+=("ARCHIVE_R_CORE_ROOT=$core_root")
     fi
 
     : > "$RUBY_GEM_INSTALL_LOG"
@@ -821,7 +827,12 @@ if [ -d "$ROOT_DIR/bindings/python" ] && (ls "$ROOT_DIR/bindings/python"/*.so >/
     TESTS_RUN=$((TESTS_RUN + 1))
     
     cd "$ROOT_DIR/bindings/python"
-    if python3 test/test_traverser.py > /dev/null 2>&1; then
+    local python_cmd="python3"
+    if ! command -v python3 >/dev/null 2>&1; then
+        python_cmd="python"
+    fi
+    
+    if $python_cmd test/test_traverser.py > /dev/null 2>&1; then
         log_success "Test PASSED: python_binding"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
