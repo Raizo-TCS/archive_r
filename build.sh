@@ -458,7 +458,9 @@ package_ruby_binding() {
 
     local gem_version
     local gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
+    gem_name=$(echo "$gem_name" | tr -d '\r')
     local gem_version=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.version" 2>/dev/null || true)
+    gem_version=$(echo "$gem_version" | tr -d '\r')
 
     rm -f "${gem_name}"-*.gem
     if ! gem build archive_r.gemspec; then
@@ -472,7 +474,9 @@ package_ruby_binding() {
     if [ -n "$gem_version" ] && [ -f "${gem_name}-${gem_version}.gem" ]; then
         gem_file="${gem_name}-${gem_version}.gem"
     else
-        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
+        # Use portable find (avoid -printf)
+        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}-*.gem" | sort | tail -n 1)
+        gem_file=$(basename "$gem_file")
     fi
 
     if [ -z "$gem_file" ] || [ ! -f "$gem_file" ]; then
@@ -506,9 +510,9 @@ build_python_binding() {
     # Build extension in-place
     "$PYTHON_EXEC" setup.py build_ext --inplace
     
-    if ls *.so 1>/dev/null 2>&1; then
+    if ls *.so 1>/dev/null 2>&1 || ls *.pyd 1>/dev/null 2>&1; then
         log_success "Python binding built successfully"
-        log_success "  Extension: $ROOT_DIR/bindings/python/*.so"
+        log_success "  Extension: $ROOT_DIR/bindings/python/*.{so,pyd}"
         cd "$ROOT_DIR"
         return 0
     else
