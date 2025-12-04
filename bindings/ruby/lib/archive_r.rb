@@ -5,8 +5,13 @@ begin
   # Prefer the packaged gem layout (lib/archive_r/archive_r.so)
   require_relative 'archive_r/archive_r'
 rescue LoadError
-  # Fallback to the local development layout (bindings/ruby/archive_r.so)
-  require_relative '../archive_r'
+  begin
+    # Fallback to the local development layout (bindings/ruby/archive_r.so)
+    require_relative '../archive_r'
+  rescue LoadError
+    # Fallback for Windows/MinGW where extension might be directly in lib/ or current dir
+    require 'archive_r/archive_r'
+  end
 end
 
 module Archive_r

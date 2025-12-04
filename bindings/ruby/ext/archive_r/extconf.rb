@@ -91,10 +91,18 @@ end
 
 # Try to link with pre-built static library first
 prebuilt_lib = File.join(archive_r_lib_dir, 'libarchive_r_core.a')
+prebuilt_lib_win = File.join(archive_r_lib_dir, 'archive_r_core.lib')
+prebuilt_lib_win_release = File.join(archive_r_lib_dir, 'Release', 'archive_r_core.lib')
 
 if File.exist?(prebuilt_lib)
   $LOCAL_LIBS << " #{prebuilt_lib}"
-  puts "Using pre-built archive_r core library"
+  puts "Using pre-built archive_r core library (Unix style)"
+elsif File.exist?(prebuilt_lib_win)
+  $LOCAL_LIBS << " \"#{prebuilt_lib_win}\""
+  puts "Using pre-built archive_r core library (Windows style)"
+elsif File.exist?(prebuilt_lib_win_release)
+  $LOCAL_LIBS << " \"#{prebuilt_lib_win_release}\""
+  puts "Using pre-built archive_r core library (Windows Release style)"
 else
   # Build from source as fallback (ensure the Ruby glue source is compiled too)
   puts "Pre-built library not found, will build from source"
