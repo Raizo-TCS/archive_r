@@ -158,6 +158,15 @@ jobs:
         uses: actions/checkout@v4
 
       # --- PF5 (MSVC) Steps ---
+      - name: Clean PATH (MSVC)
+        if: matrix.type == 'msvc'
+        shell: pwsh
+        run: |
+          # Remove Strawberry Perl and other potential MinGW sources from PATH to ensure MSVC isolation
+          $path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+          $newPath = ($path.Split(';') | Where-Object { $_ -notlike "*Strawberry*" -and $_ -notlike "*mingw*" } | Select-Object -Unique) -join ';'
+          echo "PATH=$newPath" >> $env:GITHUB_ENV
+
       - name: Setup Python (MSVC)
         if: matrix.type == 'msvc'
         uses: actions/setup-python@v5
@@ -201,6 +210,7 @@ jobs:
         with:
           msystem: UCRT64
           update: true
+          path-type: minimal # Isolate from System PATH (MSVC, Strawberry Perl, etc.)
           install: >-
             git
             base-devel
