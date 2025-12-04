@@ -233,3 +233,9 @@ jobs:
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
+
+  build-wheels:
+    name: Build Wheels
+    needs: [pf1-linux, macos-platforms, windows-platforms]
+    uses: ./.github/workflows/build-wheels.yml
+    secrets: inherit
