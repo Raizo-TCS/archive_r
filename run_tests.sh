@@ -203,7 +203,14 @@ prepare_ruby_gem_env() {
 
     local gem_file
     # Use portable find (avoid -printf)
+    # Try to find gem with exact name first, then fallback to broader search
     gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}-*.gem" | sort | tail -n 1)
+    
+    if [ -z "$gem_file" ]; then
+        # Fallback: try finding any gem starting with the name (handling potential underscore/hyphen mismatch)
+        gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}*.gem" | sort | tail -n 1)
+    fi
+    
     gem_file=$(basename "$gem_file")
 
     if [ -z "$gem_file" ] || [ ! -f "$gem_cache_dir/$gem_file" ]; then
@@ -799,7 +806,7 @@ else
 fi
 
 # Python Binding Tests
-if [ -d "$ROOT_DIR/bindings/python" ] && ls "$ROOT_DIR/bindings/python"/*.so 1>/dev/null 2>&1; then
+if [ -d "$ROOT_DIR/bindings/python" ] && (ls "$ROOT_DIR/bindings/python"/*.so >/dev/null 2>&1 || ls "$ROOT_DIR/bindings/python"/*.pyd >/dev/null 2>&1); then
     log_test_header "python_binding"
     TESTS_RUN=$((TESTS_RUN + 1))
     
