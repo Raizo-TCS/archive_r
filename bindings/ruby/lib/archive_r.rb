@@ -35,7 +35,7 @@ rescue LoadError
 end
 
 module Archive_r
-  VERSION = "0.1.1"
+  VERSION = "0.1.3"
   # Common archive formats excluding libarchive's mtree/raw pseudo formats
   STANDARD_FORMATS = %w[
     7zip ar cab cpio empty iso9660 lha rar tar warc xar zip
