@@ -4,8 +4,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["raizo.tcs"]
   spec.email         = ["raizo.tcs@users.noreply.github.com"]
   
-  spec.summary       = "Ruby bindings for archive_r library"
-  spec.description   = "Fast archive traversal library with support for nested archives and multipart files"
+  spec.summary       = "Ruby bindings for archive_r that traverse nested archives without temp extraction"
+  spec.description   = File.read(File.join(File.dirname(__FILE__), "README.md"))
   spec.homepage      = "https://github.com/raizo-tcs/archive_r"
   spec.license       = "MIT"
   
