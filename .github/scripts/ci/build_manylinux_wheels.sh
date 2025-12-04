@@ -8,6 +8,7 @@ WORKSPACE_DIR="/io"
 PYTHON_BINDINGS_DIR="${WORKSPACE_DIR}/bindings/python"
 TARGET_DIR="dist/${PYTHON_TAG}"
 TARGET_PATH="${PYTHON_BINDINGS_DIR}/${TARGET_DIR}"
+PYBIN="/opt/python/${PYTHON_TAG}/bin"
 
 install_build_dependencies() {
   yum install -y \
@@ -25,12 +26,7 @@ install_build_dependencies() {
     zlib-devel \
     bzip2-devel \
     xz-devel \
-    libxml2-devel \
-    python3 \
-    python3-pip \
-    python3-devel \
-    rust \
-    cargo >/dev/null
+    libxml2-devel >/dev/null
 }
 
 build_custom_libarchive() {
@@ -38,9 +34,13 @@ build_custom_libarchive() {
   curl -sSL "https://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VERSION}.tar.xz" -o /tmp/libarchive.tar.xz
   tar -xf /tmp/libarchive.tar.xz -C /tmp/libarchive --strip-components=1
   pushd /tmp/libarchive >/dev/null
-  ./configure --prefix=/opt/libarchive-custom >/dev/null
-  make -j"$(nproc)" >/dev/null
-  make install >/dev/null
+  echo "Configuring libarchive..."
+  ./configure --prefix=/opt/libarchive-custom
+
+  echo "Building libarchive..."
+  make -j"$(nproc)"
+  echo "Installing libarchive..."
+  make install
   popd >/dev/null
   echo '/opt/libarchive-custom/lib' > /etc/ld.so.conf.d/libarchive_custom.conf
   ldconfig
@@ -55,8 +55,6 @@ configure_toolchain_env() {
   export CPPFLAGS="${CPPFLAGS:+${CPPFLAGS} }-I/opt/libarchive-custom/include"
   export CXXFLAGS="${CXXFLAGS:+${CXXFLAGS} }-pthread -I/opt/libarchive-custom/include"
   export LDFLAGS="${LDFLAGS:+${LDFLAGS} }-pthread -L/opt/libarchive-custom/lib"
-  export CC="/opt/rh/gcc-toolset-14/root/usr/bin/gcc"
-  export CXX="/opt/rh/gcc-toolset-14/root/usr/bin/g++"
 }
 
 build_python_bindings() {
@@ -69,7 +67,6 @@ build_python_bindings() {
   rm -rf "${TARGET_PATH}"
   mkdir -p "${TARGET_PATH}"
 
-  PYBIN="/opt/python/${PYTHON_TAG}/bin"
   "${PYBIN}/pip" install --upgrade pip setuptools wheel pybind11 >/dev/null
   "${PYBIN}/pip" wheel . -w dist_temp/ --no-deps >/dev/null
   "${PYBIN}/pip" install auditwheel >/dev/null
@@ -120,8 +117,8 @@ finalize_artifacts() {
 
 install_build_dependencies
 build_custom_libarchive
-python3 -m pip install --upgrade pip >/dev/null
-python3 -m pip install --upgrade build twine virtualenv pybind11 >/dev/null
+"${PYBIN}/pip" install --upgrade pip >/dev/null
+"${PYBIN}/pip" install --upgrade build twine virtualenv pybind11 >/dev/null
 configure_toolchain_env
 build_python_bindings
 ensure_target_wheels
