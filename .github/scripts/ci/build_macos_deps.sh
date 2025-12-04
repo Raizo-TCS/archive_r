@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Configuration
-LIBARCHIVE_VERSION="3.7.4"
-XZ_VERSION="5.6.3"
-ZSTD_VERSION="1.5.6"
+LIBARCHIVE_VERSION="3.8.4"
+XZ_VERSION="5.6.4"
+ZSTD_VERSION="1.5.7"
 
 INSTALL_PREFIX="$PWD/libs"
 mkdir -p "$INSTALL_PREFIX"
