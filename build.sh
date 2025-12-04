@@ -320,14 +320,50 @@ if [ "$BINDINGS_ONLY" = false ]; then
     fi
     cmake --build . --config Release --parallel "$CPU_COUNT"
 
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
+    # Check for build artifacts (Unix-style or Windows-style)
+    # Windows MSVC builds often place artifacts in Release/ or Debug/ subdirectories
+    local lib_found=false
+    local exe_found=false
+    local lib_path=""
+    local exe_path=""
+
+    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.a"
+    elif [ -f "$BUILD_DIR/archive_r_core.lib" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/archive_r_core.lib"
+    elif [ -f "$BUILD_DIR/Release/archive_r_core.lib" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/Release/archive_r_core.lib"
+    fi
+
+    if [ -f "$BUILD_DIR/find_and_traverse" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/find_and_traverse"
+    elif [ -f "$BUILD_DIR/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/Release/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/Release/find_and_traverse.exe"
+    fi
+
+    if [ "$lib_found" = true ] && [ "$exe_found" = true ]; then
         echo ""
         log_success "Core build completed"
-        log_success "  Library: $BUILD_DIR/libarchive_r_core.a"
-        log_success "  Example: $BUILD_DIR/find_and_traverse"
+        log_success "  Library: $lib_path"
+        log_success "  Example: $exe_path"
         echo ""
     else
         log_error "Core build failed - expected files not found"
+        log_error "Checked locations:"
+        log_error "  $BUILD_DIR/libarchive_r_core.a"
+        log_error "  $BUILD_DIR/archive_r_core.lib"
+        log_error "  $BUILD_DIR/Release/archive_r_core.lib"
+        log_error "  $BUILD_DIR/find_and_traverse"
+        log_error "  $BUILD_DIR/find_and_traverse.exe"
+        log_error "  $BUILD_DIR/Release/find_and_traverse.exe"
         exit 1
     fi
 
