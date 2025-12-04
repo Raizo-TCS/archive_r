@@ -116,8 +116,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Python Build Deps (MinGW)
-        shell: msys2 {0}
+      - name: Install Python Build Deps
         run: |
           python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine --break-system-packages
 
@@ -187,7 +186,7 @@ jobs:
           CMAKE_GENERATOR: "Visual Studio 17 2022"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
-          python .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
+          python .github/scripts/ci/run_with_timeout.py 120 bash ./run_tests.sh
 
       - name: Upload PF5 artifacts
         if: ${{ always() && env.ACT != 'true' }}
@@ -226,6 +225,7 @@ jobs:
             mingw-w64-ucrt-x86_64-python-pip
             mingw-w64-ucrt-x86_64-python-setuptools
             mingw-w64-ucrt-x86_64-python-wheel
+            mingw-w64-ucrt-x86_64-rust
 
       - name: Install Python Build Deps (MinGW)
         shell: msys2 {0}

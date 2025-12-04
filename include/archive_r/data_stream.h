@@ -8,6 +8,7 @@
 #include <functional>
 #include <memory>
 #include <sys/types.h>
+#include <cstdint>
 
 #ifdef _WIN32
 #include <basetsd.h>
