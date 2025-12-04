@@ -178,7 +178,8 @@ jobs:
 
       - name: Install Python Build Deps (MSVC)
         run: |
-          python -m pip install --upgrade pip setuptools wheel pybind11 build twine virtualenv
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools wheel pybind11 build twine virtualenv
 
       - name: Build and Test (MSVC)
         shell: bash

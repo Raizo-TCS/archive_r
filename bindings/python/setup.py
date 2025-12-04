@@ -249,7 +249,7 @@ ext_modules = [
         extra_objects=extra_objects,
         language='c++',
         extra_link_args=extra_link_args,
-        runtime_library_dirs=runtime_dirs,
+        runtime_library_dirs=runtime_library_dirs,
         define_macros=[('ARCHIVE_R_VERSION', f'"{package_version}"')],
     ),
 ]
