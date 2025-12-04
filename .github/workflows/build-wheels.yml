@@ -70,6 +70,8 @@ jobs:
   build-macos-arch-wheels:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     strategy:
       fail-fast: false
       matrix:
@@ -78,10 +80,8 @@ jobs:
         include:
           - runner: macos-13
             arch: x86_64
-            deployment_target: '13.0'
           - runner: macos-14
             arch: arm64
-            deployment_target: '14.0'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -93,7 +93,6 @@ jobs:
 
       - name: Install libarchive
         env:
-          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment_target }}
           HOMEBREW_NO_INSTALL_CLEANUP: "1"
           HOMEBREW_NO_INSTALL_FROM_API: "1"
         run: |
@@ -111,14 +110,13 @@ jobs:
       - name: Build and validate ${{ matrix.arch }} wheel
         env:
           ARCH_NAME: ${{ matrix.arch }}
-          DEPLOYMENT_TARGET: ${{ matrix.deployment_target }}
           PY_VERSION: ${{ matrix.python-version }}
         run: |
           set -euo pipefail
           cd bindings/python
           python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
-          export MACOSX_DEPLOYMENT_TARGET="${DEPLOYMENT_TARGET}"
-          deployment_tag="${DEPLOYMENT_TARGET//./_}"
+          # MACOSX_DEPLOYMENT_TARGET is set in job env
+          deployment_tag="${MACOSX_DEPLOYMENT_TARGET//./_}"
           export ARCHFLAGS="-arch ${ARCH_NAME}"
           plat_name="macosx_${deployment_tag}_${ARCH_NAME}"
           target_dir="dist/macos-${ARCH_NAME}-${PY_VERSION}"
@@ -213,43 +211,22 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
-      - name: Login to GitHub Container Registry
-        shell: pwsh
-        env:
-          CR_PAT: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
-          CR_USER: ${{ secrets.GHCR_USER != '' && secrets.GHCR_USER || github.actor }}
-        run: |
-          $creds = $env:CR_PAT
-          if (-not $creds) {
-            throw "CR_PAT (or GITHUB_TOKEN) not available"
-          }
-          $user = $env:CR_USER
-          Write-Host "Logging into ghcr.io as $user"
-          $creds | docker login ghcr.io -u $user --password-stdin
-
-      - name: Extract libarchive from container
+      - name: Install libarchive
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest"
-          Write-Host "Pulling $image..."
-          docker pull $image
+          Write-Host "Installing libarchive via vcpkg..."
+          # vcpkg is pre-installed on windows-2022 runner
+          vcpkg install libarchive:x64-windows
           
-          $dest = "${{ github.workspace }}\vcpkg_libarchive"
-          if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
-          mkdir $dest
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) { $vcpkgRoot = "C:\vcpkg" }
+          $prefix = "$vcpkgRoot\installed\x64-windows"
           
-          Write-Host "Extracting libarchive using docker run..."
-          # Use docker run with volume mount to copy files to avoid docker cp issues
-          docker run --rm `
-            -v "${dest}:C:\out" `
-            $image `
-            powershell -Command "Copy-Item -Path 'C:\vcpkg\installed\x64-windows' -Destination 'C:\out' -Recurse -Force"
-          
-          $prefix = "$dest\x64-windows"
           if (-not (Test-Path $prefix)) {
-             throw "Failed to extract libarchive: $prefix does not exist"
+             throw "Failed to install libarchive: $prefix does not exist"
           }
+          
           $binPath = Join-Path $prefix 'bin'
           $includePath = Join-Path $prefix 'include'
           $libPath = Join-Path $prefix 'lib'

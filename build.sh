@@ -111,6 +111,8 @@ sync_ruby_vendor_sources() {
     if [ -f "$ROOT_DIR/LICENSE.txt" ]; then
         mkdir -p "$vendor_root"
         cp "$ROOT_DIR/LICENSE.txt" "$vendor_root/LICENSE.txt"
+        # Copy LICENSE.txt to bindings/ruby/LICENSE for gemspec inclusion
+        cp "$ROOT_DIR/LICENSE.txt" "$ROOT_DIR/bindings/ruby/LICENSE"
     fi
 
     return 0
@@ -119,6 +121,8 @@ sync_ruby_vendor_sources() {
 cleanup_ruby_vendor_sources() {
     local vendor_root="$ROOT_DIR/bindings/ruby/ext/archive_r/vendor/archive_r"
     rm -rf "$vendor_root"
+    # Remove temporary LICENSE file
+    rm -f "$ROOT_DIR/bindings/ruby/LICENSE"
 }
 
 purge_ruby_binding_artifacts() {
