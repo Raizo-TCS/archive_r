@@ -13,7 +13,6 @@
 #include <exception>
 #include <memory>
 #include <string>
-#include <sys/types.h>
 #include <vector>
 
 namespace archive_r {

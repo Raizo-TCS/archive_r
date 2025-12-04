@@ -8,7 +8,6 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
-#include <sys/types.h> // for mode_t
 #include <unordered_set>
 
 namespace archive_r {

@@ -3,13 +3,13 @@
 
 import atexit
 import os
+import platform
 import shutil
 import sys
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Optional, Tuple
 
 from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext
 
 
 binding_root = Path(__file__).resolve().parent
@@ -21,6 +21,55 @@ vendor_src = vendor_root / 'src'
 local_readme = binding_root / 'README.md'
 local_license = binding_root / 'LICENSE.txt'
 local_version = binding_root / 'VERSION'
+system_name = platform.system().lower()
+is_windows = system_name == 'windows' or os.name == 'nt'
+print(f"DEBUG: system_name={system_name}, os.name={os.name}, sys.platform={sys.platform}")
+libraries: List[str] = ['archive']
+library_dirs: List[str] = []
+include_dirs_override: List[str] = []
+extra_link_args: List[str] = []
+runtime_library_dirs: List[str] = []
+
+
+def extend_path_entries(target: List[str], raw_value: Optional[str]) -> None:
+    if not raw_value:
+        return
+    for entry in raw_value.split(os.pathsep):
+        normalized = entry.strip()
+        if normalized:
+            target.append(normalized)
+
+
+def configure_libarchive_paths_from_root(root_value: Optional[str]) -> None:
+    if not root_value:
+        return
+
+    root = Path(root_value).expanduser().resolve(strict=False)
+    include_candidates = [root / 'include']
+    lib_candidates = [root / 'lib', root / 'lib64', root / 'lib/x86_64']
+
+    for candidate in include_candidates:
+        if candidate.exists():
+            include_dirs_override.append(str(candidate))
+
+    for candidate in lib_candidates:
+        if candidate.exists():
+            library_dirs.append(str(candidate))
+
+    if not is_windows:
+        for candidate in lib_candidates:
+            if candidate.exists():
+                runtime_library_dirs.append(str(candidate))
+
+
+configure_libarchive_paths_from_root(os.environ.get('LIBARCHIVE_ROOT'))
+extend_path_entries(include_dirs_override, os.environ.get('LIBARCHIVE_INCLUDE_DIRS'))
+extend_path_entries(library_dirs, os.environ.get('LIBARCHIVE_LIBRARY_DIRS'))
+extend_path_entries(runtime_library_dirs, os.environ.get('LIBARCHIVE_RUNTIME_DIRS'))
+
+user_defined_libs = os.environ.get('LIBARCHIVE_LIBRARIES')
+if user_defined_libs:
+    libraries = [name.strip() for name in user_defined_libs.split(',') if name.strip()]
 
 generated_paths: List[Tuple[Path, str]] = []
 
@@ -100,7 +149,7 @@ def read_readme() -> str:
     for candidate in paths:
         if candidate.exists():
             return candidate.read_text(encoding='utf-8')
-    return 'Python bindings for archive_r that recursively traverse nested archives without creating temporary extraction files.'
+    return 'Fast archive traversal library with support for nested archives and multipart files.'
 
 
 def resolve_core_paths() -> Tuple[Path, Path]:
@@ -134,9 +183,26 @@ core_include_dir, core_src_dir = resolve_core_paths()
 sources = ['src/archive_r_py.cc']
 
 # Try to use pre-built library first
+
+def find_prebuilt_library() -> Optional[Path]:
+    candidates = [
+        archive_r_build / 'libarchive_r_core.lib',
+        archive_r_build / 'libarchive_r_core.a',
+        archive_r_build / 'archive_r_core.lib',
+        archive_r_build / 'Release' / 'libarchive_r_core.lib',
+        archive_r_build / 'Release' / 'archive_r_core.lib',
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return None
+
+
 extra_objects: List[str] = []
-static_lib = archive_r_build / 'libarchive_r_core.a'
-if static_lib.exists():
+static_lib = find_prebuilt_library()
+if static_lib:
     extra_objects = [str(static_lib)]
     print(f"Using pre-built archive_r library: {static_lib}")
 else:
@@ -148,43 +214,36 @@ else:
     sources.extend([str(unit) for unit in fallback_units])
 
 
-class BuildExt(build_ext):
-    def build_extensions(self):
-        compiler_type = self.compiler.compiler_type
-        opts = []
-        if compiler_type == 'msvc':
-            opts.append('/std:c++17')
-        else:
-            opts.append('-std=c++17')
-
-        for ext in self.extensions:
-            ext.extra_compile_args = opts
-
-        build_ext.build_extensions(self)
-
-
-include_dirs = [
+base_include_dirs = [
     pybind11_include,
     str(core_include_dir),
     str(core_src_dir),
 ]
-library_dirs = []
+if include_dirs_override:
+    base_include_dirs.extend(include_dirs_override)
 
-libarchive_root = os.environ.get('LIBARCHIVE_ROOT')
-print(f"DEBUG: LIBARCHIVE_ROOT={libarchive_root}")
-if libarchive_root:
-    include_dirs.append(os.path.join(libarchive_root, 'include'))
-    library_dirs.append(os.path.join(libarchive_root, 'lib'))
+compile_args: List[str]
+if is_windows:
+    compile_args = ['/std:c++17', '/EHsc', '/DNOMINMAX']
+else:
+    compile_args = ['-std=c++17', '-fvisibility=hidden']
+    if system_name == 'darwin':
+        compile_args.append('-stdlib=libc++')
+
+runtime_dirs = runtime_library_dirs if not is_windows else []
 
 ext_modules = [
     Extension(
         'archive_r',
         sources=sources,
-        include_dirs=include_dirs,
+        include_dirs=base_include_dirs,
         library_dirs=library_dirs,
-        libraries=['archive'],
+        libraries=libraries,
         extra_objects=extra_objects,
         language='c++',
+        extra_compile_args=compile_args,
+        extra_link_args=extra_link_args,
+        runtime_library_dirs=runtime_dirs,
         define_macros=[('ARCHIVE_R_VERSION', f'"{package_version}"')],
     ),
 ]
@@ -193,7 +252,6 @@ ext_modules = [
 setup(
     version=package_version,
     ext_modules=ext_modules,
-    cmdclass={'build_ext': BuildExt},
     long_description=read_readme(),
     long_description_content_type='text/markdown',
     license_files=['LICENSE.txt'],

@@ -11,18 +11,10 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <sys/types.h>
 #include <unordered_set>
 #include <vector>
 
-#ifdef _WIN32
-#ifndef _MODE_T_DEFINED_WIN32
-typedef unsigned short mode_t;
-#define _MODE_T_DEFINED_WIN32
-#endif
-#include <basetsd.h>
-using ssize_t = SSIZE_T;
-#endif
+#include "archive_r/platform_compat.h"
 
 namespace archive_r {
 

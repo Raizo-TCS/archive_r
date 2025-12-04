@@ -19,6 +19,51 @@ if _use_local_source():
     # Allow tests to import from source tree unless explicitly disabled.
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
+_DLL_SEARCH_HANDLES: list[object] = []
+
+
+def _configure_windows_runtime():
+    if os.name != "nt":
+        return
+
+    add_dll_directory = getattr(os, "add_dll_directory", None)
+    candidate_dirs = []
+
+    libarchive_root = os.environ.get("LIBARCHIVE_ROOT")
+    if libarchive_root:
+        candidate_dirs.append(Path(libarchive_root) / "bin")
+
+    runtime_dirs = os.environ.get("LIBARCHIVE_RUNTIME_DIRS")
+    if runtime_dirs:
+        for entry in runtime_dirs.split(os.pathsep):
+            entry = entry.strip()
+            if entry:
+                candidate_dirs.append(Path(entry))
+
+    # Fall back to PATH entries so locally installed libarchive is discovered.
+    if not candidate_dirs:
+        for entry in os.environ.get("PATH", "").split(os.pathsep):
+            entry = entry.strip()
+            if entry:
+                candidate_dirs.append(Path(entry))
+
+    for directory in candidate_dirs:
+        try:
+            resolved = directory.resolve(strict=False)
+        except OSError:
+            continue
+        if not resolved.is_dir():
+            continue
+        if add_dll_directory:
+            handle = add_dll_directory(str(resolved))
+            if handle is not None:
+                _DLL_SEARCH_HANDLES.append(handle)
+        else:
+            os.environ["PATH"] = f"{resolved}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
+_configure_windows_runtime()
+
 import archive_r
 
 class TestTraverser(unittest.TestCase):
