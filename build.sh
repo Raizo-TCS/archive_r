@@ -301,7 +301,9 @@ if [ "$BINDINGS_ONLY" = false ]; then
     CMAKE_ARGS=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0074=NEW)
 
     # Detect Windows/MinGW environment and set generator if needed
-    if [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
+    if [ -n "$CMAKE_GENERATOR" ]; then
+        log_info "Using external CMAKE_GENERATOR: $CMAKE_GENERATOR"
+    elif [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
         if ! command -v make >/dev/null 2>&1 && command -v mingw32-make >/dev/null 2>&1; then
             log_info "Detected MinGW environment with mingw32-make. Using 'MinGW Makefiles' generator."
             CMAKE_ARGS+=(-G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make)

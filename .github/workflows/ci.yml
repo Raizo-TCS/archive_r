@@ -188,6 +188,8 @@ jobs:
       - name: Build and Test (MSVC)
         if: matrix.type == 'msvc'
         shell: bash
+        env:
+          CMAKE_GENERATOR: "Visual Studio 17 2022"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
           python .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
