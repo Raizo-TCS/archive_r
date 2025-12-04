@@ -322,10 +322,10 @@ if [ "$BINDINGS_ONLY" = false ]; then
 
     # Check for build artifacts (Unix-style or Windows-style)
     # Windows MSVC builds often place artifacts in Release/ or Debug/ subdirectories
-    local lib_found=false
-    local exe_found=false
-    local lib_path=""
-    local exe_path=""
+    lib_found=false
+    exe_found=false
+    lib_path=""
+    exe_path=""
 
     if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
         lib_found=true
