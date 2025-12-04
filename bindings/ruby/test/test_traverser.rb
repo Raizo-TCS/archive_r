@@ -343,26 +343,31 @@ class TestTraverser < Minitest::Test
     counts = Hash.new(0)
     total = 0
 
-  open_traverser([@simple_archive, @directory_path]) do |traverser|
+    simple_norm = normalize_path(@simple_archive)
+    dir_norm = normalize_path(@directory_path)
+
+    open_traverser([@simple_archive, @directory_path]) do |traverser|
       traverser.each do |entry|
         hierarchy = entry.path_hierarchy
         refute_nil hierarchy
         refute_empty hierarchy
         head = hierarchy.first
-        if head == @simple_archive || head.start_with?(@simple_archive + File::SEPARATOR)
+        head_norm = normalize_path(head)
+
+        if head_norm == simple_norm || head_norm.start_with?(simple_norm + '/')
           counts[@simple_archive] += 1
-        elsif head == @directory_path || head.start_with?(@directory_path + File::SEPARATOR)
+        elsif head_norm == dir_norm || head_norm.start_with?(dir_norm + '/')
           counts[@directory_path] += 1
         else
-          flunk("Unexpected root component: #{head}")
+          flunk("Unexpected root component: #{head} (normalized: #{head_norm})")
         end
         total += 1
       end
     end
 
-  assert_equal 21, total
-  assert_equal 11, counts[@simple_archive]
-  assert_equal 10, counts[@directory_path]
+    assert_equal 21, total
+    assert_equal 11, counts[@simple_archive]
+    assert_equal 10, counts[@directory_path]
   end
   
   def test_entry_methods
@@ -387,8 +392,8 @@ class TestTraverser < Minitest::Test
         hierarchy = entry.path_hierarchy
         assert_kind_of Array, hierarchy
         refute_empty hierarchy
-  assert hierarchy.all? { |component| component.is_a?(String) }
-  assert_equal hierarchy.join('/'), entry.path
+        assert hierarchy.all? { |component| component.is_a?(String) }
+        assert_equal normalize_path(hierarchy.join('/')), normalize_path(entry.path)
         
         break # Test first entry only
       end
@@ -427,10 +432,10 @@ class TestTraverser < Minitest::Test
       hierarchy = entry.path_hierarchy
       assert_kind_of Array, hierarchy
       assert_operator hierarchy.length, :>, 1
-      assert_equal File.expand_path(@simple_archive), hierarchy.first
+      assert_equal normalize_path(File.expand_path(@simple_archive)), normalize_path(hierarchy.first)
       assert_equal expected_entry_name(entry), hierarchy.last
 
-      assert_equal entry.path, hierarchy.join('/')
+      assert_equal normalize_path(entry.path), normalize_path(hierarchy.join('/'))
     end
   end
   
@@ -517,5 +522,9 @@ class TestTraverser < Minitest::Test
   def multi_volume_base(filename)
     idx = filename.rindex('.part')
     idx ? filename[0...idx] : filename
+  end
+
+  def normalize_path(path)
+    path.to_s.gsub('\\', '/')
   end
 end
