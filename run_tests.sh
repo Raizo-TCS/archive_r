@@ -827,7 +827,7 @@ if [ -d "$ROOT_DIR/bindings/python" ] && (ls "$ROOT_DIR/bindings/python"/*.so >/
     TESTS_RUN=$((TESTS_RUN + 1))
     
     cd "$ROOT_DIR/bindings/python"
-    local python_cmd="python3"
+    python_cmd="python3"
     if ! command -v python3 >/dev/null 2>&1; then
         python_cmd="python"
     fi
