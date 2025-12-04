@@ -21,7 +21,7 @@ public:
   Impl(const Impl &other);
   Impl &operator=(const Impl &other);
 
-  Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent, std::optional<FilesystemMetadataInfo> metadata = std::nullopt);
+  Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent);
 
   std::string name() const;
   const PathHierarchy &path_hierarchy() const;

@@ -85,14 +85,7 @@ void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
 
   const std::string path = entry.single_value();
   errno = 0;
-#if defined(_WIN32)
-  // Use _wfopen for Unicode support on Windows
-  std::filesystem::path fs_path(path);
-  FILE *handle = _wfopen(fs_path.c_str(), L"rb");
-#else
   FILE *handle = std::fopen(path.c_str(), "rb");
-#endif
-
   if (!handle) {
     const int err = errno;
     throw make_entry_fault_error(format_path_errno_error("Failed to open root file", path, err), single_part, err);
@@ -171,11 +164,26 @@ void SystemFileStream::report_read_failure(int err) {
   throw make_entry_fault_error(detailed, _logical_path, err);
 }
 
-FilesystemMetadataInfo collect_metadata_from_entry(const std::filesystem::directory_entry &entry, const std::unordered_set<std::string> &allowed_keys) {
+FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy, const std::unordered_set<std::string> &allowed_keys) {
   FilesystemMetadataInfo info;
-  std::error_code ec;
 
-  uint64_t filetype = 0;
+  if (hierarchy.empty()) {
+    return info;
+  }
+
+  std::error_code ec;
+  const PathEntry &root_entry = hierarchy[0];
+  if (!root_entry.is_single()) {
+    return info;
+  }
+
+  const std::filesystem::path target(root_entry.single_value());
+  std::filesystem::directory_entry entry(target, ec);
+  if (ec) {
+    return info;
+  }
+
+  mode_t filetype = 0;
   uint64_t size = 0;
 
   ec.clear();
@@ -205,21 +213,31 @@ FilesystemMetadataInfo collect_metadata_from_entry(const std::filesystem::direct
 
   info.size = size;
   info.filetype = filetype;
-  
+  EntryMetadataMap metadata;
   if (!allowed_keys.empty()) {
     const auto wants = [&allowed_keys](std::string_view key) {
       return allowed_keys.find(std::string(key)) != allowed_keys.end();
     };
 
+    // Path hierarchy / directory entry derived metadata
+    if (wants("pathname")) {
+      const PathEntry &tail = hierarchy.back();
+      if (tail.is_single()) {
+        metadata["pathname"] = tail.single_value();
+      } else {
+        metadata["pathname"] = path_entry_display(tail);
+      }
+    }
+
     if (wants("filetype")) {
-      info.metadata["filetype"] = filetype;
+      metadata["filetype"] = static_cast<uint64_t>(filetype);
     }
 
     if (wants("mode")) {
       std::error_code status_ec;
       const auto status = entry.status(status_ec);
       if (!status_ec) {
-        info.metadata["mode"] = static_cast<uint64_t>(status.permissions());
+        metadata["mode"] = static_cast<uint64_t>(status.permissions());
       }
     }
 
@@ -242,68 +260,35 @@ FilesystemMetadataInfo collect_metadata_from_entry(const std::filesystem::direct
         resolved = static_cast<uint64_t>(stat_buffer.st_size);
       }
       if (resolved > 0 || (size == 0 && have_stat)) {
-        info.metadata["size"] = resolved;
+        metadata["size"] = resolved;
       }
     }
 
 #if !defined(_WIN32)
     if (have_stat) {
       if (wants("uid")) {
-        info.metadata["uid"] = static_cast<int64_t>(stat_buffer.st_uid);
+        metadata["uid"] = static_cast<int64_t>(stat_buffer.st_uid);
       }
       if (wants("gid")) {
-        info.metadata["gid"] = static_cast<int64_t>(stat_buffer.st_gid);
+        metadata["gid"] = static_cast<int64_t>(stat_buffer.st_gid);
       }
       if (wants("uname")) {
         std::string uname;
         if (lookup_username(stat_buffer.st_uid, uname)) {
-          info.metadata["uname"] = std::move(uname);
+          metadata["uname"] = std::move(uname);
         }
       }
       if (wants("gname")) {
         std::string gname;
         if (lookup_groupname(stat_buffer.st_gid, gname)) {
-          info.metadata["gname"] = std::move(gname);
+          metadata["gname"] = std::move(gname);
         }
       }
     }
 #endif
   }
-  return info;
-}
 
-FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy, const std::unordered_set<std::string> &allowed_keys) {
-  FilesystemMetadataInfo info;
-
-  if (hierarchy.empty()) {
-    return info;
-  }
-
-  std::error_code ec;
-  const PathEntry &root_entry = hierarchy[0];
-  if (!root_entry.is_single()) {
-    return info;
-  }
-
-  const std::filesystem::path target(root_entry.single_value());
-  std::filesystem::directory_entry entry(target, ec);
-  if (ec) {
-    return info;
-  }
-
-  info = collect_metadata_from_entry(entry, allowed_keys);
-
-  if (!allowed_keys.empty()) {
-    if (allowed_keys.find("pathname") != allowed_keys.end()) {
-      const PathEntry &tail = hierarchy.back();
-      if (tail.is_single()) {
-        info.metadata["pathname"] = tail.single_value();
-      } else {
-        info.metadata["pathname"] = path_entry_display(tail);
-      }
-    }
-  }
-
+  info.metadata = std::move(metadata);
   return info;
 }
 

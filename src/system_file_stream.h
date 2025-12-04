@@ -33,12 +33,14 @@ private:
 
   FILE *_handle;
   std::string _active_path;
-#if defined(_WIN32)
-  std::vector<char> _buffer;
-#endif
+};
+
+struct FilesystemMetadataInfo {
+  uint64_t size = 0;
+  mode_t filetype = 0;
+  EntryMetadataMap metadata;
 };
 
 FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy, const std::unordered_set<std::string> &allowed_keys);
-FilesystemMetadataInfo collect_metadata_from_entry(const std::filesystem::directory_entry &entry, const std::unordered_set<std::string> &allowed_keys);
 
 } // namespace archive_r

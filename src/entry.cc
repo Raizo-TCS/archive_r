@@ -50,7 +50,7 @@ Entry::Impl &Entry::Impl::operator=(const Impl &other) {
   return *this;
 }
 
-Entry::Impl::Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent, std::optional<FilesystemMetadataInfo> metadata)
+Entry::Impl::Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent)
     : _path_hierarchy(hierarchy)
     , _size(0)
     , _filetype(0)
@@ -73,16 +73,10 @@ Entry::Impl::Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOr
       _metadata = archive->current_entry_metadata(keys);
     }
   } else if (!hierarchy.empty()) {
-    if (metadata) {
-      _size = metadata->size;
-      _filetype = static_cast<mode_t>(metadata->filetype);
-      _metadata = std::move(metadata->metadata);
-    } else {
-      FilesystemMetadataInfo info = collect_root_path_metadata(hierarchy, keys);
-      _size = info.size;
-      _filetype = static_cast<mode_t>(info.filetype);
-      _metadata = std::move(info.metadata);
-    }
+    FilesystemMetadataInfo info = collect_root_path_metadata(hierarchy, keys);
+    _size = info.size;
+    _filetype = info.filetype;
+    _metadata = std::move(info.metadata);
   }
 
   if (use_archive_metadata) {
@@ -207,9 +201,6 @@ ssize_t Entry::Impl::read(void *buffer, size_t length) {
 Entry::Entry(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent)
   : _impl(std::make_unique<Impl>(hierarchy, std::move(data_source_orchestrator), default_descent)) {}
 
-Entry::Entry(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent, std::optional<FilesystemMetadataInfo> metadata)
-  : _impl(std::make_unique<Impl>(hierarchy, std::move(data_source_orchestrator), default_descent, std::move(metadata))) {}
-
 Entry::Entry(Impl *impl)
     : _impl(impl) {}
 
@@ -217,10 +208,6 @@ Entry::~Entry() = default;
 
 std::unique_ptr<Entry> Entry::create(PathHierarchy hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent) {
   return std::unique_ptr<Entry>(new Entry(hierarchy, std::move(data_source_orchestrator), default_descent));
-}
-
-std::unique_ptr<Entry> Entry::create(PathHierarchy hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent, std::optional<FilesystemMetadataInfo> metadata) {
-  return std::unique_ptr<Entry>(new Entry(hierarchy, std::move(data_source_orchestrator), default_descent, std::move(metadata)));
 }
 
 // Copy operations - creates a new Impl copy

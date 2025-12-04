@@ -53,14 +53,4 @@ using EntryMetadataValue = std::variant<std::monostate, bool, int64_t, uint64_t,
 /** Unordered map storing metadata captured during traversal. */
 using EntryMetadataMap = std::unordered_map<std::string, EntryMetadataValue>;
 
-/**
- * @brief Metadata collected directly from filesystem during traversal.
- * Used to avoid redundant stat calls.
- */
-struct FilesystemMetadataInfo {
-  uint64_t size = 0;
-  uint64_t filetype = 0; // Using uint64_t to avoid mode_t dependency in public header
-  EntryMetadataMap metadata;
-};
-
 } // namespace archive_r

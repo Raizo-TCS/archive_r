@@ -150,20 +150,7 @@ private:
       return false;
     }
     const std::filesystem::directory_entry entry = *_directory_iterator;
-    
-    ArchiveStackOrchestrator &orchestrator = *ensure_shared_orchestrator();
-    const auto &keys = orchestrator.metadata_keys();
-    
-    FilesystemMetadataInfo info = collect_metadata_from_entry(entry, keys);
-    
-    std::string normalized_path = normalize_path_string(entry.path().string());
-    
-    if (keys.find("pathname") != keys.end()) {
-        info.metadata["pathname"] = normalized_path;
-    }
-    
-    set_current_entry(make_single_path(normalized_path), std::move(info));
-    
+    set_current_entry(make_single_path(normalize_path_string(entry.path().string())));
     if (_current_entry->is_directory() && !_current_entry->descent_enabled()) {
       _directory_iterator.disable_recursion_pending();
     }
@@ -232,8 +219,8 @@ private:
     }
   }
 
-  void set_current_entry(PathHierarchy hierarchy, std::optional<FilesystemMetadataInfo> metadata = std::nullopt) {
-    _current_entry = Entry::create(std::move(hierarchy), ensure_shared_orchestrator(), _default_descent, std::move(metadata));
+  void set_current_entry(PathHierarchy hierarchy) {
+    _current_entry = Entry::create(std::move(hierarchy), ensure_shared_orchestrator(), _default_descent);
   }
 
   void handle_orchestrator_error(const EntryFault &fault) {
