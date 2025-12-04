@@ -91,16 +91,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install libarchive
-        env:
-          HOMEBREW_NO_INSTALL_CLEANUP: "1"
-          HOMEBREW_NO_INSTALL_FROM_API: "1"
+      - name: Install libarchive (Build from source)
         run: |
           set -euo pipefail
-          brew update
-          # Force build from source to respect MACOSX_DEPLOYMENT_TARGET
-          brew install --build-from-source libarchive xz lz4 zstd libb2
-          LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
+          # Build libarchive and dependencies from source to ensure MACOSX_DEPLOYMENT_TARGET=11.0
+          ./.github/scripts/ci/build_macos_deps.sh
+          
+          LIBARCHIVE_ROOT="${PWD}/libs"
           echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
           echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
           echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >>"$GITHUB_ENV"
