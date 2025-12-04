@@ -19,9 +19,11 @@ archive_r is a recursive archive reading library using libarchive. It provides d
 
 ## Platform Support
 
-- **OS**: Tested only on Ubuntu 24.04
-  - Not tested on other Linux distributions, macOS, or Windows
-- **Compiler**: C++17 or later (GCC 7+, Clang 5+, etc.)
+- **OS**:
+  - **Linux**: x86_64, aarch64 (glibc 2.28+, manylinux_2_28)
+  - **macOS**: x86_64, arm64 (Universal2, macOS 11.0+)
+  - **Windows**: x64 (Windows 10/11, Server 2019+)
+- **Compiler**: C++17 or later (GCC 7+, Clang 5+, MSVC 2019+, etc.)
 - **Dependencies**:
   - libarchive 3.x (required)
 

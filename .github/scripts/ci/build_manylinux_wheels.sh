@@ -73,7 +73,18 @@ build_python_bindings() {
   "${PYBIN}/pip" install --upgrade pip setuptools wheel pybind11 >/dev/null
   "${PYBIN}/pip" wheel . -w dist_temp/ --no-deps >/dev/null
   "${PYBIN}/pip" install auditwheel >/dev/null
-  auditwheel repair dist_temp/*.whl --plat manylinux_2_28_x86_64 -w "${TARGET_PATH}/" >/dev/null
+
+  ARCH=$(uname -m)
+  if [[ "$ARCH" == "x86_64" ]]; then
+    PLAT_TAG="manylinux_2_28_x86_64"
+  elif [[ "$ARCH" == "aarch64" ]]; then
+    PLAT_TAG="manylinux_2_28_aarch64"
+  else
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+  fi
+
+  auditwheel repair dist_temp/*.whl --plat "${PLAT_TAG}" -w "${TARGET_PATH}/" >/dev/null
   "${PYBIN}/pip" install --no-index "${TARGET_PATH}"/*.whl >/dev/null
   "${PYBIN}/python" -c "import archive_r; print(f'validated {archive_r.__version__}')"
 }

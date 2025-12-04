@@ -18,32 +18,46 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        platform:
+          - x86_64
+          - aarch64
         python-tag:
           - cp39-cp39
           - cp310-cp310
           - cp311-cp311
           - cp312-cp312
     env:
-      MANYLINUX_IMAGE: quay.io/pypa/manylinux_2_28_x86_64:latest
       LIBARCHIVE_VERSION: 3.7.4
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build wheel for ${{ matrix.python-tag }}
+      - name: Set up QEMU
+        if: matrix.platform == 'aarch64'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build wheel for ${{ matrix.python-tag }} (${{ matrix.platform }})
         env:
           PYTHON_TAG: ${{ matrix.python-tag }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
           HOST_UID="$(id -u)"
           HOST_GID="$(id -g)"
+          
+          if [[ "${PLATFORM}" == "aarch64" ]]; then
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64:latest"
+          else
+            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_x86_64:latest"
+          fi
+          
           docker run --rm \
             -e HOST_UID="${HOST_UID}" \
             -e HOST_GID="${HOST_GID}" \
             -e PYTHON_TAG="${PYTHON_TAG}" \
             -e LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION}" \
             -v "${{ github.workspace }}:/io" \
-            ${{ env.MANYLINUX_IMAGE }} \
+            "${MANYLINUX_IMAGE}" \
             /bin/bash -c "/io/.github/scripts/ci/build_manylinux_wheels.sh"
 
       - name: List built wheels for ${{ matrix.python-tag }}
@@ -54,10 +68,10 @@ jobs:
           find bindings/python/dist -maxdepth 2 -type f -name '*.whl' || true
           find . -maxdepth 6 -type f -name '*.whl'
 
-      - name: Upload wheels for ${{ matrix.python-tag }}
+      - name: Upload wheels for ${{ matrix.python-tag }} (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.python-tag }}-${{ github.sha }}
+          name: wheels-${{ matrix.platform }}-${{ matrix.python-tag }}-${{ github.sha }}
           path: bindings/python/dist/${{ matrix.python-tag }}/*.whl
           if-no-files-found: error
           retention-days: 7

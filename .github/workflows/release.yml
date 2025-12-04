@@ -98,7 +98,7 @@ jobs:
             bindings/python/dist/*.tar.gz
             build/logs/*.log
 
-  build-manylinux-wheels:
+  build-wheels:
     needs: validate-tag
     uses: ./.github/workflows/build-wheels.yml
 
@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs:
       - build-local-artifacts
-      - build-manylinux-wheels
+      - build-wheels
     environment:
       name: production
     steps:
