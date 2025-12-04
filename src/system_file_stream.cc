@@ -93,6 +93,14 @@ void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
 
   _handle = handle;
   _active_path = path;
+
+#if defined(_WIN32)
+  // Enable larger buffering on Windows to improve performance
+  // Use 64KB buffer to match StreamArchive's buffer size
+  if (_handle) {
+      std::setvbuf(_handle, nullptr, _IOFBF, 65536);
+  }
+#endif
 }
 
 void SystemFileStream::close_single_part() {
@@ -122,11 +130,19 @@ int64_t SystemFileStream::seek_within_single_part(int64_t offset, int whence) {
   int64_t position = -1;
 #if defined(_WIN32)
   if (_fseeki64(_handle, offset, whence) == 0) {
-    position = _ftelli64(_handle);
+    if (whence == SEEK_SET) {
+      position = offset;
+    } else {
+      position = _ftelli64(_handle);
+    }
   }
 #else
   if (fseeko(_handle, offset, whence) == 0) {
-    position = ftello(_handle);
+    if (whence == SEEK_SET) {
+      position = offset;
+    } else {
+      position = ftello(_handle);
+    }
   }
 #endif
   return position >= 0 ? position : -1;
