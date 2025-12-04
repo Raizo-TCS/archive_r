@@ -21,6 +21,11 @@ vendor_include = vendor_root / 'include'
 vendor_src = vendor_root / 'src'
 local_readme = binding_root / 'README.md'
 local_license = binding_root / 'LICENSE.txt'
+
+# Ensure LICENSE.txt is present in the binding directory
+if (archive_r_root / 'LICENSE.txt').exists():
+    shutil.copy(archive_r_root / 'LICENSE.txt', local_license)
+
 local_version = binding_root / 'VERSION'
 system_name = platform.system().lower()
 is_windows = system_name == 'windows' or os.name == 'nt'
@@ -261,4 +266,5 @@ setup(
     ext_modules=ext_modules,
     long_description=read_readme(),
     long_description_content_type='text/markdown',
+    license_files=['LICENSE.txt'],
 )
