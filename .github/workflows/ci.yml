@@ -173,10 +173,12 @@ jobs:
           echo "LIBARCHIVE_ROOT=$root" >> $env:GITHUB_ENV
           echo "CMAKE_PREFIX_PATH=$root" >> $env:GITHUB_ENV
           echo "PATH=$root\bin;$env:PATH" >> $env:GITHUB_ENV
+          echo "LIB=$root\lib;$env:LIB" >> $env:GITHUB_ENV
+          echo "INCLUDE=$root\include;$env:INCLUDE" >> $env:GITHUB_ENV
 
       - name: Install Python Build Deps (MSVC)
         run: |
-          python -m pip install --upgrade pip setuptools wheel pybind11 build twine
+          python -m pip install --upgrade pip setuptools wheel pybind11 build twine virtualenv
 
       - name: Build and Test (MSVC)
         shell: bash
@@ -228,7 +230,7 @@ jobs:
         shell: msys2 {0}
         run: |
           python3 -m ensurepip
-          python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine
+          python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine --break-system-packages
 
       - name: Build and Test (MinGW)
         shell: msys2 {0}
