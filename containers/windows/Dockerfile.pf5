@@ -9,21 +9,13 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force ; `
     Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) ; `
     refreshenv ; `
     choco feature enable -n=allowGlobalConfirmation ; `
-    choco install git cmake ninja python --no-progress ; `
-    choco install ruby --version 3.2.4.1 --no-progress ; `
+    choco install git cmake ninja --no-progress ; `
     choco install visualstudio2022buildtools --package-parameters "'--quiet --wait --norestart --nocache --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.Component.Windows11SDK.22621 --add Microsoft.VisualStudio.Component.TextTemplating --includeRecommended --includeOptional'" --no-progress ; `
     choco install vcredist140 --no-progress ; `
     choco install nuget.commandline --no-progress
 
-ENV VCPKG_ROOT=C:\vcpkg `
-    LIBARCHIVE_ROOT=C:\vcpkg\installed\x64-windows
-
-# Clone and bootstrap vcpkg, preinstall libarchive (x64)
-RUN git clone https://github.com/microsoft/vcpkg.git C:\vcpkg ; `
-    cd C:\vcpkg ; `
-    .\bootstrap-vcpkg.bat -disableMetrics ; `
-    .\vcpkg.exe integrate install ; `
-    .\vcpkg.exe install libarchive:x64-windows --clean-after-build
+# Clone vcpkg (but do not bootstrap or install libraries yet)
+RUN git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
 
 RUN $additionalPaths = @(`
         'C:\Windows\system32',`
@@ -32,11 +24,7 @@ RUN $additionalPaths = @(`
         'C:\ProgramData\chocolatey\bin',`
         'C:\Program Files\CMake\bin',`
         'C:\Program Files\Git\cmd',`
-        'C:\Program Files\Python311',`
-        'C:\Program Files\Python311\Scripts',`
-        'C:\Program Files\Ruby32-x64\bin',`
-        'C:\vcpkg',`
-        'C:\vcpkg\installed\x64-windows\bin'`
+        'C:\vcpkg'`
     ); `
     $existing = [Environment]::GetEnvironmentVariable('PATH', 'Machine'); `
     $newPath = ($additionalPaths + $existing) -join ';'; `

@@ -28,6 +28,42 @@ if (-not (Test-Path -LiteralPath $workspace)) {
     throw "Workspace not found at $workspace"
 }
 
+# Install dependencies (Python, Ruby, Libarchive)
+function Install-Dependencies {
+    param([string]$Platform)
+    Write-Host "Installing dependencies for $Platform..."
+    
+    # Install Python and Ruby via Chocolatey (latest versions)
+    choco install python ruby -y --no-progress
+    
+    # Refresh environment variables
+    refreshenv
+
+    if ($Platform -eq "pf5") {
+        # MSVC: Install libarchive via vcpkg
+        Write-Host "Bootstrapping vcpkg..."
+        Set-Location "C:\vcpkg"
+        .\bootstrap-vcpkg.bat -disableMetrics
+        .\vcpkg.exe integrate install
+        
+        Write-Host "Installing libarchive:x64-windows..."
+        .\vcpkg.exe install libarchive:x64-windows
+        
+        $env:LIBARCHIVE_ROOT = "C:\vcpkg\installed\x64-windows"
+        $env:PATH = "$env:LIBARCHIVE_ROOT\bin;" + $env:PATH
+    }
+    elseif ($Platform -eq "pf6") {
+        # MinGW: Install libarchive via pacman
+        Write-Host "Installing mingw-w64-ucrt-x86_64-libarchive..."
+        $bashExe = "C:\\tools\\msys64\\usr\\bin\\bash.exe"
+        & $bashExe -lc "pacman -S --noconfirm --needed mingw-w64-ucrt-x86_64-libarchive"
+        
+        $env:LIBARCHIVE_ROOT = "C:\tools\msys64\ucrt64"
+    }
+}
+
+Install-Dependencies -Platform $Platform
+
 $posixWorkspace = Convert-ToPosixPath -Path $workspace
 $buildCommand = "./build.sh --rebuild-all --package-python --package-ruby"
 $testCommand = "python3 ./.github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh"
