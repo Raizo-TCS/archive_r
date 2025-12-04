@@ -187,7 +187,9 @@ jobs:
           CMAKE_GENERATOR: "Visual Studio 17 2022"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
-          python .github/scripts/ci/run_with_timeout.py 120 sh ./run_tests.sh
+          # Explicitly use the current bash (Git Bash) to avoid triggering WSL
+          BASH_PATH=$(cygpath -w $(which bash))
+          python .github/scripts/ci/run_with_timeout.py 120 "$BASH_PATH" ./run_tests.sh
 
       - name: Upload PF5 artifacts
         if: ${{ always() && env.ACT != 'true' }}
@@ -239,7 +241,7 @@ jobs:
           ARCHIVE_R_BUILD_NO_ISOLATION: "1"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
-          python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
+          python3 .github/scripts/ci/run_with_timeout.py 120 bash ./run_tests.sh
 
       - name: Upload PF6 artifacts
         if: ${{ always() && env.ACT != 'true' }}
