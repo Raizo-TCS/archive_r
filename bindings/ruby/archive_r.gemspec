@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["raizo.tcs@users.noreply.github.com"]
   
   spec.summary       = "Ruby bindings for archive_r that traverse nested archives without temp extraction"
-  spec.description   = File.read(File.join(File.dirname(__FILE__), "README.md"))
+  spec.description   = "Ruby bindings for archive_r that recursively walk nested and multipart archives directly from the source stream without creating temporary files"
   spec.homepage      = "https://github.com/raizo-tcs/archive_r"
   spec.license       = "MIT"
   
