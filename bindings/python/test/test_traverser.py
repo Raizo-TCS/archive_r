@@ -537,14 +537,22 @@ class TestTraverser(unittest.TestCase):
         self.assertEqual(len(entries), 21)
 
         counts = {self.simple_archive: 0, self.directory_path: 0}
+        
+        # Normalize paths for comparison to handle potential separator differences (e.g. Windows vs MSYS2)
+        simple_archive_norm = os.path.normpath(self.simple_archive)
+        directory_path_norm = os.path.normpath(self.directory_path)
+
         for entry in entries:
-            root_component = entry.path_hierarchy[0]
-            if root_component == self.simple_archive or root_component.startswith(self.simple_archive + os.sep):
+            root_component = os.path.normpath(entry.path_hierarchy[0])
+            
+            # Check simple_archive
+            if root_component == simple_archive_norm or root_component.startswith(simple_archive_norm + os.sep):
                 counts[self.simple_archive] += 1
-            elif root_component == self.directory_path or root_component.startswith(self.directory_path + os.sep):
+            # Check directory_path
+            elif root_component == directory_path_norm or root_component.startswith(directory_path_norm + os.sep):
                 counts[self.directory_path] += 1
             else:
-                self.fail(f"Unexpected root component: {root_component}")
+                self.fail(f"Unexpected root component: {root_component} (expected matches for {simple_archive_norm} or {directory_path_norm})")
 
         self.assertEqual(counts[self.simple_archive], 11)
         self.assertEqual(counts[self.directory_path], 10)
