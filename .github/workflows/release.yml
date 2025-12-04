@@ -137,6 +137,13 @@ jobs:
             release/python/*
             release/ruby/*
 
+      - name: Publish to RubyGems.org
+        if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          gem push release/ruby/*.gem --verbose
+
       - name: Publish to PyPI
         if: ${{ env.ACT != 'true' && inputs.publish_pypi }}
         env:
@@ -144,10 +151,3 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           python3 -m twine upload release/python/* --skip-existing --verbose
-
-      - name: Publish to RubyGems.org
-        if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: |
-          gem push release/ruby/*.gem --verbose
