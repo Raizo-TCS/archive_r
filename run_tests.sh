@@ -199,11 +199,14 @@ prepare_ruby_gem_env() {
 
     local gem_name
     gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('$gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
+    gem_name=$(echo "$gem_name" | tr -d '\r')
 
     local gem_file
-    gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
+    # Use portable find (avoid -printf)
+    gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}-*.gem" | sort | tail -n 1)
+    gem_file=$(basename "$gem_file")
 
-    if [ -z "$gem_file" ]; then
+    if [ -z "$gem_file" ] || [ ! -f "$gem_cache_dir/$gem_file" ]; then
         log_error "Ruby gem not found in $gem_cache_dir. Please run ./build.sh --with-ruby first."
         return 1
     fi

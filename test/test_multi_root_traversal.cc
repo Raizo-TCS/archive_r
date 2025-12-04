@@ -45,20 +45,19 @@ int main(int argc, char *argv[]) {
       const std::string first_component = path_entry_display(hierarchy.front());
       const std::string *matched_root = nullptr;
       for (const auto &root : root_strings) {
-        // Normalize root path to match the format returned by path_hierarchy (native separators)
-        std::string root_preferred = fs::path(root).make_preferred().string();
+        // Normalize both paths to generic format (forward slashes) for comparison
+        std::string root_generic = fs::path(root).generic_string();
+        std::string first_generic = fs::path(first_component).generic_string();
         
-        if (first_component == root_preferred) {
+        if (first_generic == root_generic) {
           matched_root = &root;
           break;
         }
         
         // Check prefix with separator
-        // Note: preferred_separator might be wchar_t on Windows, cast to char for std::string
-        char sep = static_cast<char>(fs::path::preferred_separator);
-        std::string root_with_sep = root_preferred + sep;
+        std::string root_with_sep = root_generic + "/";
         
-        if (first_component.rfind(root_with_sep, 0) == 0) {
+        if (first_generic.rfind(root_with_sep, 0) == 0) {
           matched_root = &root;
           break;
         }

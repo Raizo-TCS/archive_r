@@ -584,18 +584,18 @@ int main(int argc, char *argv[]) {
       register_multi_volume_if_needed(entry);
       EntryInfo info = make_entry_info(entry);
 
-      entry_count++;
-      std::cout << "Entry #" << entry_count << ": " << info.path << std::endl;
-      std::cout << "  Depth: " << info.depth << std::endl;
-      std::cout << "  Size: " << info.size << " bytes" << std::endl;
+      // entry_count++;
+      // std::cout << "Entry #" << entry_count << ": " << info.path << std::endl;
+      // std::cout << "  Depth: " << info.depth << std::endl;
+      // std::cout << "  Size: " << info.size << " bytes" << std::endl;
 
-      const char *type_label = "other";
-      if (info.filetype == AE_IFDIR) {
-        type_label = "directory";
-      } else if (info.filetype == AE_IFREG) {
-        type_label = "file";
-      }
-      std::cout << "  Type: " << type_label << std::endl;
+      // const char *type_label = "other";
+      // if (info.filetype == AE_IFDIR) {
+      //   type_label = "directory";
+      // } else if (info.filetype == AE_IFREG) {
+      //   type_label = "file";
+      // }
+      // std::cout << "  Type: " << type_label << std::endl;
 
       if (!collector.on_entry(info)) {
         break;
