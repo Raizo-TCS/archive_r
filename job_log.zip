@@ -1,0 +1,230 @@
+﻿2025-12-03T12:30:26.6958106Z Current runner version: '2.329.0'
+2025-12-03T12:30:26.6983716Z ##[group]Runner Image Provisioner
+2025-12-03T12:30:26.6984485Z Hosted Compute Agent
+2025-12-03T12:30:26.6984944Z Version: 20251016.436
+2025-12-03T12:30:26.6985507Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+2025-12-03T12:30:26.6986138Z Build Date: 2025-10-15T20:44:12Z
+2025-12-03T12:30:26.6986699Z ##[endgroup]
+2025-12-03T12:30:26.6987178Z ##[group]Operating System
+2025-12-03T12:30:26.6987683Z Microsoft Windows Server 2022
+2025-12-03T12:30:26.6988216Z 10.0.20348
+2025-12-03T12:30:26.6988607Z Datacenter
+2025-12-03T12:30:26.6988985Z ##[endgroup]
+2025-12-03T12:30:26.6989396Z ##[group]Runner Image
+2025-12-03T12:30:26.6989847Z Image: windows-2022
+2025-12-03T12:30:26.6990273Z Version: 20251102.87.1
+2025-12-03T12:30:26.6991221Z Included Software: https://github.com/actions/runner-images/blob/win22/20251102.87/images/windows/Windows2022-Readme.md
+2025-12-03T12:30:26.6992821Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20251102.87
+2025-12-03T12:30:26.6993737Z ##[endgroup]
+2025-12-03T12:30:26.6994822Z ##[group]GITHUB_TOKEN Permissions
+2025-12-03T12:30:26.6996725Z Contents: read
+2025-12-03T12:30:26.6997176Z Metadata: read
+2025-12-03T12:30:26.6997634Z Packages: read
+2025-12-03T12:30:26.6998075Z ##[endgroup]
+2025-12-03T12:30:26.7000789Z Secret source: Actions
+2025-12-03T12:30:26.7001515Z Prepare workflow directory
+2025-12-03T12:30:26.7424365Z Prepare all required actions
+2025-12-03T12:30:26.7481293Z Getting action download info
+2025-12-03T12:30:26.9626609Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+2025-12-03T12:30:27.2452273Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2025-12-03T12:30:27.5473385Z Complete job name: windows-platforms (pf5, pf5, ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:1197fe6a5b8265d890cf7dd...
+2025-12-03T12:30:27.7129999Z ##[group]Run actions/checkout@v4
+2025-12-03T12:30:27.7131315Z with:
+2025-12-03T12:30:27.7131718Z   repository: Raizo-TCS/archive_r
+2025-12-03T12:30:27.7132392Z   token: ***
+2025-12-03T12:30:27.7132737Z   ssh-strict: true
+2025-12-03T12:30:27.7133098Z   ssh-user: git
+2025-12-03T12:30:27.7133465Z   persist-credentials: true
+2025-12-03T12:30:27.7133879Z   clean: true
+2025-12-03T12:30:27.7134243Z   sparse-checkout-cone-mode: true
+2025-12-03T12:30:27.7134697Z   fetch-depth: 1
+2025-12-03T12:30:27.7135057Z   fetch-tags: false
+2025-12-03T12:30:27.7135417Z   show-progress: true
+2025-12-03T12:30:27.7135777Z   lfs: false
+2025-12-03T12:30:27.7136102Z   submodules: false
+2025-12-03T12:30:27.7136467Z   set-safe-directory: true
+2025-12-03T12:30:27.7137107Z ##[endgroup]
+2025-12-03T12:30:27.8847071Z Syncing repository: Raizo-TCS/archive_r
+2025-12-03T12:30:27.8850276Z ##[group]Getting Git version info
+2025-12-03T12:30:27.8851342Z Working directory is 'D:\a\archive_r\archive_r'
+2025-12-03T12:30:27.9729457Z [command]"C:\Program Files\Git\bin\git.exe" version
+2025-12-03T12:30:28.3365061Z git version 2.51.2.windows.1
+2025-12-03T12:30:28.3413653Z ##[endgroup]
+2025-12-03T12:30:28.3433522Z Temporarily overriding HOME='D:\a\_temp\5b838d97-6669-48d6-8723-8ec3c58e378b' before making global git config changes
+2025-12-03T12:30:28.3435230Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-03T12:30:28.3444826Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+2025-12-03T12:30:28.3988619Z Deleting the contents of 'D:\a\archive_r\archive_r'
+2025-12-03T12:30:28.3994228Z ##[group]Initializing the repository
+2025-12-03T12:30:28.4004164Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\archive_r\archive_r
+2025-12-03T12:30:28.4740026Z Initialized empty Git repository in D:/a/archive_r/archive_r/.git/
+2025-12-03T12:30:28.4782143Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Raizo-TCS/archive_r
+2025-12-03T12:30:28.5327610Z ##[endgroup]
+2025-12-03T12:30:28.5331266Z ##[group]Disabling automatic garbage collection
+2025-12-03T12:30:28.5336412Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+2025-12-03T12:30:28.5652853Z ##[endgroup]
+2025-12-03T12:30:28.5653997Z ##[group]Setting up auth
+2025-12-03T12:30:28.5667999Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2025-12-03T12:30:28.5962927Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2025-12-03T12:30:30.3144620Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-03T12:30:30.3396727Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2025-12-03T12:30:30.8374854Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-03T12:30:30.8628811Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2025-12-03T12:30:31.3532278Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+2025-12-03T12:30:31.3792661Z ##[endgroup]
+2025-12-03T12:30:31.3793541Z ##[group]Fetching the repository
+2025-12-03T12:30:31.3808211Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +8df7e067d6593014669cc1096dae6b93ce8e5100:refs/remotes/origin/feature/pf5-pf6-containers
+2025-12-03T12:30:32.2230222Z From https://github.com/Raizo-TCS/archive_r
+2025-12-03T12:30:32.2231019Z  * [new ref]         8df7e067d6593014669cc1096dae6b93ce8e5100 -> origin/feature/pf5-pf6-containers
+2025-12-03T12:30:32.2529258Z ##[endgroup]
+2025-12-03T12:30:32.2530136Z ##[group]Determining the checkout info
+2025-12-03T12:30:32.2531401Z ##[endgroup]
+2025-12-03T12:30:32.2546600Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+2025-12-03T12:30:32.2844937Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+2025-12-03T12:30:32.3128833Z ##[group]Checking out the ref
+2025-12-03T12:30:32.3138191Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B feature/pf5-pf6-containers refs/remotes/origin/feature/pf5-pf6-containers
+2025-12-03T12:30:32.3812783Z branch 'feature/pf5-pf6-containers' set up to track 'origin/feature/pf5-pf6-containers'.
+2025-12-03T12:30:32.3820238Z Switched to a new branch 'feature/pf5-pf6-containers'
+2025-12-03T12:30:32.3855255Z ##[endgroup]
+2025-12-03T12:30:32.4111011Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+2025-12-03T12:30:32.4321221Z 8df7e067d6593014669cc1096dae6b93ce8e5100
+2025-12-03T12:30:32.4653775Z ##[group]Run docker version
+2025-12-03T12:30:32.4654140Z [36;1mdocker version[0m
+2025-12-03T12:30:32.4654349Z [36;1mdocker info[0m
+2025-12-03T12:30:32.4857789Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2025-12-03T12:30:32.4858231Z ##[endgroup]
+2025-12-03T12:30:39.8378128Z Client:
+2025-12-03T12:30:39.8378644Z  Version:           27.5.1
+2025-12-03T12:30:39.8379078Z  API version:       1.47
+2025-12-03T12:30:39.8379404Z  Go version:        go1.22.11
+2025-12-03T12:30:39.8379727Z  Git commit:        9f9e405
+2025-12-03T12:30:39.8380050Z  Built:             Wed Jan 22 13:41:44 2025
+2025-12-03T12:30:39.8380412Z  OS/Arch:           windows/amd64
+2025-12-03T12:30:39.8380745Z  Context:           default
+2025-12-03T12:30:39.8380957Z 
+2025-12-03T12:30:39.8381117Z Server: Docker Engine - Community
+2025-12-03T12:30:39.8381453Z  Engine:
+2025-12-03T12:30:39.8382040Z   Version:          27.5.1
+2025-12-03T12:30:39.8383916Z   API version:      1.47 (minimum version 1.24)
+2025-12-03T12:30:39.8384396Z   Go version:       go1.22.11
+2025-12-03T12:30:39.8384754Z   Git commit:       4c9b3b0
+2025-12-03T12:30:39.8385071Z   Built:            Wed Jan 22 13:40:41 2025
+2025-12-03T12:30:39.8385445Z   OS/Arch:          windows/amd64
+2025-12-03T12:30:39.8385766Z   Experimental:     false
+2025-12-03T12:30:44.2983445Z Client:
+2025-12-03T12:30:44.2983774Z  Version:    27.5.1
+2025-12-03T12:30:44.2984041Z  Context:    default
+2025-12-03T12:30:44.2984240Z  Debug Mode: false
+2025-12-03T12:30:44.2984411Z  Plugins:
+2025-12-03T12:30:44.2984594Z   compose: Docker Compose (Docker Inc.)
+2025-12-03T12:30:44.2984832Z     Version:  v2.32.2
+2025-12-03T12:30:44.2985096Z     Path:     C:\ProgramData\Docker\cli-plugins\docker-compose.exe
+2025-12-03T12:30:44.2985495Z 
+2025-12-03T12:30:44.2985596Z Server:
+2025-12-03T12:30:44.2985835Z  Containers: 0
+2025-12-03T12:30:44.2986061Z   Running: 0
+2025-12-03T12:30:44.2986398Z   Paused: 0
+2025-12-03T12:30:44.2986579Z   Stopped: 0
+2025-12-03T12:30:44.2986793Z  Images: 5
+2025-12-03T12:30:44.2987010Z  Server Version: 27.5.1
+2025-12-03T12:30:44.2987285Z  Storage Driver: windowsfilter
+2025-12-03T12:30:44.2988204Z   Windows: 
+2025-12-03T12:30:44.2988457Z  Logging Driver: json-file
+2025-12-03T12:30:44.2988755Z  Plugins:
+2025-12-03T12:30:44.2988952Z   Volume: local
+2025-12-03T12:30:44.2989355Z   Network: ics internal l2bridge l2tunnel nat null overlay private transparent
+2025-12-03T12:30:44.2990022Z   Log: awslogs etwlogs fluentd gcplogs gelf json-file local splunk syslog
+2025-12-03T12:30:44.2990539Z  Swarm: inactive
+2025-12-03T12:30:44.2990801Z  Default Isolation: process
+2025-12-03T12:30:44.2991275Z  Kernel Version: 10.0 20348 (20348.1.amd64fre.fe_release.210507-1500)
+2025-12-03T12:30:44.2991905Z  Operating System: Microsoft Windows Server Version 21H2 (OS Build 20348.4297)
+2025-12-03T12:30:44.2992456Z  OSType: windows
+2025-12-03T12:30:44.2992697Z  Architecture: x86_64
+2025-12-03T12:30:44.2993446Z  CPUs: 4
+2025-12-03T12:30:44.2993684Z  Total Memory: 16GiB
+2025-12-03T12:30:44.2994200Z  Name: runnervmpabsp
+2025-12-03T12:30:44.2994518Z  ID: 9ba5363a-a8a8-4f8c-a3ef-7587445ab263
+2025-12-03T12:30:44.2994912Z  Docker Root Dir: C:\ProgramData\docker
+2025-12-03T12:30:44.2995399Z  Debug Mode: false
+2025-12-03T12:30:44.2995707Z  Username: githubactions
+2025-12-03T12:30:44.2996019Z  Experimental: false
+2025-12-03T12:30:44.2996282Z  Insecure Registries:
+2025-12-03T12:30:44.2996511Z   127.0.0.0/8
+2025-12-03T12:30:44.2996674Z  Live Restore Enabled: false
+2025-12-03T12:30:44.2996878Z  Product License: Community Engine
+2025-12-03T12:30:44.2997033Z 
+2025-12-03T12:30:44.9129089Z ##[group]Run $creds = $env:CR_PAT
+2025-12-03T12:30:44.9129452Z [36;1m$creds = $env:CR_PAT[0m
+2025-12-03T12:30:44.9129675Z [36;1mif (-not $creds) {[0m
+2025-12-03T12:30:44.9129991Z [36;1m  throw "CR_PAT (or GITHUB_TOKEN) not available"[0m
+2025-12-03T12:30:44.9130257Z [36;1m}[0m
+2025-12-03T12:30:44.9130442Z [36;1m$user = $env:CR_USER[0m
+2025-12-03T12:30:44.9130687Z [36;1mWrite-Host "Logging into ghcr.io as $user"[0m
+2025-12-03T12:30:44.9131044Z [36;1m$creds | docker login ghcr.io -u $user --password-stdin[0m
+2025-12-03T12:30:44.9166881Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2025-12-03T12:30:44.9167207Z env:
+2025-12-03T12:30:44.9167826Z   CR_PAT: ***
+2025-12-03T12:30:44.9167994Z   CR_USER: Raizo-TCS
+2025-12-03T12:30:44.9168170Z ##[endgroup]
+2025-12-03T12:30:45.4912888Z Logging into ghcr.io as Raizo-TCS
+2025-12-03T12:30:45.7519464Z WARNING! Your password will be stored unencrypted in C:\Users\runneradmin\.docker\config.json.
+2025-12-03T12:30:45.7520684Z Configure a credential helper to remove this warning. See
+2025-12-03T12:30:45.7521600Z https://docs.docker.com/engine/reference/commandline/login/#credential-stores
+2025-12-03T12:30:45.7522243Z 
+2025-12-03T12:30:45.7534959Z Login Succeeded
+2025-12-03T12:30:45.8364520Z ##[group]Run $tags = @("8df7e067d6593014669cc1096dae6b93ce8e5100", "latest")
+2025-12-03T12:30:45.8365232Z [36;1m$tags = @("8df7e067d6593014669cc1096dae6b93ce8e5100", "latest")[0m
+2025-12-03T12:30:45.8365534Z [36;1m$selected = $null[0m
+2025-12-03T12:30:45.8365729Z [36;1mforeach ($tag in $tags) {[0m
+2025-12-03T12:30:45.8365940Z [36;1m  try {[0m
+2025-12-03T12:30:45.8366136Z [36;1m    docker pull "$env:IMAGE_NAME`:$tag"[0m
+2025-12-03T12:30:45.8366386Z [36;1m    $selected = $tag[0m
+2025-12-03T12:30:45.8366580Z [36;1m    break[0m
+2025-12-03T12:30:45.8366766Z [36;1m  } catch {[0m
+2025-12-03T12:30:45.8366996Z [36;1m    Write-Host "Failed to pull $env:IMAGE_NAME`:$tag"[0m
+2025-12-03T12:30:45.8367261Z [36;1m  }[0m
+2025-12-03T12:30:45.8367398Z [36;1m}[0m
+2025-12-03T12:30:45.8367552Z [36;1mif (-not $selected) {[0m
+2025-12-03T12:30:45.8367804Z [36;1m  throw "Unable to pull any tag for $env:IMAGE_NAME"[0m
+2025-12-03T12:30:45.8368056Z [36;1m}[0m
+2025-12-03T12:30:45.8368426Z [36;1m"selected_tag=$selected" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append[0m
+2025-12-03T12:30:45.8399464Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+2025-12-03T12:30:45.8399775Z env:
+2025-12-03T12:30:45.8400126Z   IMAGE_NAME: ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:1197fe6a5b8265d890cf7ddffa5c0d80659ee2a9
+2025-12-03T12:30:45.8400530Z ##[endgroup]
+2025-12-03T12:30:46.0801842Z invalid reference format
+2025-12-03T12:30:46.2130117Z ##[error]Process completed with exit code 1.
+2025-12-03T12:30:46.2396751Z ##[group]Run actions/upload-artifact@v4
+2025-12-03T12:30:46.2397060Z with:
+2025-12-03T12:30:46.2397301Z   name: windows-pf5-8df7e067d6593014669cc1096dae6b93ce8e5100
+2025-12-03T12:30:46.2397898Z   path: build/bindings/python/dist/*.tar.gz
+build/bindings/python/dist/*.whl
+build/bindings/ruby/*.gem
+build/logs/**/*.log
+
+2025-12-03T12:30:46.2398407Z   if-no-files-found: ignore
+2025-12-03T12:30:46.2398603Z   retention-days: 7
+2025-12-03T12:30:46.2398768Z   compression-level: 6
+2025-12-03T12:30:46.2398965Z   overwrite: false
+2025-12-03T12:30:46.2399136Z   include-hidden-files: false
+2025-12-03T12:30:46.2399330Z ##[endgroup]
+2025-12-03T12:30:46.5277711Z Multiple search paths detected. Calculating the least common ancestor of all paths
+2025-12-03T12:30:46.5285238Z The least common ancestor is D:\a\archive_r\archive_r\build. This will be the root directory of the artifact
+2025-12-03T12:30:46.5287553Z No files were found with the provided path: build/bindings/python/dist/*.tar.gz
+2025-12-03T12:30:46.5287987Z build/bindings/python/dist/*.whl
+2025-12-03T12:30:46.5288204Z build/bindings/ruby/*.gem
+2025-12-03T12:30:46.5288437Z build/logs/**/*.log. No artifacts will be uploaded.
+2025-12-03T12:30:46.5538843Z Post job cleanup.
+2025-12-03T12:30:46.8055293Z [command]"C:\Program Files\Git\bin\git.exe" version
+2025-12-03T12:30:46.8303442Z git version 2.51.2.windows.1
+2025-12-03T12:30:46.8384184Z Temporarily overriding HOME='D:\a\_temp\a611cd62-39ac-4a11-a59a-37cf4d0e41bc' before making global git config changes
+2025-12-03T12:30:46.8385335Z Adding repository directory to the temporary git global config as a safe directory
+2025-12-03T12:30:46.8396821Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+2025-12-03T12:30:46.8683376Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+2025-12-03T12:30:46.8935083Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+2025-12-03T12:30:47.3671205Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-12-03T12:30:47.3975829Z http.https://github.com/.extraheader
+2025-12-03T12:30:47.4032679Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+2025-12-03T12:30:47.4335108Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+2025-12-03T12:30:47.9379578Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+2025-12-03T12:30:47.9624167Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+2025-12-03T12:30:48.4574674Z Cleaning up orphan processes

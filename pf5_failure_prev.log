@@ -1,0 +1,260 @@
+PF5 Windows Container Build & Test	Set up job	﻿2025-12-04T00:59:57.5110491Z Current runner version: '2.329.0'
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5170699Z ##[group]Runner Image Provisioner
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5171812Z Hosted Compute Agent
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5172671Z Version: 20251124.448
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5173576Z Commit: fda5086b43ec66ade217e5fcd18146c879571177
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5174655Z Build Date: 2025-11-24T21:16:26Z
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5175553Z ##[endgroup]
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5176314Z ##[group]Operating System
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5177230Z Microsoft Windows Server 2022
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5178115Z 10.0.20348
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5178822Z Datacenter
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5179521Z ##[endgroup]
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5180245Z ##[group]Runner Image
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5181008Z Image: windows-2022
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5181726Z Version: 20251125.125.1
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5183463Z Included Software: https://github.com/actions/runner-images/blob/win22/20251125.125/images/windows/Windows2022-Readme.md
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5185806Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20251125.125
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5187971Z ##[endgroup]
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5189025Z ##[group]GITHUB_TOKEN Permissions
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5191455Z Contents: read
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5191973Z Metadata: read
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5192389Z Packages: read
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5192839Z ##[endgroup]
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5195228Z Secret source: Actions
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5195839Z Prepare workflow directory
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5516736Z Prepare all required actions
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.5554056Z Getting action download info
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:57.7691269Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:58.0856106Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+PF5 Windows Container Build & Test	Set up job	2025-12-04T00:59:58.3981462Z Complete job name: PF5 Windows Container Build & Test
+PF5 Windows Container Build & Test	Checkout repository	﻿2025-12-04T00:59:58.5832732Z ##[group]Run actions/checkout@v4
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5833753Z with:
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5834122Z   repository: Raizo-TCS/archive_r
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5834794Z   token: ***
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5835143Z   ssh-strict: true
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5835493Z   ssh-user: git
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5835870Z   persist-credentials: true
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5836278Z   clean: true
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5836646Z   sparse-checkout-cone-mode: true
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5837085Z   fetch-depth: 1
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5837434Z   fetch-tags: false
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5837797Z   show-progress: true
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5838167Z   lfs: false
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5838503Z   submodules: false
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5838873Z   set-safe-directory: true
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.5839460Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.7484942Z Syncing repository: Raizo-TCS/archive_r
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.7486644Z ##[group]Getting Git version info
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.7487217Z Working directory is 'D:\a\archive_r\archive_r'
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:58.8472520Z [command]"C:\Program Files\Git\bin\git.exe" version
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2140749Z git version 2.52.0.windows.1
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2189047Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2211868Z Temporarily overriding HOME='D:\a\_temp\ecfe819b-df02-4112-9a90-925df6c481ce' before making global git config changes
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2214272Z Adding repository directory to the temporary git global config as a safe directory
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2223025Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2751433Z Deleting the contents of 'D:\a\archive_r\archive_r'
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2756957Z ##[group]Initializing the repository
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.2766757Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\archive_r\archive_r
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.3620595Z Initialized empty Git repository in D:/a/archive_r/archive_r/.git/
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.3655100Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Raizo-TCS/archive_r
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4163099Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4164255Z ##[group]Disabling automatic garbage collection
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4172126Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4397261Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4398331Z ##[group]Setting up auth
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4410564Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T00:59:59.4649845Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:01.0813860Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:01.1040735Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:01.5322921Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:01.5548148Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:02.0005641Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:02.0256761Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:02.0257598Z ##[group]Fetching the repository
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:02.0271493Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +16a19c6dac579966d8d7ad3dab7b0308241e8994:refs/remotes/pull/2/merge
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:03.9701282Z From https://github.com/Raizo-TCS/archive_r
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:03.9702025Z  * [new ref]         16a19c6dac579966d8d7ad3dab7b0308241e8994 -> pull/2/merge
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:03.9985362Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:03.9986049Z ##[group]Determining the checkout info
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:03.9988901Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:03.9999021Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.0362507Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.0584509Z ##[group]Checking out the ref
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.0596136Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/2/merge
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1423165Z Note: switching to 'refs/remotes/pull/2/merge'.
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1423778Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1424185Z You are in 'detached HEAD' state. You can look around, make experimental
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1425044Z changes and commit them, and you can discard any commits you make in this
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1425776Z state without impacting any branches by switching back to a branch.
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1426458Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1426715Z If you want to create a new branch to retain commits you create, you may
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1427458Z do so (now or later) by using -c with the switch command. Example:
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1427881Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1428043Z   git switch -c <new-branch-name>
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1428332Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1428502Z Or undo this operation with:
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1428757Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1428871Z   git switch -
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1429054Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1429390Z Turn off this advice by setting config variable advice.detachedHead to false
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1429860Z 
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1430445Z HEAD is now at 16a19c6 Merge c965132f45b0e23043d3c5c7cf35b9e7f2f150f0 into def6b5a7e993ee929d6903771f283eb2ebe02e2b
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1452407Z ##[endgroup]
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1758007Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+PF5 Windows Container Build & Test	Checkout repository	2025-12-04T01:00:04.1952238Z 16a19c6dac579966d8d7ad3dab7b0308241e8994
+PF5 Windows Container Build & Test	Show Docker info	﻿2025-12-04T01:00:04.2267787Z ##[group]Run docker version
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:04.2268162Z [36;1mdocker version[0m
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:04.2269111Z [36;1mdocker info[0m
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:04.2430848Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:04.2431235Z ##[endgroup]
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3780314Z Client:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3780949Z  Version:           27.5.1
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3781510Z  API version:       1.47
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3781929Z  Go version:        go1.22.11
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3782340Z  Git commit:        9f9e405
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3782791Z  Built:             Wed Jan 22 13:41:44 2025
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3783398Z  OS/Arch:           windows/amd64
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3783811Z  Context:           default
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3784106Z 
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3784316Z Server: Docker Engine - Community
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3784677Z  Engine:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3785139Z   Version:          27.5.1
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3789033Z   API version:      1.47 (minimum version 1.24)
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3789637Z   Go version:       go1.22.11
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3789984Z   Git commit:       4c9b3b0
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3790292Z   Built:            Wed Jan 22 13:40:41 2025
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3790790Z   OS/Arch:          windows/amd64
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:12.3791157Z   Experimental:     false
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4559786Z Client:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4560137Z  Version:    27.5.1
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4560414Z  Context:    default
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4560670Z  Debug Mode: false
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4560855Z  Plugins:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4561059Z   compose: Docker Compose (Docker Inc.)
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4561291Z     Version:  v2.32.2
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4561608Z     Path:     C:\ProgramData\Docker\cli-plugins\docker-compose.exe
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4561863Z 
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4561919Z Server:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4562106Z  Containers: 0
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4562297Z   Running: 0
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4562477Z   Paused: 0
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4562655Z   Stopped: 0
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4562830Z  Images: 5
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4563048Z  Server Version: 27.5.1
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4563291Z  Storage Driver: windowsfilter
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4563512Z   Windows: 
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4563693Z  Logging Driver: json-file
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4563903Z  Plugins:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4564071Z   Volume: local
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4564410Z   Network: ics internal l2bridge l2tunnel nat null overlay private transparent
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4564938Z   Log: awslogs etwlogs fluentd gcplogs gelf json-file local splunk syslog
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4565315Z  Swarm: inactive
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4565521Z  Default Isolation: process
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4565854Z  Kernel Version: 10.0 20348 (20348.1.amd64fre.fe_release.210507-1500)
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4566359Z  Operating System: Microsoft Windows Server Version 21H2 (OS Build 20348.4405)
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4566750Z  OSType: windows
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4566942Z  Architecture: x86_64
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4567142Z  CPUs: 4
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4605439Z  Total Memory: 16GiB
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4605809Z  Name: runnervmeol0e
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4606148Z  ID: 37f4b4bf-d3fd-4a50-8c09-cb01eff0ebbd
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4606566Z  Docker Root Dir: C:\ProgramData\docker
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4607178Z  Debug Mode: false
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4607489Z  Username: githubactions
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4607783Z  Experimental: false
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4608068Z  Insecure Registries:
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4608307Z   127.0.0.0/8
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4608528Z  Live Restore Enabled: false
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4608843Z  Product License: Community Engine
+PF5 Windows Container Build & Test	Show Docker info	2025-12-04T01:00:16.4609092Z 
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	﻿2025-12-04T01:00:17.1958688Z ##[group]Run $creds = $env:CR_PAT
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1959052Z [36;1m$creds = $env:CR_PAT[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1959371Z [36;1mif (-not $creds -or $creds.Trim().Length -eq 0) {[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1959822Z [36;1m  throw "CR_PAT is empty. Configure GHCR_PAT (write:packages) or rely on default GITHUB_TOKEN."[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1960195Z [36;1m}[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1960435Z [36;1m$user = if ($env:CR_USER) { $env:CR_USER.Trim() } else { "Raizo-TCS" }[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1960973Z [36;1mWrite-Host "Logging into ghcr.io as $user"[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1961316Z [36;1m$creds | docker login ghcr.io -u $user --password-stdin[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1961622Z [36;1mif ($LASTEXITCODE -ne 0) {[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1962112Z [36;1m  Write-Error "docker login failed. Ensure GHCR terms are accepted for $user and GHCR_PAT has write:packages scope if required."[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1962598Z [36;1m  exit $LASTEXITCODE[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1962776Z [36;1m}[0m
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1996800Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1997106Z env:
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1997562Z   CR_PAT: ***
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1997730Z   CR_USER: raizo-tcs
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.1997897Z ##[endgroup]
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:17.8639759Z Logging into ghcr.io as raizo-tcs
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:18.1369788Z WARNING! Your password will be stored unencrypted in C:\Users\runneradmin\.docker\config.json.
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:18.1370972Z Configure a credential helper to remove this warning. See
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:18.1371899Z https://docs.docker.com/engine/reference/commandline/login/#credential-stores
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:18.1372524Z 
+PF5 Windows Container Build & Test	Login to GitHub Container Registry	2025-12-04T01:00:18.1384185Z Login Succeeded
+PF5 Windows Container Build & Test	Pull PF5 image	﻿2025-12-04T01:00:18.2184048Z ##[group]Run $tags = @("16a19c6dac579966d8d7ad3dab7b0308241e8994", "latest")
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2184597Z [36;1m$tags = @("16a19c6dac579966d8d7ad3dab7b0308241e8994", "latest")[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2184910Z [36;1m$selected = $null[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2185115Z [36;1mforeach ($tag in $tags) {[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2185415Z [36;1m  Write-Host "Attempting to pull $env:IMAGE_NAME`:$tag..."[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2185727Z [36;1m  docker pull "$env:IMAGE_NAME`:$tag"[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2185970Z [36;1m  if ($LASTEXITCODE -eq 0) {[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2186183Z [36;1m    $selected = $tag[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2186365Z [36;1m    break[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2186515Z [36;1m  }[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2186749Z [36;1m  Write-Host "Failed to pull $env:IMAGE_NAME`:$tag"[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2187004Z [36;1m}[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2187154Z [36;1mif (-not $selected) {[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2187408Z [36;1m  throw "Unable to pull any tag for $env:IMAGE_NAME"[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2187698Z [36;1m}[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2188008Z [36;1m"selected_tag=$selected" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2218578Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2218883Z env:
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2219106Z   IMAGE_NAME: ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.2219392Z ##[endgroup]
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.4760045Z Attempting to pull ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:16a19c6dac579966d8d7ad3dab7b0308241e8994...
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.7089892Z Error response from daemon: manifest unknown
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.7155183Z Failed to pull ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:16a19c6dac579966d8d7ad3dab7b0308241e8994
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.7162949Z Attempting to pull ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest...
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.8999052Z Error response from daemon: manifest unknown
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:18.9034524Z Failed to pull ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:19.1750813Z [31;1mException: [0mD:\a\_temp\33965e7e-6e20-4cf5-82f7-5bdea2b6ed97.ps1:14[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:19.1751552Z [31;1m[0m[36;1mLine |[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:19.1752081Z [31;1m[0m[36;1m[36;1m  14 | [0m   [36;1mthrow "Unable to pull any tag for $env:IMAGE_NAME"[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:19.1752789Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:19.1753752Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mUnable to pull any tag for ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc[0m
+PF5 Windows Container Build & Test	Pull PF5 image	2025-12-04T01:00:19.2178147Z ##[error]Process completed with exit code 1.
+PF5 Windows Container Build & Test	Upload PF5 artifacts	﻿2025-12-04T01:00:19.2345794Z ##[group]Run actions/upload-artifact@v4
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2346123Z with:
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2346377Z   name: archive-r-PF5-16a19c6dac579966d8d7ad3dab7b0308241e8994
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2346993Z   path: build/bindings/python/dist/*.tar.gz
+PF5 Windows Container Build & Test	Upload PF5 artifacts	build/bindings/python/dist/*.whl
+PF5 Windows Container Build & Test	Upload PF5 artifacts	build/bindings/ruby/*.gem
+PF5 Windows Container Build & Test	Upload PF5 artifacts	build/logs/**/*.log
+PF5 Windows Container Build & Test	Upload PF5 artifacts	
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2347505Z   if-no-files-found: ignore
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2347708Z   retention-days: 7
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2347878Z   compression-level: 6
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2348061Z   overwrite: false
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2348230Z   include-hidden-files: false
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.2348431Z ##[endgroup]
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.5281715Z Multiple search paths detected. Calculating the least common ancestor of all paths
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.5289495Z The least common ancestor is D:\a\archive_r\archive_r\build. This will be the root directory of the artifact
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.5292050Z No files were found with the provided path: build/bindings/python/dist/*.tar.gz
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.5292799Z build/bindings/python/dist/*.whl
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.5293134Z build/bindings/ruby/*.gem
+PF5 Windows Container Build & Test	Upload PF5 artifacts	2025-12-04T01:00:19.5293485Z build/logs/**/*.log. No artifacts will be uploaded.
+PF5 Windows Container Build & Test	Post Checkout repository	﻿2025-12-04T01:00:19.5526275Z Post job cleanup.
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.7677165Z [command]"C:\Program Files\Git\bin\git.exe" version
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.7884061Z git version 2.52.0.windows.1
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.7946217Z Temporarily overriding HOME='D:\a\_temp\b65a4570-40d7-4921-95ba-0bb7537bf6de' before making global git config changes
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.7947436Z Adding repository directory to the temporary git global config as a safe directory
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.7957206Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.8179152Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:19.8395814Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:20.2699522Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:20.2943947Z http.https://github.com/.extraheader
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:20.2989731Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:20.3296563Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:20.7408082Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+PF5 Windows Container Build & Test	Post Checkout repository	2025-12-04T01:00:20.7653099Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+PF5 Windows Container Build & Test	Complete job	﻿2025-12-04T01:00:21.2073460Z Cleaning up orphan processes

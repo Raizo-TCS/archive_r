@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <sys/types.h>
 #include <vector>
@@ -145,6 +146,7 @@ public:
   const EntryMetadataValue *find_metadata(const std::string &key) const;
 
   static std::unique_ptr<Entry> create(PathHierarchy hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent);
+  static std::unique_ptr<Entry> create(PathHierarchy hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent, std::optional<FilesystemMetadataInfo> metadata);
 
   // Copy/move operations
   Entry(const Entry &);
@@ -161,6 +163,7 @@ private:
   // Private constructor - only friends can create Entry objects
   explicit Entry(Impl *impl);
   Entry(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent);
+  Entry(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent, std::optional<FilesystemMetadataInfo> metadata);
 };
 
 } // namespace archive_r

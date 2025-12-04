@@ -1,0 +1,239 @@
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	﻿2025-12-03T09:57:57.2950920Z Current runner version: '2.329.0'
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2969160Z ##[group]Runner Image Provisioner
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2969810Z Hosted Compute Agent
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2970200Z Version: 20251124.448
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2970740Z Commit: fda5086b43ec66ade217e5fcd18146c879571177
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2971230Z Build Date: 2025-11-24T21:16:26Z
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2971630Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2971970Z ##[group]Operating System
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2972370Z macOS
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2972690Z 14.8.2
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2973000Z 23J126
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2973310Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2973640Z ##[group]Runner Image
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2973990Z Image: macos-14-arm64
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2974330Z Version: 20251126.0029
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2975260Z Included Software: https://github.com/actions/runner-images/blob/macos-14-arm64/20251126.0029/images/macos/macos-14-arm64-Readme.md
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2976300Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-14-arm64%2F20251126.0029
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2977190Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2977980Z ##[group]GITHUB_TOKEN Permissions
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2979340Z Contents: read
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2979710Z Metadata: read
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2980030Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2981650Z Secret source: Actions
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.2982090Z Prepare workflow directory
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.3266360Z Prepare all required actions
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.3301540Z Getting action download info
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:57.7475720Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:59.2951310Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:59.4807500Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build-macos-arch-wheels (macos-14, 3.9)	Set up job	2025-12-03T09:57:59.7557340Z Complete job name: build-macos-arch-wheels (macos-14, 3.9)
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	﻿2025-12-03T09:57:59.8027000Z ##[group]Run actions/checkout@v4
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8027980Z with:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8028300Z   repository: Raizo-TCS/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8028910Z   token: ***
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8029200Z   ssh-strict: true
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8029500Z   ssh-user: git
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8029790Z   persist-credentials: true
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8030110Z   clean: true
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8030400Z   sparse-checkout-cone-mode: true
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8030860Z   fetch-depth: 1
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8031160Z   fetch-tags: false
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8031460Z   show-progress: true
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8031760Z   lfs: false
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8032060Z   submodules: false
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8032370Z   set-safe-directory: true
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:57:59.8032920Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.0869420Z Syncing repository: Raizo-TCS/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.0871720Z ##[group]Getting Git version info
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.0872290Z Working directory is '/Users/runner/work/archive_r/archive_r'
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.0883120Z [command]/opt/homebrew/bin/git version
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1183540Z git version 2.50.1
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1215030Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1226500Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/68f1c250-4dbe-4156-af7a-7f7e7b357d90/.gitconfig'
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1234900Z Temporarily overriding HOME='/Users/runner/work/_temp/68f1c250-4dbe-4156-af7a-7f7e7b357d90' before making global git config changes
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1236120Z Adding repository directory to the temporary git global config as a safe directory
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1241520Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/archive_r/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1329550Z Deleting the contents of '/Users/runner/work/archive_r/archive_r'
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1340050Z ##[group]Initializing the repository
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1349270Z [command]/opt/homebrew/bin/git init /Users/runner/work/archive_r/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1687330Z hint: Using 'master' as the name for the initial branch. This default branch name
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1690630Z hint: is subject to change. To configure the initial branch name to use in all
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1695110Z hint: of your new repositories, which will suppress this warning, call:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1696960Z hint:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1698180Z hint: 	git config --global init.defaultBranch <name>
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1699580Z hint:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1701080Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1813220Z hint: 'development'. The just-created branch can be renamed via this command:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1814300Z hint:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1814640Z hint: 	git branch -m <name>
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1815000Z hint:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1815540Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1816470Z Initialized empty Git repository in /Users/runner/work/archive_r/archive_r/.git/
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1818310Z [command]/opt/homebrew/bin/git remote add origin https://github.com/Raizo-TCS/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1881470Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1883780Z ##[group]Disabling automatic garbage collection
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1895050Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1947550Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1950160Z ##[group]Setting up auth
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.1951930Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.2013930Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.3143450Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.3266010Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.4327320Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.4393970Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.5487670Z [command]/opt/homebrew/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.5552960Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.5555900Z ##[group]Fetching the repository
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:00.5561620Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +786d44cd9578fe1e0f263e5d80b89c8bb2013373:refs/remotes/pull/2/merge
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.3767280Z From https://github.com/Raizo-TCS/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.3779900Z  * [new ref]         786d44cd9578fe1e0f263e5d80b89c8bb2013373 -> pull/2/merge
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.3875260Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.3877240Z ##[group]Determining the checkout info
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.3878360Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.3879220Z [command]/opt/homebrew/bin/git sparse-checkout disable
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4008520Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4094490Z ##[group]Checking out the ref
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4096270Z [command]/opt/homebrew/bin/git checkout --progress --force refs/remotes/pull/2/merge
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4553840Z HEAD is now at 786d44c Merge daf636abe24aabe724bdb64901a5809c14fff37c into def6b5a7e993ee929d6903771f283eb2ebe02e2b
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4573660Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4650480Z [command]/opt/homebrew/bin/git log -1 --format=%H
+build-macos-arch-wheels (macos-14, 3.9)	Checkout repository	2025-12-03T09:58:01.4716530Z 786d44cd9578fe1e0f263e5d80b89c8bb2013373
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	﻿2025-12-03T09:58:01.4954440Z ##[group]Run actions/setup-python@v5
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4954720Z with:
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4954910Z   python-version: 3.9
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4955090Z   check-latest: false
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4955400Z   token: ***
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4956050Z   update-environment: true
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4956280Z   allow-prereleases: false
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4956480Z   freethreaded: false
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.4956670Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.7568370Z ##[group]Installed versions
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:01.7693220Z Version 3.9 was not found in the local cache
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:02.8439970Z Version 3.9 is available for downloading
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:02.8440750Z Download from "https://github.com/actions/python-versions/releases/download/3.9.13-11183687820/python-3.9.13-darwin-arm64.tar.gz"
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:03.7117100Z Extract downloaded archive
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:03.7413710Z [command]/usr/bin/tar xz -C /Users/runner/work/_temp/f432f41b-5375-4b83-a2cd-b4381194aee4 -f /Users/runner/work/_temp/e02c6b47-4d72-4e50-afe4-aab72d1d2209
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:03.8671360Z Execute installation script
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:03.8897530Z Check if Python hostedtoolcache folder exist...
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:03.9027910Z Install Python binaries from prebuilt package
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7158100Z installer: Package name is Python
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7165680Z installer: Upgrading at base path /
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7166830Z installer: The upgrade was successful.
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7168530Z Create hostedtoolcach symlinks (Required for the backward compatibility)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7169710Z Create Python 3.9.13 folder
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7420760Z Create additional symlinks (Required for the UsePythonVersion Azure Pipelines task and the setup-python GitHub Action)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:25.7542000Z Upgrading pip...
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:27.7206050Z Looking in links: /var/folders/8s/1jkm89h96qjdtjr7q3bll2vh0000gn/T/tmpmw01van1
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:27.7237700Z Requirement already satisfied: setuptools in /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages (58.1.0)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:27.7240250Z Requirement already satisfied: pip in /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages (22.0.4)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.5164720Z Collecting pip
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.5801730Z Downloading pip-25.3-py3-none-any.whl (1.8 MB)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.6529340Z ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 25.3 MB/s eta 0:00:00
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.6530000Z 
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.6806810Z Installing collected packages: pip
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.6807560Z Attempting uninstall: pip
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.6808460Z Found existing installation: pip 22.0.4
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:28.8100070Z Uninstalling pip-22.0.4:
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:29.1353600Z Successfully uninstalled pip-22.0.4
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:30.2974880Z Successfully installed pip-25.3
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:30.3844140Z Install OpenSSL certificates
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.0084790Z Collecting certifi
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.0116160Z Using cached certifi-2025.11.12-py3-none-any.whl.metadata (2.5 kB)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.0176660Z Using cached certifi-2025.11.12-py3-none-any.whl (159 kB)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.0389480Z Installing collected packages: certifi
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.0486130Z Successfully installed certifi-2025.11.12
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2203430Z -- pip install --upgrade certifi
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2204470Z  -- removing any existing file or link
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2204980Z  -- creating symlink to certifi certificate bundle
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2205470Z  -- setting permissions
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2205760Z  -- update complete
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2300340Z Create complete file
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2656250Z Successfully set up CPython (3.9.13)
+build-macos-arch-wheels (macos-14, 3.9)	Set up Python 3.9	2025-12-03T09:58:31.2660220Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	﻿2025-12-03T09:58:31.3181950Z ##[group]Run set -euo pipefail
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3183130Z [36;1mset -euo pipefail[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3183990Z [36;1m# Force build from source to respect MACOSX_DEPLOYMENT_TARGET[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3185760Z [36;1mbrew install --build-from-source libarchive xz lz4 zstd libb2[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3186890Z [36;1mLIBARCHIVE_ROOT="$(brew --prefix libarchive)"[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3187910Z [36;1mecho "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3188850Z [36;1mecho "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3191720Z [36;1mecho "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >>"$GITHUB_ENV"[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3192720Z [36;1mecho "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >>"$GITHUB_ENV"[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3193700Z [36;1mecho "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >>"$GITHUB_ENV"[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3442800Z shell: /bin/bash -e {0}
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3443440Z env:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3444100Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.9.13/arm64
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3445680Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.9.13/arm64/lib/pkgconfig
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3446260Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.9.13/arm64
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3446700Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.9.13/arm64
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3447100Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.9.13/arm64
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3447420Z   MACOSX_DEPLOYMENT_TARGET: 11.0
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3447670Z   HOMEBREW_NO_AUTO_UPDATE: 1
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3447970Z   HOMEBREW_NO_INSTALL_CLEANUP: 1
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:31.3448200Z ##[endgroup]
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:36.0707140Z ✔︎ JSON API formula_tap_migrations.jws.json
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:36.0711060Z ✔︎ JSON API cask_tap_migrations.jws.json
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:37.6698050Z ##[warning]xz 5.8.1 is already installed and up-to-date.
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	To reinstall 5.8.1, run:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	  brew reinstall xz
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:37.6792920Z ##[warning]lz4 1.10.0 is already installed and up-to-date.
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	To reinstall 1.10.0, run:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	  brew reinstall lz4
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:37.6832060Z ##[warning]zstd 1.5.7 is already installed and up-to-date.
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	To reinstall 1.5.7, run:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	  brew reinstall zstd
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:39.0582870Z [32m==>[0m [1mFetching downloads for: [32mlibarchive[39m and [32mlibb2[39m[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:40.0307190Z ✔︎ API Source libarchive.rb
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:40.1814130Z ✔︎ API Source libb2.rb
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:41.8032390Z ✔︎ API Source libb2.rb
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:41.8059730Z ✔︎ Patch configure-big_sur.diff
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:41.8069760Z ✔︎ Formula libb2 (0.98.1)
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:42.0562810Z ✔︎ Formula libarchive (3.8.3)
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:42.6443530Z [32m==>[0m [1mInstalling libarchive dependency: [32mlibb2[39m[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:45.4278250Z [34m==>[0m [1mPatching[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:45.4372770Z [34m==>[0m [1mApplying configure-big_sur.diff[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:58:45.4807800Z [34m==>[0m [1m./configure --disable-silent-rules[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:59:02.2611420Z [34m==>[0m [1mmake install[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:59:05.2506590Z 🍺  /opt/homebrew/Cellar/libb2/0.98.1: 9 files, 132.4KB, built in 22 seconds
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:59:08.1056690Z [34m==>[0m [1m./configure --without-lzo2 --without-nettle --without-xml2 --without-openssl[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T09:59:57.6167090Z [34m==>[0m [1mmake install[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6296730Z [34m==>[0m [1mCaveats[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6302220Z libarchive is keg-only, which means it was not symlinked into /opt/homebrew,
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6302950Z because macOS already provides this software and installing another version in
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6303820Z parallel can cause all kinds of trouble.
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6304190Z 
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6304750Z If you need to have libarchive first in your PATH, run:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6306530Z   echo 'export PATH="/opt/homebrew/opt/libarchive/bin:$PATH"' >> /Users/runner/.bash_profile
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6307630Z 
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6308200Z For compilers to find libarchive you may need to set:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6319850Z   export LDFLAGS="-L/opt/homebrew/opt/libarchive/lib"
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6320310Z   export CPPFLAGS="-I/opt/homebrew/opt/libarchive/include"
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6320690Z 
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6321640Z For pkgconf to find libarchive you may need to set:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6322950Z   export PKG_CONFIG_PATH="/opt/homebrew/opt/libarchive/lib/pkgconfig"
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6324290Z [34m==>[0m [1mSummary[0m
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:24.6372590Z 🍺  /opt/homebrew/Cellar/libarchive/3.8.3: 65 files, 4MB, built in 1 minute 19 seconds
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:27.5321880Z ##[error]An exception occurred within a child process:
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	  FormulaUnavailableError: No available formula with the name "formula.jws.json".
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	
+build-macos-arch-wheels (macos-14, 3.9)	Install libarchive	2025-12-03T10:00:27.7114810Z ##[error]Process completed with exit code 1.
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	﻿2025-12-03T10:00:27.7300530Z Post job cleanup.
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.4944240Z [command]/opt/homebrew/bin/git version
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.5377010Z git version 2.50.1
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.5937840Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/b3d8f483-0caf-4b57-9058-25f4b27b104b/.gitconfig'
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.6048780Z Temporarily overriding HOME='/Users/runner/work/_temp/b3d8f483-0caf-4b57-9058-25f4b27b104b' before making global git config changes
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.6099170Z Adding repository directory to the temporary git global config as a safe directory
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.6155090Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/archive_r/archive_r
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.6243670Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.6250620Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.8548640Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.8636190Z http.https://github.com/.extraheader
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.8661480Z [command]/opt/homebrew/bin/git config --local --unset-all http.https://github.com/.extraheader
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:28.8726870Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:29.0786610Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-macos-arch-wheels (macos-14, 3.9)	Post Checkout repository	2025-12-03T10:00:29.1004960Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+build-macos-arch-wheels (macos-14, 3.9)	Complete job	﻿2025-12-03T10:00:29.2926750Z Cleaning up orphan processes

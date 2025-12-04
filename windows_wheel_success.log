@@ -1,0 +1,370 @@
+build-windows-wheels (3.12)	Set up job	﻿2025-12-04T00:35:59.4650924Z Current runner version: '2.329.0'
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4701795Z ##[group]Runner Image Provisioner
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4702679Z Hosted Compute Agent
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4703143Z Version: 20251124.448
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4703674Z Commit: fda5086b43ec66ade217e5fcd18146c879571177
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4704258Z Build Date: 2025-11-24T21:16:26Z
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4704768Z ##[endgroup]
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4705225Z ##[group]Operating System
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4705711Z Microsoft Windows Server 2022
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4706198Z 10.0.20348
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4706610Z Datacenter
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4706987Z ##[endgroup]
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4707399Z ##[group]Runner Image
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4707847Z Image: windows-2022
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4708284Z Version: 20251125.125.1
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4709228Z Included Software: https://github.com/actions/runner-images/blob/win22/20251125.125/images/windows/Windows2022-Readme.md
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4710469Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20251125.125
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4711774Z ##[endgroup]
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4712697Z ##[group]GITHUB_TOKEN Permissions
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4714406Z Contents: read
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4714935Z Metadata: read
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4715370Z Packages: read
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4715765Z ##[endgroup]
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4717758Z Secret source: Actions
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.4718355Z Prepare workflow directory
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.5030346Z Prepare all required actions
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:35:59.5068869Z Getting action download info
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:36:00.0581021Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:36:00.6674719Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:36:00.8117148Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build-windows-wheels (3.12)	Set up job	2025-12-04T00:36:01.1579030Z Complete job name: build-windows-wheels (3.12)
+build-windows-wheels (3.12)	Checkout repository	﻿2025-12-04T00:36:01.3468088Z ##[group]Run actions/checkout@v4
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3469792Z with:
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3470681Z   repository: Raizo-TCS/archive_r
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3471955Z   token: ***
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3472641Z   ssh-strict: true
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3473355Z   ssh-user: git
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3474096Z   persist-credentials: true
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3474920Z   clean: true
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3475645Z   sparse-checkout-cone-mode: true
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3476525Z   fetch-depth: 1
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3477229Z   fetch-tags: false
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3477963Z   show-progress: true
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3478697Z   lfs: false
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3479359Z   submodules: false
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3480101Z   set-safe-directory: true
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.3481137Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.5118118Z Syncing repository: Raizo-TCS/archive_r
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.5121589Z ##[group]Getting Git version info
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.5123236Z Working directory is 'D:\a\archive_r\archive_r'
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:01.6326016Z [command]"C:\Program Files\Git\bin\git.exe" version
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.1447616Z git version 2.52.0.windows.1
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.1497104Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.1519248Z Temporarily overriding HOME='D:\a\_temp\39210b4f-7176-4bb3-b155-22a461686321' before making global git config changes
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.1521713Z Adding repository directory to the temporary git global config as a safe directory
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.1530084Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.2169802Z Deleting the contents of 'D:\a\archive_r\archive_r'
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.2175590Z ##[group]Initializing the repository
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.2185307Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\archive_r\archive_r
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3155089Z Initialized empty Git repository in D:/a/archive_r/archive_r/.git/
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3191559Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Raizo-TCS/archive_r
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3750876Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3752923Z ##[group]Disabling automatic garbage collection
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3759638Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3997016Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.3998878Z ##[group]Setting up auth
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.4016716Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:02.4320799Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:04.1274159Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:04.1499599Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:04.5582317Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:04.5806664Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:05.0535717Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:05.0809590Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:05.0810411Z ##[group]Fetching the repository
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:05.0832170Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +f0be218484aef8ee5124a004a684c4d65e77f57a:refs/remotes/pull/2/merge
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4027088Z From https://github.com/Raizo-TCS/archive_r
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4027847Z  * [new ref]         f0be218484aef8ee5124a004a684c4d65e77f57a -> pull/2/merge
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4378689Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4379095Z ##[group]Determining the checkout info
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4382649Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4397247Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.4781512Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5009129Z ##[group]Checking out the ref
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5018310Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force refs/remotes/pull/2/merge
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5927052Z Note: switching to 'refs/remotes/pull/2/merge'.
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5927639Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5927928Z You are in 'detached HEAD' state. You can look around, make experimental
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5928925Z changes and commit them, and you can discard any commits you make in this
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5929397Z state without impacting any branches by switching back to a branch.
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5929752Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5929914Z If you want to create a new branch to retain commits you create, you may
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5930332Z do so (now or later) by using -c with the switch command. Example:
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5930558Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5930689Z   git switch -c <new-branch-name>
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5930857Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5930943Z Or undo this operation with:
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5931132Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5931227Z   git switch -
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5931337Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5931517Z Turn off this advice by setting config variable advice.detachedHead to false
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5931787Z 
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.5932080Z HEAD is now at f0be218 Merge 49f18194c0c77490d5e7b323897fce937982dccc into def6b5a7e993ee929d6903771f283eb2ebe02e2b
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.6268573Z ##[endgroup]
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.6276488Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+build-windows-wheels (3.12)	Checkout repository	2025-12-04T00:36:06.6480955Z f0be218484aef8ee5124a004a684c4d65e77f57a
+build-windows-wheels (3.12)	Set up Python 3.12	﻿2025-12-04T00:36:06.6846244Z ##[group]Run actions/setup-python@v5
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6846612Z with:
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6846805Z   python-version: 3.12
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6847004Z   architecture: x64
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6847183Z   check-latest: false
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6847527Z   token: ***
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6847713Z   update-environment: true
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6847919Z   allow-prereleases: false
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6848117Z   freethreaded: false
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.6848299Z ##[endgroup]
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.9004331Z ##[group]Installed versions
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.9193032Z Successfully set up CPython (3.12.10)
+build-windows-wheels (3.12)	Set up Python 3.12	2025-12-04T00:36:06.9194591Z ##[endgroup]
+build-windows-wheels (3.12)	Login to GitHub Container Registry	﻿2025-12-04T00:36:06.9527876Z ##[group]Run $creds = $env:CR_PAT
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9528266Z [36;1m$creds = $env:CR_PAT[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9528495Z [36;1mif (-not $creds) {[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9528776Z [36;1m  throw "CR_PAT (or GITHUB_TOKEN) not available"[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9529044Z [36;1m}[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9529230Z [36;1m$user = $env:CR_USER[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9529494Z [36;1mWrite-Host "Logging into ghcr.io as $user"[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9529872Z [36;1m$creds | docker login ghcr.io -u $user --password-stdin[0m
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9761651Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9761988Z env:
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9762259Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9762733Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9763196Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9763615Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9764053Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9764683Z   CR_PAT: ***
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9764949Z   CR_USER: Raizo-TCS
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:06.9765215Z ##[endgroup]
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:14.3873861Z Logging into ghcr.io as Raizo-TCS
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:18.1061844Z WARNING! Your password will be stored unencrypted in C:\Users\runneradmin\.docker\config.json.
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:18.1062482Z Configure a credential helper to remove this warning. See
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:18.1063490Z https://docs.docker.com/engine/reference/commandline/login/#credential-stores
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:18.1065006Z 
+build-windows-wheels (3.12)	Login to GitHub Container Registry	2025-12-04T00:36:18.1073570Z Login Succeeded
+build-windows-wheels (3.12)	Extract libarchive from container	﻿2025-12-04T00:36:18.6062489Z ##[group]Run $ErrorActionPreference = 'Stop'
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6062898Z [36;1m$ErrorActionPreference = 'Stop'[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6063233Z [36;1m$image = "ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest"[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6063567Z [36;1mWrite-Host "Pulling $image..."[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6063802Z [36;1mdocker pull $image[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6063985Z [36;1m[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6064189Z [36;1m$dest = "D:\a\archive_r\archive_r\vcpkg_libarchive"[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6064535Z [36;1mif (Test-Path $dest) { Remove-Item $dest -Recurse -Force }[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6064846Z [36;1mmkdir $dest[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6065016Z [36;1m[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6065233Z [36;1mWrite-Host "Extracting libarchive using docker run..."[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6065653Z [36;1m# Use docker run with volume mount to copy files to avoid docker cp issues[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6065992Z [36;1mdocker run --rm `[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6066187Z [36;1m  -v "${dest}:C:\out" `[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6066418Z [36;1m  $image `[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6066817Z [36;1m  powershell -Command "Copy-Item -Path 'C:\vcpkg\installed\x64-windows' -Destination 'C:\out' -Recurse -Force"[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6067247Z [36;1m[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6067402Z [36;1m$prefix = "$dest\x64-windows"[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6067639Z [36;1mif (-not (Test-Path $prefix)) {[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6067937Z [36;1m   throw "Failed to extract libarchive: $prefix does not exist"[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6068226Z [36;1m}[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6068588Z [36;1m$binPath = Join-Path $prefix 'bin'[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6068847Z [36;1m$includePath = Join-Path $prefix 'include'[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6069112Z [36;1m$libPath = Join-Path $prefix 'lib'[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6069384Z [36;1m$pkgConfigPath = Join-Path $libPath 'pkgconfig'[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6069626Z [36;1m[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6069823Z [36;1mWrite-Host "Setting environment variables..."[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6070229Z [36;1mAdd-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6070735Z [36;1mAdd-Content -Path $env:GITHUB_ENV -Value "CMAKE_PREFIX_PATH=$prefix" -Encoding utf8[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6071232Z [36;1mAdd-Content -Path $env:GITHUB_ENV -Value "CPPFLAGS=-I$includePath" -Encoding utf8[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6071702Z [36;1mAdd-Content -Path $env:GITHUB_ENV -Value "LDFLAGS=-L$libPath" -Encoding utf8[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6072191Z [36;1mAdd-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$pkgConfigPath" -Encoding utf8[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6072696Z [36;1mAdd-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6105007Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6105332Z env:
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6105595Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6105994Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6106388Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6106738Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6107080Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.6107355Z ##[endgroup]
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:18.8638649Z Pulling ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest...
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:19.8096104Z latest: Pulling from raizo-tcs/archive_r/pf5-windows-msvc
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0382090Z fbc33898c8ff: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0389531Z 859df58e6a18: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0390643Z 469d27c9da59: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0391684Z da307840f647: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0392910Z 0c90207317ef: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0393761Z 74f2267ad343: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0394535Z d5c84ebc55a0: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0394926Z 3c4cb0d14b99: Pulling fs layer
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0399888Z da307840f647: Waiting
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0400107Z 0c90207317ef: Waiting
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0400286Z 74f2267ad343: Waiting
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0400463Z d5c84ebc55a0: Waiting
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.0400643Z 3c4cb0d14b99: Waiting
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:20.2990773Z 469d27c9da59: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:24.1019403Z 859df58e6a18: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:24.1020220Z 859df58e6a18: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:24.4080585Z 0c90207317ef: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:24.4081555Z 0c90207317ef: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:32.5341700Z 74f2267ad343: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:32.5342644Z 74f2267ad343: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:32.9968083Z d5c84ebc55a0: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:32.9968943Z d5c84ebc55a0: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:33.3329150Z 3c4cb0d14b99: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:33.3329759Z 3c4cb0d14b99: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:56.9433062Z fbc33898c8ff: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:36:56.9433477Z fbc33898c8ff: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:37:23.7794025Z da307840f647: Verifying Checksum
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:37:23.7794375Z da307840f647: Download complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:40:19.3300183Z fbc33898c8ff: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:43:13.1809236Z 859df58e6a18: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:43:13.5310632Z 469d27c9da59: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:46:56.3249397Z da307840f647: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:46:56.7368306Z 0c90207317ef: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:43.9783894Z 74f2267ad343: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:46.5504529Z d5c84ebc55a0: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:47.1392508Z 3c4cb0d14b99: Pull complete
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:47.2562526Z Digest: sha256:7c05a438f098014ffd1ffbb2d5bd8740446e536db95a7d6b88ad9e4c41506365
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:47.2679559Z Status: Downloaded newer image for ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:47.2715081Z ghcr.io/raizo-tcs/archive_r/pf5-windows-msvc:latest
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2228478Z 
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2274007Z     Directory: D:\a\archive_r\archive_r
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2274764Z 
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2341443Z [32;1mMode   [0m[32;1m              LastWriteTime[0m [32;1;3m        Length[0m[32;1m Name[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2342072Z [32;1m----   [0m [32;1m             -------------[0m [32;1m        ------[0m [32;1m----[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2735736Z d----           12/4/2025 12:48 AM                [44;1mvcpkg_libarchive[0m
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:48.2803942Z Extracting libarchive using docker run...
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:58.8962184Z Setting environment variables...
+build-windows-wheels (3.12)	Extract libarchive from container	2025-12-04T00:48:58.9365507Z 
+build-windows-wheels (3.12)	Build and repair Windows wheel	﻿2025-12-04T00:48:59.2174816Z ##[group]Run $ErrorActionPreference = 'Stop'
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2175395Z [36;1m$ErrorActionPreference = 'Stop'[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2175742Z [36;1mcd bindings\python[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2176168Z [36;1mpython -m pip install --upgrade pip setuptools wheel pybind11 build delvewheel[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2176687Z [36;1m$targetDir = "dist\windows-${env:PY_VERSION}"[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2177166Z [36;1mif (Test-Path $targetDir) { Remove-Item $targetDir -Recurse -Force }[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2177659Z [36;1mNew-Item -ItemType Directory -Path $targetDir | Out-Null[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2178102Z [36;1mpython -m pip wheel . -w $targetDir --no-deps[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2178585Z [36;1m$original = Get-ChildItem $targetDir -Filter *.whl | Select-Object -First 1[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2179199Z [36;1mdelvewheel repair $original.FullName -w $targetDir --add-path "$env:LIBARCHIVE_ROOT\bin"[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2179929Z [36;1m$repaired = Get-ChildItem $targetDir -Filter *.whl | Sort-Object LastWriteTime | Select-Object -Last 1[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2180800Z [36;1mGet-ChildItem $targetDir -Filter *.whl | Where-Object { $_.FullName -ne $repaired.FullName } | Remove-Item -Force[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2181372Z [36;1mpython -m venv .venv[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2181704Z [36;1m.\.venv\Scripts\pip install $repaired.FullName[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2182198Z [36;1m.\.venv\Scripts\python -c "import archive_r; print(f'validated {archive_r.__version__}')"[0m
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2229005Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2229364Z env:
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2229665Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2230209Z   PKG_CONFIG_PATH: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\lib\pkgconfig
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2230648Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2231068Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2231504Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2231900Z   LIBARCHIVE_ROOT: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2232352Z   CMAKE_PREFIX_PATH: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2243336Z   CPPFLAGS: -ID:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\include
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2243832Z   LDFLAGS: -LD:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\lib
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2252459Z   PATH: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\bin;C:\Program Files\PowerShell\7;C:\Users\runneradmin\AppData\Roaming\Python\Python312\Scripts;C:\hostedtoolcache\windows\Python\3.12.10\x64\Scripts;C:\hostedtoolcache\windows\Python\3.12.10\x64;C:\Program Files\MongoDB\Server\7.0\bin;C:\aliyun-cli;C:\vcpkg;C:\Program Files (x86)\NSIS\;C:\tools\zstd;C:\Program Files\Mercurial\;C:\hostedtoolcache\windows\stack\3.7.1\x64;C:\cabal\bin;C:\\ghcup\bin;C:\mingw64\bin;C:\Program Files\dotnet;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\R\R-4.5.2\bin\x64;C:\SeleniumWebDrivers\GeckoDriver;C:\SeleniumWebDrivers\EdgeDriver\;C:\SeleniumWebDrivers\ChromeDriver;C:\Program Files (x86)\sbt\bin;C:\Program Files (x86)\GitHub CLI;C:\Program Files\Git\bin;C:\Program Files (x86)\pipx_bin;C:\npm\prefix;C:\hostedtoolcache\windows\go\1.24.10\x64\bin;C:\hostedtoolcache\windows\Python\3.9.13\x64\Scripts;C:\hostedtoolcache\windows\Python\3.9.13\x64;C:\hostedtoolcache\windows\Ruby\3.3.10\x64\bin;C:\Program Files\OpenSSL\bin;C:\tools\kotlinc\bin;C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.472-8\x64\bin;C:\Program Files\ImageMagick-7.1.2-Q16-HDRI;C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin;C:\ProgramData\kind;C:\ProgramData\Chocolatey\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\PowerShell\7\;C:\Program Files\Microsoft\Web Platform Installer\;C:\Program Files\TortoiseSVN\bin;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files (x86)\WiX Toolset v3.14\bin;C:\Program Files\Microsoft SQL Server\130\DTS\Binn\;C:\Program Files\Microsoft SQL Server\140\DTS\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\Program Files\Microsoft SQL Server\170\DTS\Binn\;C:\Strawberry\c\bin;C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin;C:\ProgramData\chocolatey\lib\pulumi\tools\Pulumi\bin;C:\Program Files\CMake\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.11\bin;C:\Program Files\Microsoft Service Fabric\bin\Fabric\Fabric.Code;C:\Program Files\Microsoft SDKs\Service Fabric\Tools\ServiceFabricLocalClusterManager;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Program Files\GitHub CLI\;c:\tools\php;C:\Program Files (x86)\sbt\bin;C:\Program Files\Amazon\AWSCLIV2\;C:\Program Files\Amazon\SessionManagerPlugin\bin\;C:\Program Files\Amazon\AWSSAMCLI\bin\;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files\mongosh\;C:\Program Files\LLVM\bin;C:\Program Files (x86)\LLVM\bin;C:\Users\runneradmin\.dotnet\tools;C:\Users\runneradmin\.cargo\bin;C:\Users\runneradmin\AppData\Local\Microsoft\WindowsApps
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2263245Z   PY_VERSION: 3.12
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:48:59.2263484Z ##[endgroup]
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:05.3120973Z Requirement already satisfied: pip in c:\hostedtoolcache\windows\python\3.12.10\x64\lib\site-packages (25.3)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:05.9426743Z Collecting setuptools
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.1657863Z   Downloading setuptools-80.9.0-py3-none-any.whl.metadata (6.6 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.2336006Z Collecting wheel
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.2377757Z   Downloading wheel-0.45.1-py3-none-any.whl.metadata (2.3 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.2982392Z Collecting pybind11
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.3046649Z   Downloading pybind11-3.0.1-py3-none-any.whl.metadata (10.0 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.3571686Z Collecting build
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.3613224Z   Downloading build-1.3.0-py3-none-any.whl.metadata (5.6 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.4317100Z Collecting delvewheel
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.4387825Z   Downloading delvewheel-1.11.2-py3-none-any.whl.metadata (19 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.5305672Z Collecting packaging>=19.1 (from build)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.5344067Z   Downloading packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.5805608Z Collecting pyproject_hooks (from build)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.5846637Z   Downloading pyproject_hooks-1.2.0-py3-none-any.whl.metadata (1.3 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.6406374Z Collecting colorama (from build)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.7337636Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.7895883Z Collecting pefile>=2024.8.26 (from delvewheel)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.7940658Z   Downloading pefile-2024.8.26-py3-none-any.whl.metadata (1.4 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.8299757Z Downloading setuptools-80.9.0-py3-none-any.whl (1.2 MB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.8961644Z    ---------------------------------------- 1.2/1.2 MB 30.3 MB/s  0:00:00
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.9004193Z Downloading wheel-0.45.1-py3-none-any.whl (72 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.9322671Z Downloading pybind11-3.0.1-py3-none-any.whl (293 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.9608171Z Downloading build-1.3.0-py3-none-any.whl (23 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:06.9879077Z Downloading delvewheel-1.11.2-py3-none-any.whl (59 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:07.0101313Z Downloading packaging-25.0-py3-none-any.whl (66 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:07.0363288Z Downloading pefile-2024.8.26-py3-none-any.whl (74 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:07.0621492Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:07.0888757Z Downloading pyproject_hooks-1.2.0-py3-none-any.whl (10 kB)
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:07.2117671Z Installing collected packages: wheel, setuptools, pyproject_hooks, pybind11, pefile, packaging, colorama, delvewheel, build
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:09.7179585Z 
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:09.7198637Z Successfully installed build-1.3.0 colorama-0.4.6 delvewheel-1.11.2 packaging-25.0 pefile-2024.8.26 pybind11-3.0.1 pyproject_hooks-1.2.0 setuptools-80.9.0 wheel-0.45.1
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:11.2563464Z Processing d:\a\archive_r\archive_r\bindings\python
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:11.2602306Z   Installing build dependencies: started
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:13.6808443Z   Installing build dependencies: finished with status 'done'
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:13.6824671Z   Getting requirements to build wheel: started
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:14.4644906Z   Getting requirements to build wheel: finished with status 'done'
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:14.4675356Z   Preparing metadata (pyproject.toml): started
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:14.8395276Z   Preparing metadata (pyproject.toml): finished with status 'done'
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:14.8444515Z Building wheels for collected packages: archive_r_python
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:14.8486336Z   Building wheel for archive_r_python (pyproject.toml): started
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:52.0651626Z   Building wheel for archive_r_python (pyproject.toml): finished with status 'done'
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:52.0699640Z   Created wheel for archive_r_python: filename=archive_r_python-0.1.2-cp312-cp312-win_amd64.whl size=185498 sha256=b4618a5990a6ed4751a39e352bf7d23f9ba2a0fbfb7c0e001d2fb477f549ee55
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:52.0702479Z   Stored in directory: C:\Users\runneradmin\AppData\Local\Temp\pip-ephem-wheel-cache-m4bht9x5\wheels\5e\77\64\4e9bda1480e16af2adab0f7e721e07fa0b420f1612154964a6
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:52.0749335Z Successfully built archive_r_python
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:53.3737388Z repairing D:\a\archive_r\archive_r\bindings\python\dist\windows-3.12\archive_r_python-0.1.2-cp312-cp312-win_amd64.whl
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:53.3738117Z finding DLL dependencies
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:53.3738474Z copying DLLs into archive_r_python-0.1.2.data\platlib
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:53.3738827Z mangling DLL names
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:53.3739083Z repackaging wheel
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:53.3739648Z fixed wheel written to D:\a\archive_r\archive_r\bindings\python\dist\windows-3.12\archive_r_python-0.1.2-cp312-cp312-win_amd64.whl
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:58.8144583Z Processing d:\a\archive_r\archive_r\bindings\python\dist\windows-3.12\archive_r_python-0.1.2-cp312-cp312-win_amd64.whl
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:58.8440473Z Installing collected packages: archive-r-python
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:58.8970886Z Successfully installed archive-r-python-0.1.2
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:59.1613122Z 
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:59.1614820Z [notice] A new release of pip is available: 25.0.1 -> 25.3
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:59.1616007Z [notice] To update, run: D:\a\archive_r\archive_r\bindings\python\.venv\Scripts\python.exe -m pip install --upgrade pip
+build-windows-wheels (3.12)	Build and repair Windows wheel	2025-12-04T00:49:59.2503233Z validated 0.1.2
+build-windows-wheels (3.12)	Upload Windows wheels	﻿2025-12-04T00:49:59.3193866Z ##[group]Run actions/upload-artifact@v4
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3194290Z with:
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3194612Z   name: windows-wheels-py3.12-f0be218484aef8ee5124a004a684c4d65e77f57a
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3195005Z   path: bindings/python/dist/windows-3.12/*.whl
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3195511Z   if-no-files-found: error
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3195745Z   retention-days: 7
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3195979Z   compression-level: 6
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3196217Z   overwrite: false
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3196431Z   include-hidden-files: false
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3196654Z env:
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3196914Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3197394Z   PKG_CONFIG_PATH: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\lib\pkgconfig
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3197859Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3198238Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3198655Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3199122Z   LIBARCHIVE_ROOT: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3199566Z   CMAKE_PREFIX_PATH: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3200043Z   CPPFLAGS: -ID:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\include
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3200470Z   LDFLAGS: -LD:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\lib
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3208778Z   PATH: D:\a\archive_r\archive_r\vcpkg_libarchive\x64-windows\bin;C:\Program Files\PowerShell\7;C:\Users\runneradmin\AppData\Roaming\Python\Python312\Scripts;C:\hostedtoolcache\windows\Python\3.12.10\x64\Scripts;C:\hostedtoolcache\windows\Python\3.12.10\x64;C:\Program Files\MongoDB\Server\7.0\bin;C:\aliyun-cli;C:\vcpkg;C:\Program Files (x86)\NSIS\;C:\tools\zstd;C:\Program Files\Mercurial\;C:\hostedtoolcache\windows\stack\3.7.1\x64;C:\cabal\bin;C:\\ghcup\bin;C:\mingw64\bin;C:\Program Files\dotnet;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\R\R-4.5.2\bin\x64;C:\SeleniumWebDrivers\GeckoDriver;C:\SeleniumWebDrivers\EdgeDriver\;C:\SeleniumWebDrivers\ChromeDriver;C:\Program Files (x86)\sbt\bin;C:\Program Files (x86)\GitHub CLI;C:\Program Files\Git\bin;C:\Program Files (x86)\pipx_bin;C:\npm\prefix;C:\hostedtoolcache\windows\go\1.24.10\x64\bin;C:\hostedtoolcache\windows\Python\3.9.13\x64\Scripts;C:\hostedtoolcache\windows\Python\3.9.13\x64;C:\hostedtoolcache\windows\Ruby\3.3.10\x64\bin;C:\Program Files\OpenSSL\bin;C:\tools\kotlinc\bin;C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.472-8\x64\bin;C:\Program Files\ImageMagick-7.1.2-Q16-HDRI;C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin;C:\ProgramData\kind;C:\ProgramData\Chocolatey\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\PowerShell\7\;C:\Program Files\Microsoft\Web Platform Installer\;C:\Program Files\TortoiseSVN\bin;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files (x86)\WiX Toolset v3.14\bin;C:\Program Files\Microsoft SQL Server\130\DTS\Binn\;C:\Program Files\Microsoft SQL Server\140\DTS\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\Program Files\Microsoft SQL Server\170\DTS\Binn\;C:\Strawberry\c\bin;C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin;C:\ProgramData\chocolatey\lib\pulumi\tools\Pulumi\bin;C:\Program Files\CMake\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.11\bin;C:\Program Files\Microsoft Service Fabric\bin\Fabric\Fabric.Code;C:\Program Files\Microsoft SDKs\Service Fabric\Tools\ServiceFabricLocalClusterManager;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Program Files\GitHub CLI\;c:\tools\php;C:\Program Files (x86)\sbt\bin;C:\Program Files\Amazon\AWSCLIV2\;C:\Program Files\Amazon\SessionManagerPlugin\bin\;C:\Program Files\Amazon\AWSSAMCLI\bin\;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files\mongosh\;C:\Program Files\LLVM\bin;C:\Program Files (x86)\LLVM\bin;C:\Users\runneradmin\.dotnet\tools;C:\Users\runneradmin\.cargo\bin;C:\Users\runneradmin\AppData\Local\Microsoft\WindowsApps
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:49:59.3219263Z ##[endgroup]
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:00.3228695Z With the provided path, there will be 1 file uploaded
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:00.3235578Z Artifact name is valid!
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:00.3239443Z Root directory input is valid!
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:00.7412650Z Beginning upload of artifact content to blob storage
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:01.9119962Z Uploaded bytes 3295736
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:01.9923533Z Finished uploading artifact content to blob storage!
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:01.9931238Z SHA256 digest of uploaded artifact zip is 3269b785c181350ca778d838c5deb04ea009fb544feee3c9cbe3ff98a7c895c3
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:01.9933471Z Finalizing artifact upload
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:02.1349769Z Artifact windows-wheels-py3.12-f0be218484aef8ee5124a004a684c4d65e77f57a.zip successfully finalized. Artifact ID 4758517219
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:02.1350950Z Artifact windows-wheels-py3.12-f0be218484aef8ee5124a004a684c4d65e77f57a has been successfully uploaded! Final size is 3295736 bytes. Artifact ID is 4758517219
+build-windows-wheels (3.12)	Upload Windows wheels	2025-12-04T00:50:02.1361962Z Artifact download URL: https://github.com/Raizo-TCS/archive_r/actions/runs/19913571977/artifacts/4758517219
+build-windows-wheels (3.12)	Post Set up Python 3.12	﻿2025-12-04T00:50:02.1699257Z Post job cleanup.
+build-windows-wheels (3.12)	Post Checkout repository	﻿2025-12-04T00:50:02.5095866Z Post job cleanup.
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.8073991Z [command]"C:\Program Files\Git\bin\git.exe" version
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.8829586Z git version 2.52.0.windows.1
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.8903822Z Temporarily overriding HOME='D:\a\_temp\ce568b51-f877-4bb8-8b59-f74411c5a072' before making global git config changes
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.8904558Z Adding repository directory to the temporary git global config as a safe directory
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.8916004Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.9236055Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:02.9482037Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:03.5550559Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:03.5746493Z http.https://github.com/.extraheader
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:03.5783146Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:03.6015388Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:04.0504868Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+build-windows-wheels (3.12)	Post Checkout repository	2025-12-04T00:50:04.0734983Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+build-windows-wheels (3.12)	Complete job	﻿2025-12-04T00:50:04.5345391Z Cleaning up orphan processes
+build-windows-wheels (3.12)	Complete job	2025-12-04T00:50:04.6424808Z Terminate orphan process: pid (2060) (vctip)
