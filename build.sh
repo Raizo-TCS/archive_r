@@ -11,6 +11,14 @@ set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
 
+# Detect Python interpreter
+PYTHON_EXEC=""
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_EXEC="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_EXEC="python"
+fi
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -397,7 +405,14 @@ build_ruby_binding() {
     cd "$ext_dir"
     
     # Run extconf.rb
-    ruby extconf.rb
+    local extconf_args=""
+    if [ -n "$LIBARCHIVE_ROOT" ]; then
+        # Convert Windows path to Unix path if needed (for MinGW/Cygwin)
+        # But here we assume LIBARCHIVE_ROOT is a valid path for the environment
+        extconf_args="--with-archive-include=$LIBARCHIVE_ROOT/include --with-archive-lib=$LIBARCHIVE_ROOT/lib"
+    fi
+    
+    ruby extconf.rb $extconf_args
     
     # Build
     make
@@ -481,15 +496,15 @@ package_ruby_binding() {
 build_python_binding() {
     log_info "Building Python binding..."
     
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_warning "Python3 not found - skipping Python binding"
+    if [ -z "$PYTHON_EXEC" ]; then
+        log_warning "Python not found - skipping Python binding"
         return 1
     fi
     
     cd "$ROOT_DIR/bindings/python"
     
     # Build extension in-place
-    python3 setup.py build_ext --inplace
+    "$PYTHON_EXEC" setup.py build_ext --inplace
     
     if ls *.so 1>/dev/null 2>&1; then
         log_success "Python binding built successfully"
@@ -508,24 +523,38 @@ create_python_virtualenv() {
 
     rm -rf "$venv_dir"
 
-    if python3 -m venv "$venv_dir"; then
-        if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+    # Helper to check for python/pip in bin (Unix) or Scripts (Windows)
+    check_venv_executables() {
+        local dir="$1"
+        if [ -x "$dir/bin/python" ] && [ -x "$dir/bin/pip" ]; then
+            return 0
+        fi
+        if [ -x "$dir/Scripts/python.exe" ] && [ -x "$dir/Scripts/pip.exe" ]; then
+            return 0
+        fi
+        return 1
+    }
+
+    if "$PYTHON_EXEC" -m venv "$venv_dir"; then
+        if check_venv_executables "$venv_dir"; then
             return 0
         fi
         log_warning "Virtual environment created without pip; retrying with virtualenv module"
         rm -rf "$venv_dir"
     else
-        log_warning "python3 -m venv failed. Trying virtualenv module if available..."
+        log_warning "$PYTHON_EXEC -m venv failed. Trying virtualenv module if available..."
     fi
 
-    if python3 -c "import virtualenv" >/dev/null 2>&1; then
-        if python3 -m virtualenv "$venv_dir"; then
-            if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+    if "$PYTHON_EXEC" -c "import virtualenv" >/dev/null 2>&1; then
+        if "$PYTHON_EXEC" -m virtualenv "$venv_dir"; then
+            if check_venv_executables "$venv_dir"; then
                 return 0
             fi
+            log_warning "virtualenv created directory but executables not found. Listing content:"
+            ls -R "$venv_dir" || true
         fi
     else
-        log_warning "Python module 'virtualenv' not found. Install it via: python3 -m pip install --user --upgrade --break-system-packages virtualenv"
+        log_warning "Python module 'virtualenv' not found. Install it via: $PYTHON_EXEC -m pip install --user --upgrade --break-system-packages virtualenv"
     fi
 
     log_error "Unable to create virtual environment at $venv_dir. Install python3-venv or the virtualenv package."
@@ -542,8 +571,19 @@ verify_python_package_installation() {
         return 1
     fi
 
-    local venv_python="$venv_dir/bin/python"
-    local venv_pip="$venv_dir/bin/pip"
+    local venv_python
+    local venv_pip
+
+    if [ -x "$venv_dir/bin/python" ]; then
+        venv_python="$venv_dir/bin/python"
+        venv_pip="$venv_dir/bin/pip"
+    elif [ -x "$venv_dir/Scripts/python.exe" ]; then
+        venv_python="$venv_dir/Scripts/python.exe"
+        venv_pip="$venv_dir/Scripts/pip.exe"
+    else
+        log_error "Could not locate python executable in venv"
+        return 1
+    fi
 
     "$venv_pip" install --upgrade pip
 
@@ -566,18 +606,18 @@ verify_python_package_installation() {
 package_python_binding() {
     log_info "Packaging Python binding (wheel + sdist)..."
 
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_error "Python3 not found - cannot package Python binding"
+    if [ -z "$PYTHON_EXEC" ]; then
+        log_error "Python not found - cannot package Python binding"
         return 1
     fi
 
-    if ! python3 -c "import build" >/dev/null 2>&1; then
-        log_error "Python module 'build' is required. Install it via: python3 -m pip install --upgrade build"
+    if ! "$PYTHON_EXEC" -c "import build" >/dev/null 2>&1; then
+        log_error "Python module 'build' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade build"
         return 1
     fi
 
-    if ! python3 -c "import twine" >/dev/null 2>&1; then
-        log_error "Python module 'twine' is required. Install it via: python3 -m pip install --upgrade twine"
+    if ! "$PYTHON_EXEC" -c "import twine" >/dev/null 2>&1; then
+        log_error "Python module 'twine' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade twine"
         return 1
     fi
 
@@ -589,7 +629,7 @@ package_python_binding() {
 
     pushd "$python_root" >/dev/null
     rm -rf dist/ build/ *.egg-info
-    python3 -m build --sdist --wheel --outdir "$dist_dir"
+    "$PYTHON_EXEC" -m build --sdist --wheel --outdir "$dist_dir"
     popd >/dev/null
 
     dist_artifacts=()
@@ -602,7 +642,7 @@ package_python_binding() {
     fi
 
     log_info "Running twine check on built artifacts..."
-    python3 -m twine check "${dist_artifacts[@]}"
+    "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
 
     verify_python_package_installation "$dist_dir" || return 1
 
