@@ -99,17 +99,17 @@ jobs:
       - name: Provide nproc helper
         shell: bash
         run: |
-          set -euo pipefail
-          cat <<'EOF' >/tmp/nproc.sh
-          #!/bin/bash
-          if command -v sysctl >/dev/null 2>&1; then
-            sysctl -n hw.logicalcpu
-          else
-            printf "1\n"
-          fi
-          EOF
-          sudo mv /tmp/nproc.sh /usr/local/bin/nproc
-          sudo chmod +x /usr/local/bin/nproc
+          # macOS runner doesn't have nproc, create a wrapper
+          echo '#!/bin/bash' > nproc
+          echo 'sysctl -n hw.logicalcpu' >> nproc
+          chmod +x nproc
+          echo "$PWD" >> $GITHUB_PATH
+
+      - name: Build archive_r
+        run: ./build.sh --rebuild-all
+
+      - name: Run test suite
+        run: python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
