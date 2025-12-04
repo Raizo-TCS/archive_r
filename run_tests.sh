@@ -250,6 +250,17 @@ prepare_ruby_gem_env() {
         install_env+=("ARCHIVE_R_CORE_ROOT=$core_root")
     fi
 
+    # Pass libarchive configuration to gem install
+    if [ -n "$LIBARCHIVE_ROOT" ]; then
+        install_env+=("LIBARCHIVE_ROOT=$LIBARCHIVE_ROOT")
+    fi
+    if [ -n "$LIBARCHIVE_INCLUDE_DIRS" ]; then
+        install_env+=("LIBARCHIVE_INCLUDE_DIRS=$LIBARCHIVE_INCLUDE_DIRS")
+    fi
+    if [ -n "$LIBARCHIVE_LIBRARY_DIRS" ]; then
+        install_env+=("LIBARCHIVE_LIBRARY_DIRS=$LIBARCHIVE_LIBRARY_DIRS")
+    fi
+
     : > "$RUBY_GEM_INSTALL_LOG"
     log_info "Installing Ruby gem from $gem_cache_dir/$gem_file (log: $RUBY_GEM_INSTALL_LOG)"
 

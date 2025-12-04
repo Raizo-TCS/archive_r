@@ -62,9 +62,31 @@ $INCFLAGS << " -I#{archive_r_src}"
 # C++17 standard
 $CXXFLAGS << " -std=c++17"
 
+# Configure libarchive paths from environment variables
+if ENV['LIBARCHIVE_ROOT']
+  root = File.expand_path(ENV['LIBARCHIVE_ROOT'])
+  $INCFLAGS << " -I#{File.join(root, 'include')}"
+  $LIBPATH.unshift(File.join(root, 'lib'))
+end
+
+if ENV['LIBARCHIVE_INCLUDE_DIRS']
+  ENV['LIBARCHIVE_INCLUDE_DIRS'].split(File::PATH_SEPARATOR).each do |dir|
+    $INCFLAGS << " -I#{dir}"
+  end
+end
+
+if ENV['LIBARCHIVE_LIBRARY_DIRS']
+  ENV['LIBARCHIVE_LIBRARY_DIRS'].split(File::PATH_SEPARATOR).each do |dir|
+    $LIBPATH.unshift(dir)
+  end
+end
+
 # Check for libarchive
 unless have_library('archive')
-  abort "libarchive is required but not found"
+  # Try alternative names for Windows/Static builds
+  unless have_library('archive_static') || have_library('libarchive')
+    abort "libarchive is required but not found"
+  end
 end
 
 # Try to link with pre-built static library first
