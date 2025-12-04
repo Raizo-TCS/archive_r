@@ -187,7 +187,7 @@ jobs:
           CMAKE_GENERATOR: "Visual Studio 17 2022"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
-          python .github/scripts/ci/run_with_timeout.py 120 bash ./run_tests.sh
+          python .github/scripts/ci/run_with_timeout.py 120 sh ./run_tests.sh
 
       - name: Upload PF5 artifacts
         if: ${{ always() && env.ACT != 'true' }}
@@ -235,6 +235,8 @@ jobs:
 
       - name: Build and Test (MinGW)
         shell: msys2 {0}
+        env:
+          ARCHIVE_R_BUILD_NO_ISOLATION: "1"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
           python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh

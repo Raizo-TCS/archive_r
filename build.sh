@@ -629,7 +629,13 @@ package_python_binding() {
 
     pushd "$python_root" >/dev/null
     rm -rf dist/ build/ *.egg-info
-    "$PYTHON_EXEC" -m build --sdist --wheel --outdir "$dist_dir"
+    
+    local build_args=("--sdist" "--wheel" "--outdir" "$dist_dir")
+    if [ "${ARCHIVE_R_BUILD_NO_ISOLATION:-0}" -eq 1 ]; then
+        build_args+=("--no-isolation")
+    fi
+    
+    "$PYTHON_EXEC" -m build "${build_args[@]}"
     popd >/dev/null
 
     dist_artifacts=()
