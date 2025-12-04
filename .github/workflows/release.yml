@@ -139,12 +139,11 @@ jobs:
 
       - name: Publish to PyPI
         if: ${{ env.ACT != 'true' && inputs.publish_pypi }}
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: release/python
-          skip-existing: true
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          python3 -m twine upload release/python/* --skip-existing --verbose
 
       - name: Publish to RubyGems.org
         if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
