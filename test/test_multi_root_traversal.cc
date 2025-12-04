@@ -8,8 +8,10 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <filesystem>
 
 using namespace archive_r;
+namespace fs = std::filesystem;
 
 int main(int argc, char *argv[]) {
   if (argc < 3) {
@@ -43,11 +45,20 @@ int main(int argc, char *argv[]) {
       const std::string first_component = path_entry_display(hierarchy.front());
       const std::string *matched_root = nullptr;
       for (const auto &root : root_strings) {
-        if (first_component == root) {
+        // Normalize root path to match the format returned by path_hierarchy (native separators)
+        std::string root_preferred = fs::path(root).make_preferred().string();
+        
+        if (first_component == root_preferred) {
           matched_root = &root;
           break;
         }
-        if (first_component.rfind(root + '/', 0) == 0) {
+        
+        // Check prefix with separator
+        // Note: preferred_separator might be wchar_t on Windows, cast to char for std::string
+        char sep = static_cast<char>(fs::path::preferred_separator);
+        std::string root_with_sep = root_preferred + sep;
+        
+        if (first_component.rfind(root_with_sep, 0) == 0) {
           matched_root = &root;
           break;
         }
