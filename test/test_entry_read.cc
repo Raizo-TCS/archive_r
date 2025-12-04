@@ -2,6 +2,7 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/traverser.h"
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <optional>
@@ -259,9 +260,15 @@ int main() {
         return 1;
       }
 
-      const std::string actual(buffer.data(), buffer.data() + bytes_read);
+      std::string actual(buffer.data(), buffer.data() + bytes_read);
+      
+      // Normalize line endings (remove CR) for cross-platform comparison
+      actual.erase(std::remove(actual.begin(), actual.end(), '\r'), actual.end());
+      
       if (actual != expected_content) {
         std::cerr << "  ✗ Filesystem entry content mismatch" << std::endl;
+        std::cerr << "    Expected: " << expected_content.size() << " bytes" << std::endl;
+        std::cerr << "    Actual:   " << actual.size() << " bytes" << std::endl;
         return 1;
       }
 

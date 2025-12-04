@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
       if (!hierarchy.empty()) {
         try {
           const auto relative_fs = reconstructed.lexically_relative(base_path);
-          if (!relative_fs.empty() && relative_fs.native() != ".") {
+          if (!relative_fs.empty() && relative_fs != std::filesystem::path(".")) {
             return relative_fs.generic_string();
           }
         } catch (const std::exception &) {

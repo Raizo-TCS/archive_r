@@ -8,8 +8,10 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <filesystem>
 
 using namespace archive_r;
+namespace fs = std::filesystem;
 
 int main(int argc, char *argv[]) {
   if (argc < 3) {
@@ -43,11 +45,19 @@ int main(int argc, char *argv[]) {
       const std::string first_component = path_entry_display(hierarchy.front());
       const std::string *matched_root = nullptr;
       for (const auto &root : root_strings) {
-        if (first_component == root) {
+        // Normalize both paths to generic format (forward slashes) for comparison
+        std::string root_generic = fs::path(root).generic_string();
+        std::string first_generic = fs::path(first_component).generic_string();
+        
+        if (first_generic == root_generic) {
           matched_root = &root;
           break;
         }
-        if (first_component.rfind(root + '/', 0) == 0) {
+        
+        // Check prefix with separator
+        std::string root_with_sep = root_generic + "/";
+        
+        if (first_generic.rfind(root_with_sep, 0) == 0) {
           matched_root = &root;
           break;
         }

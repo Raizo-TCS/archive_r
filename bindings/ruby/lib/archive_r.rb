@@ -2,15 +2,40 @@
 # Copyright (c) 2025 archive_r Team
 
 begin
+  # Windows/MSVC specific: Ensure dependent DLLs (like libarchive.dll) are found.
+  # If LIBARCHIVE_ROOT is set, add its bin directory to the DLL search path.
+  if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    if ENV['LIBARCHIVE_ROOT']
+      bin_dir = File.join(ENV['LIBARCHIVE_ROOT'], 'bin')
+      if Dir.exist?(bin_dir)
+        if defined?(RubyInstaller::Runtime)
+          RubyInstaller::Runtime.add_dll_directory(bin_dir)
+        else
+          ENV['PATH'] = "#{bin_dir};#{ENV['PATH']}"
+        end
+      end
+    end
+  end
+
   # Prefer the packaged gem layout (lib/archive_r/archive_r.so)
   require_relative 'archive_r/archive_r'
 rescue LoadError
-  # Fallback to the local development layout (bindings/ruby/archive_r.so)
-  require_relative '../archive_r'
+  begin
+    # Fallback to the local development layout (bindings/ruby/archive_r.so)
+    require_relative '../archive_r'
+  rescue LoadError
+    begin
+      # Fallback for Windows/MinGW where extension might be directly in lib/ or current dir
+      require 'archive_r/archive_r'
+    rescue LoadError
+      # Last resort: try requiring without directory prefix (common in some Windows setups)
+      require 'archive_r'
+    end
+  end
 end
 
 module Archive_r
-  VERSION = "0.1.2"
+  VERSION = "0.1.1"
   # Common archive formats excluding libarchive's mtree/raw pseudo formats
   STANDARD_FORMATS = %w[
     7zip ar cab cpio empty iso9660 lha rar tar warc xar zip

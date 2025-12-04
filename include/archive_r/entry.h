@@ -10,6 +10,11 @@
 #include <sys/types.h>
 #include <vector>
 
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #include "archive_r/entry_fault.h"
 #include "archive_r/entry_metadata.h"
 #include "archive_r/path_hierarchy.h"

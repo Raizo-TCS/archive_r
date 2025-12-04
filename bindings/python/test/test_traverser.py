@@ -19,6 +19,51 @@ if _use_local_source():
     # Allow tests to import from source tree unless explicitly disabled.
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
+_DLL_SEARCH_HANDLES: list[object] = []
+
+
+def _configure_windows_runtime():
+    if os.name != "nt":
+        return
+
+    add_dll_directory = getattr(os, "add_dll_directory", None)
+    candidate_dirs = []
+
+    libarchive_root = os.environ.get("LIBARCHIVE_ROOT")
+    if libarchive_root:
+        candidate_dirs.append(Path(libarchive_root) / "bin")
+
+    runtime_dirs = os.environ.get("LIBARCHIVE_RUNTIME_DIRS")
+    if runtime_dirs:
+        for entry in runtime_dirs.split(os.pathsep):
+            entry = entry.strip()
+            if entry:
+                candidate_dirs.append(Path(entry))
+
+    # Fall back to PATH entries so locally installed libarchive is discovered.
+    if not candidate_dirs:
+        for entry in os.environ.get("PATH", "").split(os.pathsep):
+            entry = entry.strip()
+            if entry:
+                candidate_dirs.append(Path(entry))
+
+    for directory in candidate_dirs:
+        try:
+            resolved = directory.resolve(strict=False)
+        except OSError:
+            continue
+        if not resolved.is_dir():
+            continue
+        if add_dll_directory:
+            handle = add_dll_directory(str(resolved))
+            if handle is not None:
+                _DLL_SEARCH_HANDLES.append(handle)
+        else:
+            os.environ["PATH"] = f"{resolved}{os.pathsep}{os.environ.get('PATH', '')}"
+
+
+_configure_windows_runtime()
+
 import archive_r
 
 class TestTraverser(unittest.TestCase):
@@ -492,14 +537,22 @@ class TestTraverser(unittest.TestCase):
         self.assertEqual(len(entries), 21)
 
         counts = {self.simple_archive: 0, self.directory_path: 0}
+        
+        # Normalize paths for comparison to handle potential separator differences (e.g. Windows vs MSYS2)
+        simple_archive_norm = os.path.normpath(self.simple_archive)
+        directory_path_norm = os.path.normpath(self.directory_path)
+
         for entry in entries:
-            root_component = entry.path_hierarchy[0]
-            if root_component == self.simple_archive or root_component.startswith(self.simple_archive + os.sep):
+            root_component = os.path.normpath(entry.path_hierarchy[0])
+            
+            # Check simple_archive
+            if root_component == simple_archive_norm or root_component.startswith(simple_archive_norm + os.sep):
                 counts[self.simple_archive] += 1
-            elif root_component == self.directory_path or root_component.startswith(self.directory_path + os.sep):
+            # Check directory_path
+            elif root_component == directory_path_norm or root_component.startswith(directory_path_norm + os.sep):
                 counts[self.directory_path] += 1
             else:
-                self.fail(f"Unexpected root component: {root_component}")
+                self.fail(f"Unexpected root component: {root_component} (expected matches for {simple_archive_norm} or {directory_path_norm})")
 
         self.assertEqual(counts[self.simple_archive], 11)
         self.assertEqual(counts[self.directory_path], 10)

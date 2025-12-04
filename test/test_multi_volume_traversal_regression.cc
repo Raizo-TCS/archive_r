@@ -7,7 +7,9 @@
 #include "archive_r/traverser.h"
 
 #include <filesystem>
-#include <glob.h>
+#if !defined(_WIN32)
+#  include <glob.h>
+#endif
 #include <iostream>
 #include <map>
 #include <regex>
@@ -63,12 +65,144 @@ void insert_path(std::set<std::string> &sink, const std::string &path) {
   sink.insert(normalized.string());
 }
 
+#if defined(_WIN32)
+bool contains_glob_wildcard(const std::string &segment) {
+  return segment.find_first_of("*?[") != std::string::npos;
+}
+
+std::string glob_segment_to_regex(const std::string &segment) {
+  std::string regex = "^";
+  bool in_class = false;
+  for (size_t i = 0; i < segment.size(); ++i) {
+    const char ch = segment[i];
+    switch (ch) {
+    case '*':
+      regex += ".*";
+      break;
+    case '?':
+      regex += '.';
+      break;
+    case '[':
+      in_class = true;
+      regex += '[';
+      break;
+    case ']':
+      if (in_class) {
+        in_class = false;
+        regex += ']';
+      } else {
+        regex += R"(\])";
+      }
+      break;
+    case '\\':
+      regex += R"(\\\\)";
+      break;
+    default:
+      if (!in_class && std::string(".^$+(){}|\\").find(ch) != std::string::npos) {
+        regex.push_back('\\');
+      }
+      regex.push_back(ch);
+      break;
+    }
+  }
+  regex += '$';
+  return regex;
+}
+
+// Minimal glob implementation for Windows CI environments lacking POSIX glob.h
+std::vector<std::string> portable_glob(const std::string &pattern) {
+  using namespace std::filesystem;
+
+  path pattern_path(pattern);
+  path root = pattern_path.root_path();
+  path relative = pattern_path.relative_path();
+
+  std::vector<std::string> segments;
+  for (const auto &part : relative) {
+    segments.push_back(part.string());
+  }
+
+  std::vector<path> current;
+  if (!root.empty()) {
+    current.push_back(root);
+  } else {
+    current.emplace_back();
+  }
+
+  if (segments.empty()) {
+    path resolved = root.empty() ? pattern_path : root;
+    if (exists(resolved)) {
+      return {resolved.lexically_normal().string()};
+    }
+    return {};
+  }
+
+  for (size_t idx = 0; idx < segments.size(); ++idx) {
+    const bool last_segment = idx + 1 == segments.size();
+    const std::string &segment = segments[idx];
+    const bool has_wildcard = contains_glob_wildcard(segment);
+    std::vector<path> next;
+
+    for (const auto &base : current) {
+      path search_dir = base.empty() ? path(".") : base;
+
+      if (has_wildcard) {
+        if (!exists(search_dir) || !is_directory(search_dir)) {
+          continue;
+        }
+
+        std::regex matcher(glob_segment_to_regex(segment));
+        for (const auto &entry : directory_iterator(search_dir)) {
+          const std::string name = entry.path().filename().string();
+          if (!std::regex_match(name, matcher)) {
+            continue;
+          }
+          if (!last_segment && !entry.is_directory()) {
+            continue;
+          }
+          next.push_back(entry.path());
+        }
+        continue;
+      }
+
+      path candidate = base.empty() ? path(segment) : base / segment;
+      if (!exists(candidate)) {
+        continue;
+      }
+      if (!last_segment && !is_directory(candidate)) {
+        continue;
+      }
+      next.push_back(candidate);
+    }
+
+    current = std::move(next);
+    if (current.empty()) {
+      break;
+    }
+  }
+
+  std::vector<std::string> results;
+  for (const auto &match : current) {
+    if (match.empty()) {
+      continue;
+    }
+    results.push_back(match.lexically_normal().string());
+  }
+  return results;
+}
+#endif // defined(_WIN32)
+
 std::vector<std::string> expand_inputs(const std::vector<std::string> &inputs) {
   std::set<std::string> expanded;
 
   for (const auto &original : inputs) {
     const bool has_glob = original.find('*') != std::string::npos || original.find('?') != std::string::npos || original.find('[') != std::string::npos;
     if (has_glob) {
+#if defined(_WIN32)
+      for (const auto &expanded_path : portable_glob(original)) {
+        insert_path(expanded, expanded_path);
+      }
+#else
       glob_t glob_result{};
       if (glob(original.c_str(), 0, nullptr, &glob_result) == 0) {
         for (size_t i = 0; i < glob_result.gl_pathc; ++i) {
@@ -76,6 +210,7 @@ std::vector<std::string> expand_inputs(const std::vector<std::string> &inputs) {
         }
       }
       globfree(&glob_result);
+#endif
       continue;
     }
 

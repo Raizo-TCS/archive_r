@@ -3,25 +3,31 @@
 
 #include "system_file_stream.h"
 #include "archive_r/path_hierarchy_utils.h"
+#include "archive_r/platform_compat.h"
 #include "entry_fault_error.h"
 
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
 #include <filesystem>
-#include <grp.h>
-#include <pwd.h>
 #include <stdexcept>
 #include <sys/stat.h>
 #include <system_error>
 #include <string_view>
-#include <unistd.h>
 #include <utility>
 #include <vector>
+
+#if !defined(_WIN32)
+#  include <grp.h>
+#  include <pwd.h>
+#  include <unistd.h>
+#endif
 
 namespace archive_r {
 
 namespace {
 
+#if !defined(_WIN32)
 static long determine_buffer_size(int name) {
   long size = ::sysconf(name);
   if (size < 0) {
@@ -55,6 +61,7 @@ static bool lookup_groupname(gid_t gid, std::string &name_out) {
   }
   return false;
 }
+#endif
 
 } // namespace
 
@@ -86,6 +93,14 @@ void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
 
   _handle = handle;
   _active_path = path;
+
+#if defined(_WIN32)
+  // Enable larger buffering on Windows to improve performance
+  // Use 64KB buffer to match StreamArchive's buffer size
+  if (_handle) {
+      std::setvbuf(_handle, nullptr, _IOFBF, 65536);
+  }
+#endif
 }
 
 void SystemFileStream::close_single_part() {
@@ -112,10 +127,24 @@ ssize_t SystemFileStream::read_from_single_part(void *buffer, size_t size) {
 }
 
 int64_t SystemFileStream::seek_within_single_part(int64_t offset, int whence) {
-  if (fseeko(_handle, offset, whence) != 0) {
-    return -1;
+  int64_t position = -1;
+#if defined(_WIN32)
+  if (_fseeki64(_handle, offset, whence) == 0) {
+    if (whence == SEEK_SET) {
+      position = offset;
+    } else {
+      position = _ftelli64(_handle);
+    }
   }
-  const auto position = ftello(_handle);
+#else
+  if (fseeko(_handle, offset, whence) == 0) {
+    if (whence == SEEK_SET) {
+      position = offset;
+    } else {
+      position = ftello(_handle);
+    }
+  }
+#endif
   return position >= 0 ? position : -1;
 }
 
@@ -175,7 +204,9 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       ec.clear();
       const bool is_symlink = entry.is_symlink(ec);
       if (!ec && is_symlink) {
+#ifdef S_IFLNK
         filetype = S_IFLNK;
+#endif
       }
     }
   }
@@ -210,12 +241,11 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       }
     }
 
-    const bool wants_size = wants("size");
-    const bool wants_uid = wants("uid");
-    const bool wants_gid = wants("gid");
-    const bool wants_uname = wants("uname");
-    const bool wants_gname = wants("gname");
-    const bool needs_stat = (wants_size && size == 0) || wants_uid || wants_gid || wants_uname || wants_gname;
+    const bool needs_stat = (wants("size") && size == 0)
+  #if !defined(_WIN32)
+      || wants("uid") || wants("gid") || wants("uname") || wants("gname")
+  #endif
+      ;
 
     struct stat stat_buffer;
     bool have_stat = false;
@@ -224,7 +254,7 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       have_stat = (::stat(native_path.c_str(), &stat_buffer) == 0);
     }
 
-    if (wants_size) {
+    if (wants("size")) {
       uint64_t resolved = size;
       if (resolved == 0 && have_stat) {
         resolved = static_cast<uint64_t>(stat_buffer.st_size);
@@ -234,26 +264,28 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
       }
     }
 
+#if !defined(_WIN32)
     if (have_stat) {
-      if (wants_uid) {
+      if (wants("uid")) {
         metadata["uid"] = static_cast<int64_t>(stat_buffer.st_uid);
       }
-      if (wants_gid) {
+      if (wants("gid")) {
         metadata["gid"] = static_cast<int64_t>(stat_buffer.st_gid);
       }
-      if (wants_uname) {
+      if (wants("uname")) {
         std::string uname;
         if (lookup_username(stat_buffer.st_uid, uname)) {
           metadata["uname"] = std::move(uname);
         }
       }
-      if (wants_gname) {
+      if (wants("gname")) {
         std::string gname;
         if (lookup_groupname(stat_buffer.st_gid, gname)) {
           metadata["gname"] = std::move(gname);
         }
       }
     }
+#endif
   }
 
   info.metadata = std::move(metadata);

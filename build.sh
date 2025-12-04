@@ -11,6 +11,14 @@ set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
 
+# Detect Python interpreter
+PYTHON_EXEC=""
+if command -v python3 >/dev/null 2>&1; then
+    PYTHON_EXEC="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON_EXEC="python"
+fi
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -111,6 +119,8 @@ sync_ruby_vendor_sources() {
     if [ -f "$ROOT_DIR/LICENSE.txt" ]; then
         mkdir -p "$vendor_root"
         cp "$ROOT_DIR/LICENSE.txt" "$vendor_root/LICENSE.txt"
+        # Copy LICENSE.txt to bindings/ruby/LICENSE for gemspec inclusion
+        cp "$ROOT_DIR/LICENSE.txt" "$ROOT_DIR/bindings/ruby/LICENSE"
     fi
 
     return 0
@@ -119,6 +129,8 @@ sync_ruby_vendor_sources() {
 cleanup_ruby_vendor_sources() {
     local vendor_root="$ROOT_DIR/bindings/ruby/ext/archive_r/vendor/archive_r"
     rm -rf "$vendor_root"
+    # Remove temporary LICENSE file
+    rm -f "$ROOT_DIR/bindings/ruby/LICENSE"
 }
 
 purge_ruby_binding_artifacts() {
@@ -293,19 +305,79 @@ if [ "$BINDINGS_ONLY" = false ]; then
 
     log_info "Configuring with CMake..."
     cd "$BUILD_DIR"
-    cmake .. -DCMAKE_BUILD_TYPE=Release
+    # CMP0074: find_package() uses <PackageName>_ROOT variables
+    CMAKE_ARGS=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0074=NEW)
+
+    # Detect Windows/MinGW environment and set generator if needed
+    if [ -n "$CMAKE_GENERATOR" ]; then
+        log_info "Using external CMAKE_GENERATOR: $CMAKE_GENERATOR"
+    elif [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
+        if ! command -v make >/dev/null 2>&1 && command -v mingw32-make >/dev/null 2>&1; then
+            log_info "Detected MinGW environment with mingw32-make. Using 'MinGW Makefiles' generator."
+            CMAKE_ARGS+=(-G "MinGW Makefiles" -DCMAKE_MAKE_PROGRAM=mingw32-make)
+        elif command -v make >/dev/null 2>&1; then
+            log_info "Detected MinGW/MSYS environment with make. Using 'Unix Makefiles' generator."
+            CMAKE_ARGS+=(-G "Unix Makefiles")
+        fi
+    fi
+
+    cmake .. "${CMAKE_ARGS[@]}"
 
     log_info "Building core library..."
-    make -j$(nproc)
+    # Use cmake --build for cross-platform compatibility (handles Makefiles, MSVC, Ninja, etc.)
+    # Detect CPU count for parallel build
+    CPU_COUNT=1
+    if command -v nproc >/dev/null 2>&1; then
+        CPU_COUNT=$(nproc)
+    elif command -v sysctl >/dev/null 2>&1; then
+        CPU_COUNT=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
+    fi
+    cmake --build . --config Release --parallel "$CPU_COUNT"
 
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ] && [ -f "$BUILD_DIR/find_and_traverse" ]; then
+    # Check for build artifacts (Unix-style or Windows-style)
+    # Windows MSVC builds often place artifacts in Release/ or Debug/ subdirectories
+    lib_found=false
+    exe_found=false
+    lib_path=""
+    exe_path=""
+
+    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.a"
+    elif [ -f "$BUILD_DIR/archive_r_core.lib" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/archive_r_core.lib"
+    elif [ -f "$BUILD_DIR/Release/archive_r_core.lib" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/Release/archive_r_core.lib"
+    fi
+
+    if [ -f "$BUILD_DIR/find_and_traverse" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/find_and_traverse"
+    elif [ -f "$BUILD_DIR/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/Release/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/Release/find_and_traverse.exe"
+    fi
+
+    if [ "$lib_found" = true ] && [ "$exe_found" = true ]; then
         echo ""
         log_success "Core build completed"
-        log_success "  Library: $BUILD_DIR/libarchive_r_core.a"
-        log_success "  Example: $BUILD_DIR/find_and_traverse"
+        log_success "  Library: $lib_path"
+        log_success "  Example: $exe_path"
         echo ""
     else
         log_error "Core build failed - expected files not found"
+        log_error "Checked locations:"
+        log_error "  $BUILD_DIR/libarchive_r_core.a"
+        log_error "  $BUILD_DIR/archive_r_core.lib"
+        log_error "  $BUILD_DIR/Release/archive_r_core.lib"
+        log_error "  $BUILD_DIR/find_and_traverse"
+        log_error "  $BUILD_DIR/find_and_traverse.exe"
+        log_error "  $BUILD_DIR/Release/find_and_traverse.exe"
         exit 1
     fi
 
@@ -333,7 +405,14 @@ build_ruby_binding() {
     cd "$ext_dir"
     
     # Run extconf.rb
-    ruby extconf.rb
+    local extconf_args=""
+    if [ -n "$LIBARCHIVE_ROOT" ]; then
+        # Convert Windows path to Unix path if needed (for MinGW/Cygwin)
+        # But here we assume LIBARCHIVE_ROOT is a valid path for the environment
+        extconf_args="--with-archive-include=$LIBARCHIVE_ROOT/include --with-archive-lib=$LIBARCHIVE_ROOT/lib"
+    fi
+    
+    ruby extconf.rb $extconf_args
     
     # Build
     make
@@ -379,7 +458,9 @@ package_ruby_binding() {
 
     local gem_version
     local gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
+    gem_name=$(echo "$gem_name" | tr -d '\r')
     local gem_version=$(ruby -rrubygems -e "spec = Gem::Specification.load('archive_r.gemspec'); puts spec.version" 2>/dev/null || true)
+    gem_version=$(echo "$gem_version" | tr -d '\r')
 
     rm -f "${gem_name}"-*.gem
     if ! gem build archive_r.gemspec; then
@@ -393,7 +474,9 @@ package_ruby_binding() {
     if [ -n "$gem_version" ] && [ -f "${gem_name}-${gem_version}.gem" ]; then
         gem_file="${gem_name}-${gem_version}.gem"
     else
-        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}"'-*.gem' -printf '%f\n' | sort | tail -n 1)
+        # Use portable find (avoid -printf)
+        gem_file=$(find . -maxdepth 1 -type f -name "${gem_name}-*.gem" | sort | tail -n 1)
+        gem_file=$(basename "$gem_file")
     fi
 
     if [ -z "$gem_file" ] || [ ! -f "$gem_file" ]; then
@@ -417,19 +500,19 @@ package_ruby_binding() {
 build_python_binding() {
     log_info "Building Python binding..."
     
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_warning "Python3 not found - skipping Python binding"
+    if [ -z "$PYTHON_EXEC" ]; then
+        log_warning "Python not found - skipping Python binding"
         return 1
     fi
     
     cd "$ROOT_DIR/bindings/python"
     
     # Build extension in-place
-    python3 setup.py build_ext --inplace
+    "$PYTHON_EXEC" setup.py build_ext --inplace
     
-    if ls *.so 1>/dev/null 2>&1; then
+    if ls *.so 1>/dev/null 2>&1 || ls *.pyd 1>/dev/null 2>&1; then
         log_success "Python binding built successfully"
-        log_success "  Extension: $ROOT_DIR/bindings/python/*.so"
+        log_success "  Extension: $ROOT_DIR/bindings/python/*.{so,pyd}"
         cd "$ROOT_DIR"
         return 0
     else
@@ -444,24 +527,38 @@ create_python_virtualenv() {
 
     rm -rf "$venv_dir"
 
-    if python3 -m venv "$venv_dir"; then
-        if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+    # Helper to check for python/pip in bin (Unix) or Scripts (Windows)
+    check_venv_executables() {
+        local dir="$1"
+        if [ -x "$dir/bin/python" ] && [ -x "$dir/bin/pip" ]; then
+            return 0
+        fi
+        if [ -x "$dir/Scripts/python.exe" ] && [ -x "$dir/Scripts/pip.exe" ]; then
+            return 0
+        fi
+        return 1
+    }
+
+    if "$PYTHON_EXEC" -m venv "$venv_dir"; then
+        if check_venv_executables "$venv_dir"; then
             return 0
         fi
         log_warning "Virtual environment created without pip; retrying with virtualenv module"
         rm -rf "$venv_dir"
     else
-        log_warning "python3 -m venv failed. Trying virtualenv module if available..."
+        log_warning "$PYTHON_EXEC -m venv failed. Trying virtualenv module if available..."
     fi
 
-    if python3 -c "import virtualenv" >/dev/null 2>&1; then
-        if python3 -m virtualenv "$venv_dir"; then
-            if [ -x "$venv_dir/bin/python" ] && [ -x "$venv_dir/bin/pip" ]; then
+    if "$PYTHON_EXEC" -c "import virtualenv" >/dev/null 2>&1; then
+        if "$PYTHON_EXEC" -m virtualenv "$venv_dir"; then
+            if check_venv_executables "$venv_dir"; then
                 return 0
             fi
+            log_warning "virtualenv created directory but executables not found. Listing content:"
+            ls -R "$venv_dir" || true
         fi
     else
-        log_warning "Python module 'virtualenv' not found. Install it via: python3 -m pip install --user --upgrade --break-system-packages virtualenv"
+        log_warning "Python module 'virtualenv' not found. Install it via: $PYTHON_EXEC -m pip install --user --upgrade --break-system-packages virtualenv"
     fi
 
     log_error "Unable to create virtual environment at $venv_dir. Install python3-venv or the virtualenv package."
@@ -478,10 +575,21 @@ verify_python_package_installation() {
         return 1
     fi
 
-    local venv_python="$venv_dir/bin/python"
-    local venv_pip="$venv_dir/bin/pip"
+    local venv_python
+    local venv_pip
 
-    "$venv_pip" install --upgrade pip
+    if [ -x "$venv_dir/bin/python" ]; then
+        venv_python="$venv_dir/bin/python"
+        venv_pip="$venv_dir/bin/pip"
+    elif [ -x "$venv_dir/Scripts/python.exe" ]; then
+        venv_python="$venv_dir/Scripts/python.exe"
+        venv_pip="$venv_dir/Scripts/pip.exe"
+    else
+        log_error "Could not locate python executable in venv"
+        return 1
+    fi
+
+    "$venv_python" -m pip install --upgrade pip
 
     local wheel_path
     wheel_path=$(find "$dist_dir" -maxdepth 1 -type f -name "*.whl" | head -n 1)
@@ -502,18 +610,18 @@ verify_python_package_installation() {
 package_python_binding() {
     log_info "Packaging Python binding (wheel + sdist)..."
 
-    if ! command -v python3 >/dev/null 2>&1; then
-        log_error "Python3 not found - cannot package Python binding"
+    if [ -z "$PYTHON_EXEC" ]; then
+        log_error "Python not found - cannot package Python binding"
         return 1
     fi
 
-    if ! python3 -c "import build" >/dev/null 2>&1; then
-        log_error "Python module 'build' is required. Install it via: python3 -m pip install --upgrade build"
+    if ! "$PYTHON_EXEC" -c "import build" >/dev/null 2>&1; then
+        log_error "Python module 'build' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade build"
         return 1
     fi
 
-    if ! python3 -c "import twine" >/dev/null 2>&1; then
-        log_error "Python module 'twine' is required. Install it via: python3 -m pip install --upgrade twine"
+    if ! "$PYTHON_EXEC" -c "import twine" >/dev/null 2>&1; then
+        log_error "Python module 'twine' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade twine"
         return 1
     fi
 
@@ -525,17 +633,26 @@ package_python_binding() {
 
     pushd "$python_root" >/dev/null
     rm -rf dist/ build/ *.egg-info
-    python3 -m build --sdist --wheel --outdir "$dist_dir"
+    
+    local build_args=("--sdist" "--wheel" "--outdir" "$dist_dir")
+    if [ "${ARCHIVE_R_BUILD_NO_ISOLATION:-0}" -eq 1 ]; then
+        build_args+=("--no-isolation")
+    fi
+    
+    "$PYTHON_EXEC" -m build "${build_args[@]}"
     popd >/dev/null
 
-    mapfile -t dist_artifacts < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
+    dist_artifacts=()
+    while IFS= read -r line; do
+        dist_artifacts+=("$line")
+    done < <(find "$dist_dir" -maxdepth 1 -type f \( -name "*.whl" -o -name "*.tar.gz" \) | sort)
     if [ "${#dist_artifacts[@]}" -eq 0 ]; then
         log_error "No distribution artifacts produced for Python binding"
         return 1
     fi
 
     log_info "Running twine check on built artifacts..."
-    python3 -m twine check "${dist_artifacts[@]}"
+    "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
 
     verify_python_package_installation "$dist_dir" || return 1
 

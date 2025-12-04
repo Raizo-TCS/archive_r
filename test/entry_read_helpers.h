@@ -11,6 +11,14 @@
 #include <stdexcept>
 #include <vector>
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 namespace archive_r::test_helpers {
 
 inline std::vector<uint8_t> read_entry_fully(Entry &entry, size_t chunk_size = 64 * 1024) {

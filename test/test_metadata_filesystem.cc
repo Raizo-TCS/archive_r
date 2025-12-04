@@ -4,20 +4,24 @@
 #include "archive_r/entry.h"
 #include "archive_r/traverser.h"
 
-#include <grp.h>
-#include <pwd.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <cstdint>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <vector>
 
+#ifndef _WIN32
+#include <grp.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 using namespace archive_r;
 
 namespace {
+
+#ifndef _WIN32
 
 struct ExpectedIdentity {
   uid_t uid;
@@ -132,3 +136,16 @@ int main(int argc, char *argv[]) {
   std::cout << "Filesystem metadata identity verification succeeded" << std::endl;
   return 0;
 }
+
+#else // _WIN32
+
+} // namespace
+
+int main(int argc, char *argv[]) {
+  (void)argc;
+  (void)argv;
+  std::cout << "Filesystem metadata identity verification skipped on Windows" << std::endl;
+  return 0;
+}
+
+#endif // _WIN32

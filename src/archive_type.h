@@ -11,9 +11,10 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
-#include <sys/types.h>
 #include <unordered_set>
 #include <vector>
+
+#include "archive_r/platform_compat.h"
 
 namespace archive_r {
 
