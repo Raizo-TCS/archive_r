@@ -241,7 +241,8 @@ jobs:
           ARCHIVE_R_BUILD_NO_ISOLATION: "1"
         run: |
           ./build.sh --rebuild-all --package-python --package-ruby
-          python3 .github/scripts/ci/run_with_timeout.py 120 bash ./run_tests.sh
+          BASH_PATH=$(cygpath -w $(which bash))
+          python3 .github/scripts/ci/run_with_timeout.py 120 "$BASH_PATH" ./run_tests.sh
 
       - name: Upload PF6 artifacts
         if: ${{ always() && env.ACT != 'true' }}

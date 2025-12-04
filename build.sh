@@ -585,7 +585,7 @@ verify_python_package_installation() {
         return 1
     fi
 
-    "$venv_pip" install --upgrade pip
+    "$venv_python" -m pip install --upgrade pip
 
     local wheel_path
     wheel_path=$(find "$dist_dir" -maxdepth 1 -type f -name "*.whl" | head -n 1)
