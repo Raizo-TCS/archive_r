@@ -266,5 +266,4 @@ setup(
     ext_modules=ext_modules,
     long_description=read_readme(),
     long_description_content_type='text/markdown',
-    license_files=['LICENSE.txt'],
 )
