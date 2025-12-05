@@ -105,15 +105,26 @@ jobs:
           echo "Downloading artifacts from run $RUN_ID..."
           gh run download "$RUN_ID" --dir artifacts
 
-      - name: Collect release assets
+      - name: Collect release assets (filter official wheels only)
         run: |
           set -euo pipefail
           mkdir -p release/python release/ruby
-          # Artifacts structure might vary, so find files recursively
-          find artifacts -type f -name "*.whl" -exec cp {} release/python/ \;
+
+          # sdist
           find artifacts -type f -name "*.tar.gz" -exec cp {} release/python/ \;
+
+          # Official wheels: manylinux, macOS (including universal2), Windows
+          while IFS= read -r wheel; do
+            cp "$wheel" release/python/
+          done < <(
+            find artifacts -type f -name "*.whl" \
+              | grep -E "(manylinux|macos|macosx|universal2|win_amd64)" \
+              || true
+          )
+
+          # Ruby gem
           find artifacts -type f -name "*.gem" -exec cp {} release/ruby/ \;
-          
+
           if ! compgen -G "release/python/*" > /dev/null; then
             echo "::error::No Python artifacts were collected"
             exit 1
