@@ -9,3 +9,4 @@ recursive-include examples *.py
 recursive-include test *.py
 recursive-include _vendor/archive_r/include *
 recursive-include _vendor/archive_r/src *
+include tools/bootstrap_deps.sh

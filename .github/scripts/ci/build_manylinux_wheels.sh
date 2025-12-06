@@ -31,7 +31,7 @@ install_build_dependencies() {
 
 build_custom_libarchive() {
   mkdir -p /tmp/libarchive
-  curl -sSL "https://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VERSION}.tar.xz" -o /tmp/libarchive.tar.xz
+  fetch_libarchive_tarball
   tar -xf /tmp/libarchive.tar.xz -C /tmp/libarchive --strip-components=1
   pushd /tmp/libarchive >/dev/null
   echo "Configuring libarchive..."
@@ -44,6 +44,22 @@ build_custom_libarchive() {
   popd >/dev/null
   echo '/opt/libarchive-custom/lib' > /etc/ld.so.conf.d/libarchive_custom.conf
   ldconfig
+}
+
+fetch_libarchive_tarball() {
+  local primary_url="https://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VERSION}.tar.xz"
+  local github_url="https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}/libarchive-${LIBARCHIVE_VERSION}.tar.xz"
+  local source_url="${LIBARCHIVE_SOURCE_URL:-${primary_url}}"
+
+  echo "Fetching libarchive from ${source_url}"
+  if curl -fsSL "${source_url}" -o /tmp/libarchive.tar.xz; then
+    return
+  fi
+
+  if [[ -z "${LIBARCHIVE_SOURCE_URL:-}" ]]; then
+    echo "Primary fetch failed; retrying GitHub mirror..."
+    curl -fsSL "${github_url}" -o /tmp/libarchive.tar.xz
+  fi
 }
 
 configure_toolchain_env() {

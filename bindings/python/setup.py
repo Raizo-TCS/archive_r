@@ -22,19 +22,29 @@ vendor_src = vendor_root / 'src'
 local_readme = binding_root / 'README.md'
 local_license = binding_root / 'LICENSE.txt'
 
-# Ensure LICENSE.txt is present in the binding directory
-if (archive_r_root / 'LICENSE.txt').exists():
+# Ensure LICENSE.txt is present in the binding directory. Skip overwrite when a copy already exists
+# to avoid permission issues from prior root-owned builds.
+if (archive_r_root / 'LICENSE.txt').exists() and not local_license.exists():
     shutil.copy(archive_r_root / 'LICENSE.txt', local_license)
 
 local_version = binding_root / 'VERSION'
 system_name = platform.system().lower()
 is_windows = system_name == 'windows' or os.name == 'nt'
+target_triple = os.environ.get('ARCHIVE_R_TARGET_TRIPLE')
+sysroot_override = os.environ.get('ARCHIVE_R_SYSROOT')
+bootstrap_cmd = os.environ.get('ARCHIVE_R_BOOTSTRAP_CMD')
+bootstrap_prefix = os.environ.get('ARCHIVE_R_BOOTSTRAP_PREFIX')
+bootstrap_args = os.environ.get('ARCHIVE_R_BOOTSTRAP_ARGS', '')
+auto_fetch_deps = os.environ.get('ARCHIVE_R_AUTO_FETCH_DEPS', '0') == '1'
+bootstrap_script = binding_root / 'tools' / 'bootstrap_deps.sh'
+force_source_build = os.environ.get('ARCHIVE_R_FORCE_SOURCE', '0') == '1'
 print(f"DEBUG: system_name={system_name}, os.name={os.name}, sys.platform={sys.platform}")
 libraries: List[str] = ['archive']
 library_dirs: List[str] = []
 include_dirs_override: List[str] = []
 extra_link_args: List[str] = []
 runtime_library_dirs: List[str] = []
+extra_compile_args: List[str] = []
 
 
 def extend_path_entries(target: List[str], raw_value: Optional[str]) -> None:
@@ -72,6 +82,58 @@ configure_libarchive_paths_from_root(os.environ.get('LIBARCHIVE_ROOT'))
 extend_path_entries(include_dirs_override, os.environ.get('LIBARCHIVE_INCLUDE_DIRS'))
 extend_path_entries(library_dirs, os.environ.get('LIBARCHIVE_LIBRARY_DIRS'))
 extend_path_entries(runtime_library_dirs, os.environ.get('LIBARCHIVE_RUNTIME_DIRS'))
+if sysroot_override:
+    configure_libarchive_paths_from_root(sysroot_override)
+    if not is_windows:
+        extra_compile_args.append(f"--sysroot={sysroot_override}")
+        extra_link_args.append(f"--sysroot={sysroot_override}")
+
+bootstrap_root: Optional[Path] = None
+if auto_fetch_deps:
+    bootstrap_root = Path(bootstrap_prefix or (binding_root / '_deps')).expanduser().resolve()
+    configure_libarchive_paths_from_root(str(bootstrap_root))
+
+
+def run_bootstrap_if_requested() -> None:
+    global bootstrap_cmd
+    if not bootstrap_cmd and auto_fetch_deps:
+        if not bootstrap_root:
+            raise RuntimeError("bootstrap root was not resolved")
+        if not bootstrap_script.exists():
+            raise RuntimeError("bootstrap script missing from sdist: tools/bootstrap_deps.sh")
+        cmd_parts = ["bash", str(bootstrap_script), "--prefix", str(bootstrap_root)]
+        # target_triple 由来の --host は重複しないよう先に挿入する
+        host_injected = False
+        if target_triple:
+            cmd_parts.extend(["--host", target_triple])
+            host_injected = True
+        if bootstrap_args:
+            args_parts = bootstrap_args.split()
+            # 既に指定済みの --host を二重付与しない
+            if host_injected and "--host" in args_parts:
+                filtered = []
+                skip_next = False
+                for part in args_parts:
+                    if skip_next:
+                        skip_next = False
+                        continue
+                    if part == "--host":
+                        skip_next = True
+                        continue
+                    filtered.append(part)
+                args_parts = filtered
+            cmd_parts.extend(args_parts)
+        bootstrap_cmd = " ".join(cmd_parts)
+
+    if not bootstrap_cmd:
+        return
+    print(f"Running bootstrap command for dependencies: {bootstrap_cmd}")
+    result = os.system(bootstrap_cmd)
+    if result != 0:
+        raise RuntimeError(f"bootstrap command failed with exit code {result}")
+
+
+run_bootstrap_if_requested()
 
 user_defined_libs = os.environ.get('LIBARCHIVE_LIBRARIES')
 if user_defined_libs:
@@ -191,6 +253,9 @@ sources = ['src/archive_r_py.cc']
 # Try to use pre-built library first
 
 def find_prebuilt_library() -> Optional[Path]:
+    if target_triple:
+        # クロス時はホスト向け静的ライブラリを誤用しない
+        return None
     candidates = [
         archive_r_build / 'libarchive_r_core.lib',
         archive_r_build / 'libarchive_r_core.a',
@@ -207,7 +272,7 @@ def find_prebuilt_library() -> Optional[Path]:
 
 
 extra_objects: List[str] = []
-static_lib = find_prebuilt_library()
+static_lib = None if force_source_build else find_prebuilt_library()
 if static_lib:
     extra_objects = [str(static_lib)]
     print(f"Using pre-built archive_r library: {static_lib}")
@@ -229,6 +294,21 @@ if include_dirs_override:
     base_include_dirs.extend(include_dirs_override)
 
 class BuildExt(build_ext):
+    def get_ext_filename(self, ext_name: str) -> str:  # type: ignore[override]
+        filename = super().get_ext_filename(ext_name)
+        # クロス時にターゲットアーキの拡張子へ合わせる
+        override_suffix = os.environ.get('ARCHIVE_R_EXT_SUFFIX')
+        if override_suffix:
+            stem, _ = os.path.splitext(filename)
+            return f"{stem}{override_suffix}"
+
+        if target_triple and not is_windows:
+            stem, _ = os.path.splitext(filename)
+            py_ver = f"{sys.version_info.major}{sys.version_info.minor}"
+            return f"{stem}.cpython-{py_ver}-{target_triple}.so"
+
+        return filename
+
     def build_extensions(self):
         compiler_type = self.compiler.compiler_type
         opts = []
@@ -238,6 +318,9 @@ class BuildExt(build_ext):
             opts = ['-std=c++17', '-fvisibility=hidden']
             if system_name == 'darwin':
                 opts.append('-stdlib=libc++')
+            if sysroot_override:
+                opts.append(f"--sysroot={sysroot_override}")
+        opts.extend(extra_compile_args)
         
         for ext in self.extensions:
             ext.extra_compile_args = opts
