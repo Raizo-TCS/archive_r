@@ -47,20 +47,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up QEMU (aarch64)
+        uses: docker/setup-qemu-action@v3
+
       - name: Build & Test on arm64
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: aarch64
-          distro: ubuntu24.04
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update
-            apt-get install -y sudo
-          run: |
-            cd "$GITHUB_WORKSPACE"
-            ./install-deps-ubuntu.sh
-            PACKAGE_MODE=full ./build-on-ubuntu.sh
-            ./test-on-ubuntu.sh
+        run: |
+          set -euo pipefail
+          docker run --rm --platform linux/arm64 \
+            -v "${{ github.workspace }}:/io" \
+            -w /io \
+            ubuntu:24.04 \
+            bash -c "set -euo pipefail; apt-get update; apt-get install -y sudo; ./install-deps-ubuntu.sh; PACKAGE_MODE=full ./build-on-ubuntu.sh; ./test-on-ubuntu.sh"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
@@ -82,9 +79,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-13
+          - runner: macos-15-intel
             arch: x86_64
-            label: PF2.0 macOS 13 x86_64
+            label: PF2.0 macOS 15 x86_64
           - runner: macos-14
             arch: arm64
             label: PF2.1 macOS 14 arm64

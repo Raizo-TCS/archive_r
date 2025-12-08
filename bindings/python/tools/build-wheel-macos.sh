@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 cd bindings/python
-python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
+python -m pip install --upgrade --break-system-packages pip setuptools wheel pybind11 build delocate
 
 deployment_tag="${MACOSX_DEPLOYMENT_TARGET//./_}"
 if [[ "${ARCH}" == "universal2" ]]; then

@@ -14,4 +14,4 @@ echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >> "$GITHUB_ENV"
 echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >> "$GITHUB_ENV"
 echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >> "$GITHUB_ENV"
 
-python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine
+python3 -m pip install --upgrade --break-system-packages pip setuptools wheel pybind11 build twine
