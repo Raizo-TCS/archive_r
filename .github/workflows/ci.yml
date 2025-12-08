@@ -1,9 +1,9 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [main]
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
 
 permissions:
@@ -11,253 +11,191 @@ permissions:
   packages: read
 
 jobs:
-  pf1-linux:
-    name: PF1 Linux Build & Test
+  pf1-linux-x86:
+    name: PF1.0 Linux x86_64 Build & Test
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        shell: bash
-        run: |
-          APT_PREFIX="sudo"
-          if ! command -v sudo >/dev/null 2>&1; then
-            APT_PREFIX=""
-          fi
-          $APT_PREFIX apt-get update
-          $APT_PREFIX apt-get install -y \
-            libarchive-dev \
-            build-essential \
-            cmake \
-            python3-dev \
-            python3-pip \
-            ruby-dev
+      - name: Install dependencies (Ubuntu x86_64)
+        run: ./install-deps-ubuntu.sh
 
-      - name: Install Python build dependencies
-        run: |
-          python3 -m pip install --upgrade --ignore-installed pip setuptools wheel --break-system-packages
-          python3 -m pip install --upgrade --ignore-installed pybind11 twine build --break-system-packages
+      - name: Build (Ubuntu x86_64)
+        run: PACKAGE_MODE=full ./build-on-ubuntu.sh
 
-      - name: Build archive_r
-        run: ./build.sh --rebuild-all --package-python --package-ruby
+      - name: Test (Ubuntu x86_64)
+        run: ./test-on-ubuntu.sh
 
-      - name: Run test suite
-        run: python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
-
-      - name: Upload PF1 artifacts
+      - name: Upload PF1.0 artifacts
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: archive-r-pf1-${{ github.sha }}
+          name: archive-r-pf1-x86_64-${{ github.sha }}
           path: |
-            build/libarchive_r_core.a
-            build/bindings/python/dist/*.tar.gz
-            build/bindings/python/dist/*.whl
-            build/bindings/ruby/*.gem
+            build/bindings/python/dist/**/*
+            build/bindings/ruby/**/*.gem
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
 
-  macos-platforms:
-    name: ${{ matrix.platform }} macOS Build & Test
+  pf1-linux-arm64:
+    name: PF1.1 Linux arm64 Build & Test (QEMU)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & Test on arm64
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: aarch64
+          distro: ubuntu24.04
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get install -y sudo
+          run: |
+            cd "$GITHUB_WORKSPACE"
+            ./install-deps-ubuntu.sh
+            PACKAGE_MODE=full ./build-on-ubuntu.sh
+            ./test-on-ubuntu.sh
+
+      - name: Upload PF1.1 artifacts
+        if: ${{ always() && env.ACT != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-r-pf1-arm64-${{ github.sha }}
+          path: |
+            build/bindings/python/dist/**/*
+            build/bindings/ruby/**/*.gem
+            build/logs/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  pf2-macos:
+    name: ${{ matrix.label }} macOS Build & Test
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: PF3
-            runner: macos-13
+          - runner: macos-13
             arch: x86_64
-          - platform: PF4
-            runner: macos-14
+            label: PF2.0 macOS 13 x86_64
+          - runner: macos-14
             arch: arm64
+            label: PF2.1 macOS 14 arm64
     env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
       HOMEBREW_NO_AUTO_UPDATE: "1"
       HOMEBREW_NO_INSTALL_CLEANUP: "1"
       HOMEBREW_NO_ANALYTICS: "1"
       HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
-      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install Homebrew dependencies
-        shell: bash
-        run: |
-          set -euo pipefail
-          brew install cmake ninja pkg-config libarchive ruby coreutils
-          LIBARCHIVE_ROOT="$(brew --prefix libarchive)"
-          echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
-          echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
-          echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >>"$GITHUB_ENV"
-          echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >>"$GITHUB_ENV"
-          echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >>"$GITHUB_ENV"
+      - name: Install dependencies (macOS)
+        run: ./install-deps-macos.sh
 
-      - name: Provide nproc helper
-        shell: bash
-        run: |
-          # macOS runner doesn't have nproc, create a wrapper
-          echo '#!/bin/bash' > nproc
-          echo 'sysctl -n hw.logicalcpu' >> nproc
-          chmod +x nproc
-          echo "$PWD" >> $GITHUB_PATH
+      - name: Build (macOS ${{ matrix.arch }})
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: PACKAGE_MODE=full ./build-on-macos.sh
 
-      - name: Build archive_r
-        run: ./build.sh --rebuild-all
+      - name: Test (macOS ${{ matrix.arch }})
+        run: ./test-on-macos.sh
 
-      - name: Run test suite
-        run: python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
-
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python Build Deps
-        run: |
-          python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine --break-system-packages
-
-      - name: Build archive_r (macOS)
-        run: ./build.sh --rebuild-all --package-python --package-ruby
-
-      - name: Run test suite (macOS)
-        run: python3 .github/scripts/ci/run_with_timeout.py 120 ./run_tests.sh
-
-      - name: Upload ${{ matrix.platform }} artifacts
+      - name: Upload ${{ matrix.label }} artifacts
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: archive-r-${{ matrix.platform }}-${{ github.sha }}
+          name: archive-r-${{ matrix.arch }}-${{ github.sha }}
           path: |
-            build/bindings/python/dist/*.tar.gz
-            build/bindings/python/dist/*.whl
-            build/bindings/ruby/*.gem
+            build/bindings/python/dist/**/*
+            build/bindings/ruby/**/*.gem
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
 
-  pf5-msvc:
-    name: PF5 (MSVC) Windows Build & Test
+  pf3-msvc:
+    name: PF3.0 Windows MSVC Build & Test
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 90
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Clean PATH (MSVC)
-        shell: pwsh
-        run: |
-          # Remove Strawberry Perl and other potential MinGW sources from PATH to ensure MSVC isolation
-          $path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-          $newPath = ($path.Split(';') | Where-Object { $_ -notlike "*Strawberry*" -and $_ -notlike "*mingw*" } | Select-Object -Unique) -join ';'
-          echo "PATH=$newPath" >> $env:GITHUB_ENV
-
-      - name: Setup Python (MSVC)
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Setup Ruby (MSVC)
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.2'
 
-      - name: Install Dependencies (MSVC)
+      - name: Install dependencies (MSVC)
         shell: pwsh
-        run: |
-          vcpkg install libarchive:x64-windows
-          $root = "C:\vcpkg\installed\x64-windows"
-          echo "LIBARCHIVE_ROOT=$root" >> $env:GITHUB_ENV
-          echo "CMAKE_PREFIX_PATH=$root" >> $env:GITHUB_ENV
-          echo "PATH=$root\bin;$env:PATH" >> $env:GITHUB_ENV
-          echo "LIB=$root\lib;$env:LIB" >> $env:GITHUB_ENV
-          echo "INCLUDE=$root\include;$env:INCLUDE" >> $env:GITHUB_ENV
+        run: ./install-deps-msvc.ps1
 
-      - name: Install Python Build Deps (MSVC)
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools wheel pybind11 build twine virtualenv
+      - name: Build (MSVC x64)
+        shell: pwsh
+        run: ./build-on-msvc.ps1 -PackageMode full
 
-      - name: Build and Test (MSVC)
-        shell: bash
-        env:
-          CMAKE_GENERATOR: "Visual Studio 17 2022"
-        run: |
-          ./build.sh --rebuild-all --package-python --package-ruby
-          # Explicitly use the current bash (Git Bash) to avoid triggering WSL
-          BASH_PATH=$(cygpath -w /usr/bin/bash)
-          python .github/scripts/ci/run_with_timeout.py 120 "$BASH_PATH" ./run_tests.sh
+      - name: Test (MSVC x64)
+        shell: pwsh
+        run: ./test-on-msvc.ps1
 
-      - name: Upload PF5 artifacts
+      - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: archive-r-pf5-${{ github.sha }}
+          name: archive-r-pf3-${{ github.sha }}
           path: |
-            build/bindings/python/dist/*.whl
-            build/bindings/ruby/*.gem
+            build/bindings/python/dist/**/*
+            build/bindings/ruby/**/*.gem
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
 
-  pf6-mingw:
-    name: PF6 (MinGW) Windows Build & Test
+  pf4-mingw:
+    name: PF4.0 Windows MinGW Build & Test
     runs-on: windows-2022
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup MSYS2 (MinGW)
+      - name: Setup MSYS2 (UCRT64)
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
           update: true
-          path-type: minimal # Isolate from System PATH (MSVC, Strawberry Perl, etc.)
-          install: >-
-            git
-            base-devel
-            mingw-w64-ucrt-x86_64-toolchain
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-libarchive
-            mingw-w64-ucrt-x86_64-python
-            mingw-w64-ucrt-x86_64-ruby
-            mingw-w64-ucrt-x86_64-python-pip
-            mingw-w64-ucrt-x86_64-python-setuptools
-            mingw-w64-ucrt-x86_64-python-wheel
-            mingw-w64-ucrt-x86_64-rust
+          path-type: minimal
 
-      - name: Install Python Build Deps (MinGW)
-        shell: msys2 {0}
-        run: |
-          python3 -m pip install --upgrade pip setuptools wheel pybind11 build twine --break-system-packages
+      - name: Install dependencies (MinGW)
+        shell: pwsh
+        run: ./install-deps-mingw.ps1
 
-      - name: Build and Test (MinGW)
-        shell: msys2 {0}
-        env:
-          ARCHIVE_R_BUILD_NO_ISOLATION: "1"
-        run: |
-          ./build.sh --rebuild-all --package-python --package-ruby
-          BASH_PATH=$(cygpath -w /usr/bin/bash)
-          python3 .github/scripts/ci/run_with_timeout.py 120 "$BASH_PATH" ./run_tests.sh
+      - name: Build (MinGW x86_64)
+        shell: pwsh
+        run: ./build-on-mingw.ps1 -PackageMode full
 
-      - name: Upload PF6 artifacts
+      - name: Test (MinGW x86_64)
+        shell: pwsh
+        run: ./test-on-mingw.ps1
+
+      - name: Upload PF4 artifacts
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
-          name: archive-r-pf6-${{ github.sha }}
+          name: archive-r-pf4-${{ github.sha }}
           path: |
-            build/bindings/python/dist/*.whl
-            build/bindings/ruby/*.gem
+            build/bindings/python/dist/**/*
+            build/bindings/ruby/**/*.gem
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
-
-  build-wheels:
-    name: Build Wheels
-    needs: [pf1-linux, macos-platforms, pf5-msvc, pf6-mingw]
-    uses: ./.github/workflows/build-wheels.yml
-    secrets: inherit

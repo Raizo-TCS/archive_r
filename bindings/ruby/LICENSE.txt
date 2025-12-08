@@ -73,5 +73,21 @@ The following components are redistributed only because libarchive (bundled with
 9. libiconv / libcharset
    - Purpose: libxml2/libarchive dependency for character set conversion; redistributed with archive_r artifacts.
    - License: GNU LGPLv2.1+ (https://www.gnu.org/software/libiconv/)
+
+10. lz4
+   - Purpose: libarchive dependency providing LZ4 compression; shipped with archive_r artifacts when required.
+   - License: BSD 2-Clause (https://github.com/lz4/lz4)
+
+11. libb2 (BLAKE2)
+   - Purpose: libarchive dependency providing BLAKE2 hashing; bundled when archive formats require it.
+   - License: CC0 1.0 Universal (https://github.com/BLAKE2/libb2)
+
+12. libattr
+   - Purpose: libarchive dependency providing extended attribute support on POSIX platforms; included in POSIX builds only.
+   - License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/attr)
+
+13. libacl
+   - Purpose: libarchive dependency providing POSIX ACL support; included in POSIX builds only.
+   - License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/acl)
 Users of archive_r should review the linked third-party licenses to ensure
 compliance with their terms when redistributing this software.

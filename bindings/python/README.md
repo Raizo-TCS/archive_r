@@ -455,7 +455,7 @@ Or use the project-wide test runner:
 
 ```bash
 cd archive_r
-./run_tests.sh
+./bindings/python/run_binding_tests.sh
 ```
 
 ---

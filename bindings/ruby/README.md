@@ -37,9 +37,9 @@ bundle exec rake build     # creates archive_r-<version>.gem locally
 
 The `rake test` task compiles the extension, installs it into `lib/`, and executes the Minitest suite.
 
-## Running the full repository test suite
+## Running the repository test suite
 
-`./run_tests.sh` prepares a clean GEM_HOME (`build/ruby_gem_home`), installs the gem produced in `build/bindings/ruby`, and runs `bindings/ruby/test/test_traverser.rb`. The script now streams the `gem install` log to the console and preserves it in `build/logs/ruby_gem_install.log` for later inspection.
+From the repository root run `./bindings/ruby/run_binding_tests.sh`. The script prepares a clean GEM_HOME (`build/ruby_gem_home`), installs the gem produced in `build/bindings/ruby`, runs `bindings/ruby/test/test_traverser.rb`, and saves the install log to `build/logs/ruby_gem_install.log`. CI invokes this script after the core tests.
 
 ## Usage Example
 

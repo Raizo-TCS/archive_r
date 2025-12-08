@@ -13,6 +13,42 @@ if(UNIX)
 endif()
 
 find_package(LibArchive REQUIRED)
+find_package(PkgConfig QUIET)
+if(PKG_CONFIG_FOUND)
+    # Use pkg-config static metadata to pull in transitive deps when libarchive is static
+    set(PKG_CONFIG_USE_STATIC_LIBS ON)
+    pkg_check_modules(LibArchivePC QUIET libarchive)
+    if(LibArchivePC_FOUND)
+        list(APPEND LibArchive_LIBRARIES ${LibArchivePC_LINK_LIBRARIES})
+        list(APPEND LibArchive_INCLUDE_DIRS ${LibArchivePC_INCLUDE_DIRS})
+    endif()
+endif()
+
+set(_LibArchive_is_static FALSE)
+if(LibArchive_LIBRARY MATCHES "\\.a$")
+    set(_LibArchive_is_static TRUE)
+endif()
+
+if(_LibArchive_is_static)
+    # Ensure static libarchive pulls transitive deps even when pkg-config metadata is missing or incomplete
+    set(_LibArchive_dep_libs z bz2 lzma zstd lz4 xml2 nettle)
+    set(_LibArchive_dep_paths)
+    if(DEFINED LibArchive_ROOT)
+        list(APPEND _LibArchive_dep_paths ${LibArchive_ROOT}/lib ${LibArchive_ROOT}/lib64)
+    endif()
+    list(APPEND _LibArchive_dep_paths ${CMAKE_PREFIX_PATH})
+    foreach(_hint ${_LibArchive_dep_paths})
+        if(IS_DIRECTORY ${_hint})
+            list(APPEND _LibArchive_search_paths ${_hint})
+        endif()
+    endforeach()
+    foreach(_dep ${_LibArchive_dep_libs})
+        find_library(_LibArchive_dep_${_dep} NAMES ${_dep} HINTS ${_LibArchive_search_paths})
+        if(_LibArchive_dep_${_dep})
+            list(APPEND LibArchive_LIBRARIES ${_LibArchive_dep_${_dep}})
+        endif()
+    endforeach()
+endif()
 
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
@@ -36,7 +72,7 @@ set(LIBRARY_SOURCES
     src/entry_fault_error.cc
 )
 
-add_library(archive_r_core STATIC ${LIBRARY_SOURCES})
+add_library(archive_r_core SHARED ${LIBRARY_SOURCES})
 target_link_libraries(archive_r_core ${LibArchive_LIBRARIES})
 
 # ========================================

@@ -26,6 +26,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Default macOS deployment target to keep wheel compatibility
+if [[ "$(uname -s)" == "Darwin" && -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]]; then
+    export MACOSX_DEPLOYMENT_TARGET="11.0"
+fi
+
 # === Utility Functions ===
 log_info() {
     echo -e "${BLUE}▶${NC} $1"
@@ -341,7 +346,16 @@ if [ "$BINDINGS_ONLY" = false ]; then
     lib_path=""
     exe_path=""
 
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
+    if [ -f "$BUILD_DIR/libarchive_r_core.so" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.so"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.dylib" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.dylib"
+    elif [ -f "$BUILD_DIR/archive_r_core.dll" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/archive_r_core.dll"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/libarchive_r_core.a"
     elif [ -f "$BUILD_DIR/archive_r_core.lib" ]; then

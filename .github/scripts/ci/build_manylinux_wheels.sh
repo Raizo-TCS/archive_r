@@ -2,75 +2,41 @@
 set -euo pipefail
 
 : "${PYTHON_TAG:?PYTHON_TAG must be set}" 
-: "${LIBARCHIVE_VERSION:?LIBARCHIVE_VERSION must be set}" 
 
 WORKSPACE_DIR="/io"
 PYTHON_BINDINGS_DIR="${WORKSPACE_DIR}/bindings/python"
 TARGET_DIR="dist/${PYTHON_TAG}"
 TARGET_PATH="${PYTHON_BINDINGS_DIR}/${TARGET_DIR}"
 PYBIN="/opt/python/${PYTHON_TAG}/bin"
+DEPS_PREFIX="${ARCHIVE_R_DEPS_PREFIX:-/opt/archive_r_deps}"
+DEPS_BUILDER="${WORKSPACE_DIR}/bindings/python/tools/build-deps-manylinux.sh"
 
-install_build_dependencies() {
-  yum install -y \
-    cmake \
-    gcc-c++ \
-    make \
-    curl \
-    tar \
-    xz \
-    autoconf \
-    automake \
-    libtool \
-    pkgconfig \
-    openssl-devel \
-    zlib-devel \
-    bzip2-devel \
-    xz-devel \
-    libxml2-devel >/dev/null
-}
-
-build_custom_libarchive() {
-  mkdir -p /tmp/libarchive
-  fetch_libarchive_tarball
-  tar -xf /tmp/libarchive.tar.xz -C /tmp/libarchive --strip-components=1
-  pushd /tmp/libarchive >/dev/null
-  echo "Configuring libarchive..."
-  ./configure --prefix=/opt/libarchive-custom
-
-  echo "Building libarchive..."
-  make -j"$(nproc)"
-  echo "Installing libarchive..."
-  make install
-  popd >/dev/null
-  echo '/opt/libarchive-custom/lib' > /etc/ld.so.conf.d/libarchive_custom.conf
-  ldconfig
-}
-
-fetch_libarchive_tarball() {
-  local primary_url="https://www.libarchive.org/downloads/libarchive-${LIBARCHIVE_VERSION}.tar.xz"
-  local github_url="https://github.com/libarchive/libarchive/releases/download/v${LIBARCHIVE_VERSION}/libarchive-${LIBARCHIVE_VERSION}.tar.xz"
-  local source_url="${LIBARCHIVE_SOURCE_URL:-${primary_url}}"
-
-  echo "Fetching libarchive from ${source_url}"
-  if curl -fsSL "${source_url}" -o /tmp/libarchive.tar.xz; then
+ensure_dependencies() {
+  if [[ -f "${DEPS_PREFIX}/lib/libarchive.a" || -f "${DEPS_PREFIX}/lib/libarchive.so" || -f "${DEPS_PREFIX}/lib64/libarchive.a" || -f "${DEPS_PREFIX}/lib64/libarchive.so" ]]; then
     return
   fi
 
-  if [[ -z "${LIBARCHIVE_SOURCE_URL:-}" ]]; then
-    echo "Primary fetch failed; retrying GitHub mirror..."
-    curl -fsSL "${github_url}" -o /tmp/libarchive.tar.xz
+  if [[ ! -x "${DEPS_BUILDER}" ]]; then
+    echo "Dependency builder not found: ${DEPS_BUILDER}" >&2
+    exit 1
   fi
+
+  local args=("--prefix" "${DEPS_PREFIX}")
+  if [[ -n "${ARCHIVE_R_DEPS_HOST:-}" ]]; then
+    args+=("--host" "${ARCHIVE_R_DEPS_HOST}")
+  fi
+  bash "${DEPS_BUILDER}" "${args[@]}"
 }
 
 configure_toolchain_env() {
-  export PKG_CONFIG_PATH="/opt/libarchive-custom/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
-  export LD_LIBRARY_PATH="/opt/libarchive-custom/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-  export LIBRARY_PATH="/opt/libarchive-custom/lib${LIBRARY_PATH:+:${LIBRARY_PATH}}"
-  export CMAKE_PREFIX_PATH="/opt/libarchive-custom${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}"
-  export LibArchive_ROOT="/opt/libarchive-custom"
-  export CPPFLAGS="${CPPFLAGS:+${CPPFLAGS} }-I/opt/libarchive-custom/include"
-  export CXXFLAGS="${CXXFLAGS:+${CXXFLAGS} }-pthread -I/opt/libarchive-custom/include"
-  export LDFLAGS="${LDFLAGS:+${LDFLAGS} }-pthread -L/opt/libarchive-custom/lib"
+  export PKG_CONFIG_PATH="${DEPS_PREFIX}/lib/pkgconfig:${DEPS_PREFIX}/lib64/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}"
+  export LD_LIBRARY_PATH="${DEPS_PREFIX}/lib:${DEPS_PREFIX}/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+  export LIBRARY_PATH="${DEPS_PREFIX}/lib:${DEPS_PREFIX}/lib64${LIBRARY_PATH:+:${LIBRARY_PATH}}"
+  export CMAKE_PREFIX_PATH="${DEPS_PREFIX}${CMAKE_PREFIX_PATH:+:${CMAKE_PREFIX_PATH}}"
+  export LibArchive_ROOT="${DEPS_PREFIX}"
+  export CPPFLAGS="${CPPFLAGS:+${CPPFLAGS} }-I${DEPS_PREFIX}/include"
+  export CXXFLAGS="${CXXFLAGS:+${CXXFLAGS} }-pthread -I${DEPS_PREFIX}/include"
+  export LDFLAGS="${LDFLAGS:+${LDFLAGS} }-pthread -L${DEPS_PREFIX}/lib -L${DEPS_PREFIX}/lib64"
 }
 
 build_python_bindings() {
@@ -131,10 +97,9 @@ finalize_artifacts() {
   fi
 }
 
-install_build_dependencies
-build_custom_libarchive
 "${PYBIN}/pip" install --upgrade pip >/dev/null
 "${PYBIN}/pip" install --upgrade build twine virtualenv pybind11 >/dev/null
+ensure_dependencies
 configure_toolchain_env
 build_python_bindings
 ensure_target_wheels

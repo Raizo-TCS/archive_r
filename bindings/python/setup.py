@@ -19,6 +19,7 @@ archive_r_build = archive_r_root / 'build'
 vendor_root = binding_root / '_vendor' / 'archive_r'
 vendor_include = vendor_root / 'include'
 vendor_src = vendor_root / 'src'
+libs_dir = binding_root / '.libs'
 local_readme = binding_root / 'README.md'
 local_license = binding_root / 'LICENSE.txt'
 
@@ -36,7 +37,11 @@ bootstrap_cmd = os.environ.get('ARCHIVE_R_BOOTSTRAP_CMD')
 bootstrap_prefix = os.environ.get('ARCHIVE_R_BOOTSTRAP_PREFIX')
 bootstrap_args = os.environ.get('ARCHIVE_R_BOOTSTRAP_ARGS', '')
 auto_fetch_deps = os.environ.get('ARCHIVE_R_AUTO_FETCH_DEPS', '0') == '1'
-bootstrap_script = binding_root / 'tools' / 'bootstrap_deps.sh'
+bootstrap_scripts = []
+if system_name == 'darwin':
+    bootstrap_scripts.append(binding_root / 'tools' / 'build-deps-macos.sh')
+bootstrap_scripts.append(binding_root / 'tools' / 'build-deps-manylinux.sh')
+bootstrap_script = next((p for p in bootstrap_scripts if p.exists()), None)
 force_source_build = os.environ.get('ARCHIVE_R_FORCE_SOURCE', '0') == '1'
 print(f"DEBUG: system_name={system_name}, os.name={os.name}, sys.platform={sys.platform}")
 libraries: List[str] = ['archive']
@@ -45,6 +50,7 @@ include_dirs_override: List[str] = []
 extra_link_args: List[str] = []
 runtime_library_dirs: List[str] = []
 extra_compile_args: List[str] = []
+staged_shared_libs: List[Path] = []
 
 
 def extend_path_entries(target: List[str], raw_value: Optional[str]) -> None:
@@ -54,6 +60,29 @@ def extend_path_entries(target: List[str], raw_value: Optional[str]) -> None:
         normalized = entry.strip()
         if normalized:
             target.append(normalized)
+
+
+def stage_shared_libs(paths: Iterable[Path]) -> None:
+    libs_dir.mkdir(parents=True, exist_ok=True)
+    for candidate in paths:
+        if not candidate.exists() or not candidate.is_file():
+            continue
+        if not any(str(candidate).endswith(ext) for ext in ('.so', '.dylib', '.dll')) and '.so.' not in candidate.name:
+            continue
+        target = libs_dir / candidate.name
+        shutil.copy2(candidate, target)
+        staged_shared_libs.append(target)
+
+
+def collect_shared_from_prefix(prefix: Path) -> List[Path]:
+    results: List[Path] = []
+    for sub in ('lib', 'lib64', 'bin'):
+        base = prefix / sub
+        if not base.exists():
+            continue
+        for glob_pattern in ('*.so', '*.so.*', '*.dylib', '*.dll'):
+            results.extend(base.glob(glob_pattern))
+    return results
 
 
 def configure_libarchive_paths_from_root(root_value: Optional[str]) -> None:
@@ -99,8 +128,8 @@ def run_bootstrap_if_requested() -> None:
     if not bootstrap_cmd and auto_fetch_deps:
         if not bootstrap_root:
             raise RuntimeError("bootstrap root was not resolved")
-        if not bootstrap_script.exists():
-            raise RuntimeError("bootstrap script missing from sdist: tools/bootstrap_deps.sh")
+        if not bootstrap_script:
+            raise RuntimeError("bootstrap script missing from sdist: tools/build-deps-*.sh")
         cmd_parts = ["bash", str(bootstrap_script), "--prefix", str(bootstrap_root)]
         # target_triple 由来の --host は重複しないよう先に挿入する
         host_injected = False
@@ -134,6 +163,14 @@ def run_bootstrap_if_requested() -> None:
 
 
 run_bootstrap_if_requested()
+
+# Stage shared dependencies for bundling (bootstrap root and user-provided roots)
+if bootstrap_root:
+    stage_shared_libs(collect_shared_from_prefix(bootstrap_root))
+
+libarchive_root_env = os.environ.get('LIBARCHIVE_ROOT')
+if libarchive_root_env:
+    stage_shared_libs(collect_shared_from_prefix(Path(libarchive_root_env)))
 
 user_defined_libs = os.environ.get('LIBARCHIVE_LIBRARIES')
 if user_defined_libs:
@@ -250,35 +287,33 @@ core_include_dir, core_src_dir = resolve_core_paths()
 
 sources = ['src/archive_r_py.cc']
 
-# Try to use pre-built library first
-
-def find_prebuilt_library() -> Optional[Path]:
+def find_prebuilt_shared_library() -> Optional[Path]:
     if target_triple:
-        # クロス時はホスト向け静的ライブラリを誤用しない
         return None
     candidates = [
-        archive_r_build / 'libarchive_r_core.lib',
-        archive_r_build / 'libarchive_r_core.a',
+        archive_r_build / 'libarchive_r_core.so',
+        archive_r_build / 'libarchive_r_core.dylib',
+        archive_r_build / 'archive_r_core.dll',
         archive_r_build / 'archive_r_core.lib',
-        archive_r_build / 'Release' / 'libarchive_r_core.lib',
+        archive_r_build / 'Release' / 'archive_r_core.dll',
         archive_r_build / 'Release' / 'archive_r_core.lib',
     ]
-
     for candidate in candidates:
         if candidate.exists():
             return candidate
-
     return None
 
 
-extra_objects: List[str] = []
-static_lib = None if force_source_build else find_prebuilt_library()
-if static_lib:
-    extra_objects = [str(static_lib)]
-    print(f"Using pre-built archive_r library: {static_lib}")
+prebuilt_shared = None if force_source_build else find_prebuilt_shared_library()
+if prebuilt_shared:
+    libraries.append('archive_r_core')
+    library_dirs.append(str(prebuilt_shared.parent))
+    if not is_windows:
+        runtime_library_dirs.append(str(prebuilt_shared.parent))
+    stage_shared_libs([prebuilt_shared])
+    print(f"Using pre-built shared archive_r library: {prebuilt_shared}")
 else:
-    # Build from source as fallback
-    print("Pre-built library not found, will compile from source")
+    print("Pre-built shared library not found, will compile from source")
     fallback_units = sorted(core_src_dir.glob('*.cc'))
     if not fallback_units:
         raise RuntimeError(f"No .cc files found under {core_src_dir} for fallback build")
@@ -292,6 +327,26 @@ base_include_dirs = [
 ]
 if include_dirs_override:
     base_include_dirs.extend(include_dirs_override)
+
+library_dirs.append(str(libs_dir))
+if not is_windows:
+    runtime_library_dirs.append(str(libs_dir))
+    runtime_library_dirs.append('$ORIGIN/.libs')
+    extra_link_args.append('-Wl,-rpath,$ORIGIN/.libs')
+
+def _dedupe(seq: List[str]) -> List[str]:
+    seen = set()
+    out: List[str] = []
+    for item in seq:
+        if item in seen:
+            continue
+        seen.add(item)
+        out.append(item)
+    return out
+
+library_dirs = _dedupe(library_dirs)
+runtime_library_dirs = _dedupe(runtime_library_dirs)
+extra_link_args = _dedupe(extra_link_args)
 
 class BuildExt(build_ext):
     def get_ext_filename(self, ext_name: str) -> str:  # type: ignore[override]
@@ -334,7 +389,6 @@ ext_modules = [
         include_dirs=base_include_dirs,
         library_dirs=library_dirs,
         libraries=libraries,
-        extra_objects=extra_objects,
         language='c++',
         extra_link_args=extra_link_args,
         runtime_library_dirs=runtime_library_dirs,
@@ -343,10 +397,15 @@ ext_modules = [
 ]
 
 
+data_files = []
+if staged_shared_libs:
+    data_files.append(('.libs', [str(p) for p in staged_shared_libs]))
+
 setup(
     version=package_version,
     cmdclass={'build_ext': BuildExt},
     ext_modules=ext_modules,
     long_description=read_readme(),
     long_description_content_type='text/markdown',
+    data_files=data_files,
 )
