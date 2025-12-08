@@ -19,7 +19,14 @@ LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION:-3.7.5}"
 
 PREFIX=""
 HOST=""
-PARALLEL="${PARALLEL:-1}"
+PARALLEL="${PARALLEL:-}"
+if [[ -z "$PARALLEL" ]]; then
+  if command -v nproc >/dev/null 2>&1; then
+    PARALLEL=$(nproc)
+  else
+    PARALLEL=2
+  fi
+fi
 WORKDIR="${TMPDIR:-}"
 [[ -z "$WORKDIR" ]] && WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
@@ -91,7 +98,7 @@ export LD_LIBRARY_PATH="$PREFIX/lib:$PREFIX/lib64:${LD_LIBRARY_PATH:-}"
 fetch() {
   local url="$1" out="$2"
   if [[ -f "$out" ]]; then return; fi
-  curl -L --fail --retry 3 -o "$out" "$url"
+  curl -L --fail --retry 5 --retry-delay 5 --retry-max-time 300 --connect-timeout 10 --max-time 600 --retry-all-errors -o "$out" "$url"
 }
 
 extract() {

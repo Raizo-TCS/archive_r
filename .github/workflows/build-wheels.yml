@@ -31,6 +31,23 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
+          retry_cmd() {
+            local attempts=$1
+            local delay=$2
+            shift 2
+            local n=1
+            while true; do
+              if "$@"; then
+                return 0
+              fi
+              if (( n >= attempts )); then
+                return 1
+              fi
+              echo "[retry ${n}/${attempts}] $* failed; sleeping ${delay}s" >&2
+              sleep "$delay"
+              n=$((n+1))
+            done
+          }
           HOST_UID="$(id -u)"
           HOST_GID="$(id -g)"
           OWNER_LOWER="${{ github.repository_owner }}"
@@ -45,6 +62,7 @@ jobs:
             DEPS_PREFIX="/opt/archive_r_deps"
             BUILD_CMD="bash bindings/python/tools/build-deps-manylinux.sh --prefix ${DEPS_PREFIX} && ARCHIVE_R_DEPS_PREFIX=${DEPS_PREFIX} bash bindings/python/tools/build-wheel-manylinux.sh"
           fi
+          retry_cmd 3 5 docker pull "${MANYLINUX_IMAGE}" || true
           docker run --rm \
             ${DOCKER_PLATFORM_ARG:-} \
             -e HOST_UID="${HOST_UID}" \

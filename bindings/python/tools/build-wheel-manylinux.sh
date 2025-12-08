@@ -14,6 +14,8 @@ TARGET_PATH="${PYTHON_BINDINGS_DIR}/${TARGET_DIR}"
 PYBIN="/opt/python/${PYTHON_TAG}/bin"
 DEPS_PREFIX="${ARCHIVE_R_DEPS_PREFIX:-/opt/archive_r_deps}"
 DEPS_BUILDER="${WORKSPACE_DIR}/bindings/python/tools/build-deps-manylinux.sh"
+PIP_OPTS=(--retries 5 --timeout 60 --progress-bar off)
+export PIP_DEFAULT_TIMEOUT=60
 
 ensure_dependencies() {
 	if [[ -f "${DEPS_PREFIX}/lib/libarchive.a" || -f "${DEPS_PREFIX}/lib/libarchive.so" || -f "${DEPS_PREFIX}/lib64/libarchive.a" || -f "${DEPS_PREFIX}/lib64/libarchive.so" ]]; then
@@ -53,9 +55,9 @@ build_python_bindings() {
 	rm -rf "${TARGET_PATH}"
 	mkdir -p "${TARGET_PATH}"
 
-	"${PYBIN}/pip" install --upgrade pip setuptools wheel pybind11 >/dev/null
+	"${PYBIN}/pip" install "${PIP_OPTS[@]}" --upgrade pip setuptools wheel pybind11 >/dev/null
 	"${PYBIN}/pip" wheel . -w dist_temp/ --no-deps >/dev/null
-	"${PYBIN}/pip" install auditwheel >/dev/null
+	"${PYBIN}/pip" install "${PIP_OPTS[@]}" auditwheel >/dev/null
 
 	ARCH=$(uname -m)
 	if [[ "$ARCH" == "x86_64" ]]; then
@@ -68,7 +70,7 @@ build_python_bindings() {
 	fi
 
 	auditwheel repair dist_temp/*.whl --plat "${PLAT_TAG}" -w "${TARGET_PATH}/" >/dev/null
-	"${PYBIN}/pip" install --no-index "${TARGET_PATH}"/*.whl >/dev/null
+	"${PYBIN}/pip" install "${PIP_OPTS[@]}" --no-index "${TARGET_PATH}"/*.whl >/dev/null
 	"${PYBIN}/python" -c "import archive_r; print(f'validated {archive_r.__version__}')"
 }
 
@@ -101,8 +103,8 @@ finalize_artifacts() {
 	fi
 }
 
-"${PYBIN}/pip" install --upgrade pip >/dev/null
-"${PYBIN}/pip" install --upgrade build twine virtualenv pybind11 >/dev/null
+"${PYBIN}/pip" install "${PIP_OPTS[@]}" --upgrade pip >/dev/null
+"${PYBIN}/pip" install "${PIP_OPTS[@]}" --upgrade build twine virtualenv pybind11 >/dev/null
 ensure_dependencies
 configure_toolchain_env
 build_python_bindings
