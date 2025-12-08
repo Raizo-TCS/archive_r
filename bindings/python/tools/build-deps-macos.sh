@@ -78,10 +78,10 @@ build_bzip2() {
   local name="bzip2-${BZIP2_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "https://sourceware.org/pub/bzip2/$name.tar.gz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
-  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib libbz2.a && make -f Makefile-libbz2_so CC=cc AR=ar RANLIB=ranlib)
+  # Build static library and tools; skip upstream shared-library recipe (uses -soname, unsupported on macOS clang)
+  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib CFLAGS="${CFLAGS:-}-O2 -g -pipe -fPIC" LDFLAGS="${LDFLAGS:-}-fPIC" libbz2.a bzip2 bzip2recover)
   install -d "$PREFIX/lib" "$PREFIX/include" "$PREFIX/share/man/man1" "$PREFIX/bin"
   install -m 644 "$src"/libbz2.a "$PREFIX/lib/"
-  install -m 755 "$src"/libbz2.*dylib "$PREFIX/lib/" 2>/dev/null || true
   install -m 644 "$src"/bzlib.h "$PREFIX/include/"
   install -m 755 "$src"/bzip2 "$PREFIX/bin" 2>/dev/null || true
   install -m 755 "$src"/bzip2recover "$PREFIX/bin" 2>/dev/null || true
