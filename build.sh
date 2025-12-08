@@ -56,6 +56,27 @@ log_error() {
     echo -e "${RED}✗${NC} $1"
 }
 
+pip_install_with_retry() {
+    local attempts=${1:-3}
+    shift
+
+    local n=1
+    while true; do
+        if "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" "$@"; then
+            return 0
+        fi
+
+        if (( n >= attempts )); then
+            log_error "pip install failed after ${attempts} attempts: $*"
+            return 1
+        fi
+
+        log_warning "pip install failed (attempt ${n}/${attempts}); retrying in 5s..."
+        sleep 5
+        n=$((n+1))
+    done
+}
+
 # archive_r Build Script
 show_help() {
     cat << HELP
@@ -682,7 +703,7 @@ package_python_binding() {
     fi
 
     # Ensure build toolchain is available in manylinux images
-    if ! "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" --upgrade pip setuptools wheel build twine >/dev/null 2>&1; then
+    if ! pip_install_with_retry 3 --upgrade pip setuptools wheel build twine; then
         log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
     fi

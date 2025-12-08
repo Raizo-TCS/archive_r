@@ -57,7 +57,7 @@ jobs:
             -v "${{ github.workspace }}:/io" \
             -w /io \
             ubuntu:24.04 \
-            bash -c "set -euo pipefail; apt-get update; apt-get install -y sudo; ./install-deps-ubuntu.sh; PACKAGE_MODE=full ./build-on-ubuntu.sh; ./test-on-ubuntu.sh"
+            bash -c "set -euo pipefail; apt-get update; apt-get install -y sudo python3-venv python3-virtualenv; ./install-deps-ubuntu.sh; PACKAGE_MODE=full ./build-on-ubuntu.sh; ./test-on-ubuntu.sh"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
