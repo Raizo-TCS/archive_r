@@ -67,7 +67,7 @@ def stage_shared_libs(paths: Iterable[Path]) -> None:
     try:
         libs_dir.chmod(0o755)
     except PermissionError:
-        # 続行して後段のコピーで上書きを試みる
+        # Continue and let the subsequent copy attempt overwrite
         pass
     for candidate in paths:
         if not candidate.exists() or not candidate.is_file():
@@ -83,7 +83,7 @@ def stage_shared_libs(paths: Iterable[Path]) -> None:
             try:
                 target.unlink()
             except PermissionError:
-                # 一部の環境で上書きが拒否された場合も続行して copy2 を試す
+                # Even if unlink is denied, continue and attempt copy2 overwrite
                 pass
         shutil.copy2(candidate, target)
         staged_shared_libs.append(target)
@@ -146,14 +146,14 @@ def run_bootstrap_if_requested() -> None:
         if not bootstrap_script:
             raise RuntimeError("bootstrap script missing from sdist: tools/build-deps-*.sh")
         cmd_parts = ["bash", str(bootstrap_script), "--prefix", str(bootstrap_root)]
-        # target_triple 由来の --host は重複しないよう先に挿入する
+        # Insert --host derived from target_triple first to avoid duplicates
         host_injected = False
         if target_triple:
             cmd_parts.extend(["--host", target_triple])
             host_injected = True
         if bootstrap_args:
             args_parts = bootstrap_args.split()
-            # 既に指定済みの --host を二重付与しない
+            # Avoid double-injecting --host when already present
             if host_injected and "--host" in args_parts:
                 filtered = []
                 skip_next = False
@@ -366,7 +366,7 @@ extra_link_args = _dedupe(extra_link_args)
 class BuildExt(build_ext):
     def get_ext_filename(self, ext_name: str) -> str:  # type: ignore[override]
         filename = super().get_ext_filename(ext_name)
-        # クロス時にターゲットアーキの拡張子へ合わせる
+        # When cross-compiling, allow overriding to match target architecture suffix
         override_suffix = os.environ.get('ARCHIVE_R_EXT_SUFFIX')
         if override_suffix:
             stem, _ = os.path.splitext(filename)

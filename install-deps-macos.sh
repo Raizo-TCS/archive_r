@@ -7,7 +7,7 @@ export HOMEBREW_NO_INSTALL_CLEANUP=1
 
 brew install cmake ninja pkg-config libarchive ruby coreutils
 
-# python@3.11 はリンク競合で brew install が exit 1 になり得るため別扱い
+# python@3.11 can fail with link conflicts during brew install, so handle separately
 if ! brew install python@3.11; then
 	echo "brew install python@3.11 failed; attempting link overwrite" >&2
 	brew link --overwrite python@3.11 || true

@@ -363,15 +363,26 @@ if [ "$BINDINGS_ONLY" = false ]; then
     elif [ -f "$BUILD_DIR/archive_r_core.dll" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/archive_r_core.dll"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.dll" ]; then
+        # MinGW produces a lib-prefixed DLL
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.dll"
     elif [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/libarchive_r_core.a"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.dll.a" ]; then
+        # Import library produced alongside the DLL
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.dll.a"
     elif [ -f "$BUILD_DIR/archive_r_core.lib" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/archive_r_core.lib"
     elif [ -f "$BUILD_DIR/Release/archive_r_core.lib" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/Release/archive_r_core.lib"
+    elif [ -f "$BUILD_DIR/Release/libarchive_r_core.dll" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/Release/libarchive_r_core.dll"
     fi
 
     if [ -f "$BUILD_DIR/find_and_traverse" ]; then
@@ -380,9 +391,18 @@ if [ "$BINDINGS_ONLY" = false ]; then
     elif [ -f "$BUILD_DIR/find_and_traverse.exe" ]; then
         exe_found=true
         exe_path="$BUILD_DIR/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/examples/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/examples/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/examples/find_and_traverse" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/examples/find_and_traverse"
     elif [ -f "$BUILD_DIR/Release/find_and_traverse.exe" ]; then
         exe_found=true
         exe_path="$BUILD_DIR/Release/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/Release/examples/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/Release/examples/find_and_traverse.exe"
     fi
 
     if [ "$lib_found" = true ] && [ "$exe_found" = true ]; then
@@ -394,12 +414,21 @@ if [ "$BINDINGS_ONLY" = false ]; then
     else
         log_error "Core build failed - expected files not found"
         log_error "Checked locations:"
+        log_error "  $BUILD_DIR/libarchive_r_core.so"
+        log_error "  $BUILD_DIR/libarchive_r_core.dylib"
+        log_error "  $BUILD_DIR/archive_r_core.dll"
+        log_error "  $BUILD_DIR/libarchive_r_core.dll"
         log_error "  $BUILD_DIR/libarchive_r_core.a"
+        log_error "  $BUILD_DIR/libarchive_r_core.dll.a"
         log_error "  $BUILD_DIR/archive_r_core.lib"
         log_error "  $BUILD_DIR/Release/archive_r_core.lib"
+        log_error "  $BUILD_DIR/Release/libarchive_r_core.dll"
         log_error "  $BUILD_DIR/find_and_traverse"
         log_error "  $BUILD_DIR/find_and_traverse.exe"
+        log_error "  $BUILD_DIR/examples/find_and_traverse"
+        log_error "  $BUILD_DIR/examples/find_and_traverse.exe"
         log_error "  $BUILD_DIR/Release/find_and_traverse.exe"
+        log_error "  $BUILD_DIR/Release/examples/find_and_traverse.exe"
         exit 1
     fi
 

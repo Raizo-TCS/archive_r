@@ -98,7 +98,8 @@ export LD_LIBRARY_PATH="$PREFIX/lib:$PREFIX/lib64:${LD_LIBRARY_PATH:-}"
 fetch() {
   local url="$1" out="$2"
   if [[ -f "$out" ]]; then return; fi
-  curl -L --fail --retry 5 --retry-delay 5 --retry-max-time 300 --connect-timeout 10 --max-time 600 --retry-all-errors -o "$out" "$url"
+  # manylinux curl can be older; avoid --retry-all-errors for compatibility
+  curl -L --fail --retry 5 --retry-delay 5 --retry-max-time 300 --connect-timeout 10 --max-time 600 -o "$out" "$url"
 }
 
 extract() {
@@ -115,7 +116,7 @@ build_zlib() {
   local jobs="$PARALLEL"
   cflags_safe=${CFLAGS:-"-O2 -g -pipe -fno-lto -fno-tree-vectorize"}
   if [[ -n "$HOST" ]]; then
-    # qemu環境でのcc1セグフォ回避のため、ビルドを避けてシステムzlibをコピー
+    # Avoid compiling under qemu to sidestep cc1 segfaults; copy system zlib instead
     if command -v yum >/dev/null 2>&1; then
       yum -y install zlib zlib-devel >/dev/null 2>&1 || true
     fi
