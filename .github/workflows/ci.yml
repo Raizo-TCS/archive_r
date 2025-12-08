@@ -53,11 +53,21 @@ jobs:
       - name: Build & Test on arm64
         run: |
           set -euo pipefail
+          HOST_UID=$(id -u)
+          HOST_GID=$(id -g)
           docker run --rm --platform linux/arm64 \
+            -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             -v "${{ github.workspace }}:/io" \
             -w /io \
             ubuntu:24.04 \
-            bash -c "set -euo pipefail; apt-get update; apt-get install -y sudo python3-venv python3-virtualenv; ./install-deps-ubuntu.sh; PACKAGE_MODE=full ./build-on-ubuntu.sh; ./test-on-ubuntu.sh"
+            bash -c "set -euo pipefail; \
+              if ! getent group \"${HOST_GID}\" >/dev/null; then groupadd -g \"${HOST_GID}\" hostgroup; fi; \
+              if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" hostuser; fi; \
+              apt-get update; \
+              apt-get install -y sudo python3-venv python3-virtualenv; \
+              ./install-deps-ubuntu.sh; \
+              PACKAGE_MODE=full ./build-on-ubuntu.sh; \
+              ./test-on-ubuntu.sh"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
