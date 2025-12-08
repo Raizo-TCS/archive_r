@@ -52,6 +52,10 @@ mkdir -p "$PREFIX"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig:${PKG_CONFIG_PATH:-}"
 export CPPFLAGS="-I$PREFIX/include ${CPPFLAGS:-}"
 export LDFLAGS="-L$PREFIX/lib -L$PREFIX/lib64 ${LDFLAGS:-}"
+export LIBARCHIVE_ROOT="$PREFIX"
+export LIBARCHIVE_INCLUDE_DIRS="$PREFIX/include"
+export LIBARCHIVE_LIBRARY_DIRS="$PREFIX/lib:$PREFIX/lib64"
+export LIBARCHIVE_RUNTIME_DIRS="$PREFIX/lib:$PREFIX/lib64"
 
 fetch() {
   local url="$1" out="$2"
@@ -157,6 +161,10 @@ build_libarchive
 if [[ -n "${GITHUB_ENV:-}" ]]; then
   {
     echo "ARCHIVE_R_DEPS_PREFIX=$PREFIX"
+    echo "LIBARCHIVE_ROOT=$PREFIX"
+    echo "LIBARCHIVE_INCLUDE_DIRS=$PREFIX/include"
+    echo "LIBARCHIVE_LIBRARY_DIRS=$PREFIX/lib:$PREFIX/lib64"
+    echo "LIBARCHIVE_RUNTIME_DIRS=$PREFIX/lib:$PREFIX/lib64"
     echo "PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig:$PREFIX/lib64/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
     echo "CMAKE_PREFIX_PATH=$PREFIX${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
     echo "LIBRARY_PATH=$PREFIX/lib:$PREFIX/lib64${LIBRARY_PATH:+:$LIBRARY_PATH}"
