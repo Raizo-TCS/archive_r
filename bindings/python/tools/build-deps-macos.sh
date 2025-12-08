@@ -17,8 +17,8 @@ LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION:-3.7.5}"
 
 PREFIX=""
 PARALLEL="${PARALLEL:-$(sysctl -n hw.ncpu 2>/dev/null || echo 1)}"
-WORKDIR="${TMPDIR:-}"
-[[ -z "$WORKDIR" ]] && WORKDIR=$(mktemp -d)
+BASE_TMP="${TMPDIR:-/tmp}"
+WORKDIR="$(mktemp -d "${BASE_TMP%/}/archive_r_deps.XXXXXX")"
 trap 'rm -rf "$WORKDIR"' EXIT
 
 usage() {

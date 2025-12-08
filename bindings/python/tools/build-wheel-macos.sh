@@ -44,4 +44,4 @@ mv "$repair_dir"/*.whl "$target_dir"/
 python -m venv .venv
 source .venv/bin/activate
 pip install --no-index "$target_dir"/*.whl
-python -c "import archive_r; print(f'{ARCH} validated {archive_r.__version__}')"
+python -c "import os, archive_r; arch = os.environ.get('ARCH', '?'); print(f'{arch} validated {archive_r.__version__}')"
