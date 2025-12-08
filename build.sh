@@ -439,7 +439,16 @@ build_ruby_binding() {
     # Build
     make
 
-    if [ ! -f "archive_r.so" ]; then
+    local built_ext=""
+    if [ -f "archive_r.so" ]; then
+        built_ext="archive_r.so"
+    elif [ -f "archive_r.bundle" ]; then
+        built_ext="archive_r.bundle"
+    elif [ -f "archive_r.dll" ]; then
+        built_ext="archive_r.dll"
+    fi
+
+    if [ -z "$built_ext" ]; then
         cd "$ROOT_DIR"
         log_error "Ruby binding build failed"
         return 1
@@ -447,10 +456,10 @@ build_ruby_binding() {
 
     local ruby_output_dir="$BUILD_DIR/bindings/ruby"
     mkdir -p "$ruby_output_dir"
-    cp "archive_r.so" "$ruby_output_dir/"
+    cp "$built_ext" "$ruby_output_dir/"
 
     log_success "Ruby binding built successfully"
-    log_success "  Extension: $ruby_output_dir/archive_r.so"
+    log_success "  Extension: $ruby_output_dir/$built_ext"
 
     cd "$ROOT_DIR"
     purge_ruby_binding_artifacts

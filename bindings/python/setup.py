@@ -64,12 +64,27 @@ def extend_path_entries(target: List[str], raw_value: Optional[str]) -> None:
 
 def stage_shared_libs(paths: Iterable[Path]) -> None:
     libs_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        libs_dir.chmod(0o755)
+    except PermissionError:
+        # 続行して後段のコピーで上書きを試みる
+        pass
     for candidate in paths:
         if not candidate.exists() or not candidate.is_file():
             continue
         if not any(str(candidate).endswith(ext) for ext in ('.so', '.dylib', '.dll')) and '.so.' not in candidate.name:
             continue
         target = libs_dir / candidate.name
+        if target.exists():
+            try:
+                target.chmod(0o644)
+            except PermissionError:
+                pass
+            try:
+                target.unlink()
+            except PermissionError:
+                # 一部の環境で上書きが拒否された場合も続行して copy2 を試す
+                pass
         shutil.copy2(candidate, target)
         staged_shared_libs.append(target)
 
