@@ -11,12 +11,20 @@ set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
 
-# Detect Python interpreter
+# Detect Python interpreter (prefer /opt/python/<tag> when PYTHON_TAG is given, e.g., manylinux)
 PYTHON_EXEC=""
-if command -v python3 >/dev/null 2>&1; then
+if [[ -n "${PYTHON_TAG:-}" && -x "/opt/python/${PYTHON_TAG}/bin/python" ]]; then
+    PYTHON_EXEC="/opt/python/${PYTHON_TAG}/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
     PYTHON_EXEC="python3"
 elif command -v python >/dev/null 2>&1; then
     PYTHON_EXEC="python"
+fi
+
+# Extra pip flags for externally managed Python installations (e.g., Debian PEP 668)
+PIP_INSTALL_EXTRA=()
+if [ -n "$PYTHON_EXEC" ] && "$PYTHON_EXEC" -m pip help install 2>/dev/null | grep -q -- "--break-system-packages"; then
+    PIP_INSTALL_EXTRA+=(--break-system-packages)
 fi
 
 # Color codes for output
@@ -518,6 +526,12 @@ build_python_binding() {
         log_warning "Python not found - skipping Python binding"
         return 1
     fi
+
+    # Ensure setuptools/wheel/pybind11 are present for setup.py builds
+    if ! "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" --upgrade pip setuptools wheel pybind11 >/dev/null 2>&1; then
+        log_error "Failed to prepare Python build dependencies via pip"
+        return 1
+    fi
     
     cd "$ROOT_DIR/bindings/python"
     
@@ -629,13 +643,9 @@ package_python_binding() {
         return 1
     fi
 
-    if ! "$PYTHON_EXEC" -c "import build" >/dev/null 2>&1; then
-        log_error "Python module 'build' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade build"
-        return 1
-    fi
-
-    if ! "$PYTHON_EXEC" -c "import twine" >/dev/null 2>&1; then
-        log_error "Python module 'twine' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade twine"
+    # Ensure build toolchain is available in manylinux images
+    if ! "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" --upgrade pip setuptools wheel build twine >/dev/null 2>&1; then
+        log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
     fi
 
