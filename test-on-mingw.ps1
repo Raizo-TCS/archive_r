@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$repoRoot = if ($Env:GITHUB_WORKSPACE) { $Env:GITHUB_WORKSPACE } else { Split-Path -Parent $PSScriptRoot }
+$repoRoot = if ($Env:GITHUB_WORKSPACE) { $Env:GITHUB_WORKSPACE } else { $PSScriptRoot }
 $msysRoot = "C:\msys64"
 $bashPath = Join-Path $msysRoot "usr\bin\bash.exe"
 if (-not (Test-Path $bashPath)) { throw "MSYS2 bash not found at $bashPath" }
