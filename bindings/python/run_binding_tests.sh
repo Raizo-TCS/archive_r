@@ -22,6 +22,15 @@ if [ ${#py_exts[@]} -eq 0 ]; then
     exit 0
 fi
 
+# Copy DLLs for Windows runtime dependency resolution
+# Python 3.8+ on Windows does not search PATH for DLLs, so we copy them next to the .pyd
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    info "Copying DLLs to binding directory for Windows execution..."
+    cp "$BUILD_DIR"/*.dll "$BINDING_DIR" 2>/dev/null || true
+    cp "$BUILD_DIR"/Release/*.dll "$BINDING_DIR" 2>/dev/null || true
+    cp "$BUILD_DIR"/core/Release/*.dll "$BINDING_DIR" 2>/dev/null || true
+fi
+
 python_cmd="python3"
 if ! command -v python3 >/dev/null 2>&1 && command -v python >/dev/null 2>&1; then
     python_cmd="python"
