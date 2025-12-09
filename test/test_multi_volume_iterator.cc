@@ -144,6 +144,8 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
+    std::cout << "Multi-volume iterator test passed (entries=" << total_entries << ")" << std::endl;
+
     return 0;
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;

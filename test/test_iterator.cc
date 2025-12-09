@@ -125,6 +125,8 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    std::cout << "Iterator traversal succeeded (entries=" << observed.size() << ")" << std::endl;
+
     return 0;
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
