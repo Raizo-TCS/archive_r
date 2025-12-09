@@ -4,8 +4,12 @@ $msysRoot = "C:\msys64"
 $bashPath = Join-Path $msysRoot "usr\bin\bash.exe"
 if (-not (Test-Path $bashPath)) { throw "MSYS2 bash not found at $bashPath" }
 
-$repoPathMsys = (& $bashPath -lc "cygpath -u \"$repoRoot\"").Trim()
-$timeoutPy = (& $bashPath -lc "cygpath -u \"$repoRoot/run_with_timeout.py\"").Trim()
+$env:ARCHIVE_R_REPO_WIN = $repoRoot
+$env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
+
+$repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
+$timeoutPy = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
+
 $cmd = @(
 	'set -euo pipefail'
 	"repo=`"$repoPathMsys`""
@@ -19,4 +23,5 @@ $cmd = @(
 	'python3 "$timeout_py" 120 ./bindings/ruby/run_binding_tests.sh'
 	'python3 "$timeout_py" 120 ./bindings/python/run_binding_tests.sh'
 ) -join ' && '
+
 & $bashPath -lc $cmd
