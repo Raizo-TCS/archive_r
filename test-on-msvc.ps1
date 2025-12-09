@@ -26,7 +26,18 @@ $rubyLog = Join-Path $logDir "msvc-ruby-binding-tests.log"
 $pythonLog = Join-Path $logDir "msvc-python-binding-tests.log"
 $env:ARCHIVE_R_REPO_WIN = $repoRoot
 $repoRootUnix = (& $bash -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
-$pathExport = 'export PATH="{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix
+
+$vcpkgRoot = $env:LIBARCHIVE_ROOT
+if ($vcpkgRoot) {
+	$vcpkgBin = Join-Path $vcpkgRoot "bin"
+	$env:VCPKG_BIN_WIN = $vcpkgBin
+	$vcpkgBinUnix = (& $bash -lc 'cygpath -u "$VCPKG_BIN_WIN"').Trim()
+	Write-Host "[msvc] Prepending vcpkg bin to PATH: $vcpkgBinUnix"
+	$pathExport = 'export PATH="{1}:{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix, $vcpkgBinUnix
+} else {
+	Write-Warning "[msvc] LIBARCHIVE_ROOT not set, using default PATH"
+	$pathExport = 'export PATH="{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix
+}
 
 function Invoke-WithLog {
 	param(
