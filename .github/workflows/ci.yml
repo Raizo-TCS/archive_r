@@ -66,7 +66,7 @@ jobs:
               apt-get update; \
               apt-get install -y sudo python3-venv python3-virtualenv; \
               ./install-deps-ubuntu.sh; \
-              su - hostuser -c 'cd /io && PACKAGE_MODE=full ./build-on-ubuntu.sh && ./test-on-ubuntu.sh'"
+                su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=full ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}

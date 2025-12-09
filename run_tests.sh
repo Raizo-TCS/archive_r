@@ -21,12 +21,18 @@ detect_timeout_cmd() {
 # Helper to find executable (Unix or Windows/MSVC)
 find_executable() {
     local name="$1"
-    if [ -f "$BUILD_DIR/$name" ]; then
+    if [ -x "$BUILD_DIR/$name.exe" ]; then
+        echo "$BUILD_DIR/$name.exe"
+    elif [ -x "$BUILD_DIR/Release/$name.exe" ]; then
+        echo "$BUILD_DIR/Release/$name.exe"
+    elif [ -x "$BUILD_DIR/$name" ]; then
         echo "$BUILD_DIR/$name"
     elif [ -f "$BUILD_DIR/$name.exe" ]; then
         echo "$BUILD_DIR/$name.exe"
     elif [ -f "$BUILD_DIR/Release/$name.exe" ]; then
         echo "$BUILD_DIR/Release/$name.exe"
+    elif [ -f "$BUILD_DIR/$name" ]; then
+        echo "$BUILD_DIR/$name"
     else
         echo ""
     fi

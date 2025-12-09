@@ -147,7 +147,26 @@ build_libxml2() {
 
 build_nettle() {
   local name="nettle-${NETTLE_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://ftp.gnu.org/gnu/nettle/$name.tar.gz" "$tarball"
+  local nettle_urls=(
+    "https://ftp.gnu.org/gnu/nettle/$name.tar.gz"
+    "https://ftpmirror.gnu.org/nettle/$name.tar.gz"
+    "https://www.mirrorservice.org/sites/ftp.gnu.org/gnu/nettle/$name.tar.gz"
+  )
+
+  local fetched=1
+  for url in "${nettle_urls[@]}"; do
+    if fetch "$url" "$tarball"; then
+      fetched=0
+      break
+    fi
+    echo "[fetch] nettle primary failed, trying fallback..." >&2
+  done
+
+  if (( fetched != 0 )); then
+    echo "failed to fetch nettle sources from mirrors" >&2
+    return 1
+  fi
+
   local src; src=$(extract "$tarball" "$name")
   (cd "$src" && CC=cc ./configure --prefix="$PREFIX" --enable-shared --disable-static --enable-mini-gmp && make -j"$PARALLEL" && make install)
 }
