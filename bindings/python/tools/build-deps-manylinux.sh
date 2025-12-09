@@ -148,6 +148,7 @@ build_zlib() {
     return
   fi
   (cd "$src" && CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" ${HOST:+--host=$HOST} && make -j"$jobs" && make install)
+  rm -f "$PREFIX/lib/libz.a" "$PREFIX/lib64/libz.a"
 }
 
 build_bzip2() {

@@ -89,17 +89,28 @@ build_zlib() {
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
   cflags_safe=${CFLAGS:-"-O2 -g -pipe -fno-lto -fno-tree-vectorize"}
-  (cd "$src" && CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" && make -j"$PARALLEL" && make install)
+  (cd "$src" && CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --shared && make -j"$PARALLEL" && make install)
+  rm -f "$PREFIX/lib/libz.a"
 }
 
 build_bzip2() {
   local name="bzip2-${BZIP2_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "https://sourceware.org/pub/bzip2/$name.tar.gz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
-  # Build static library and tools; skip upstream shared-library recipe (uses -soname, unsupported on macOS clang)
-  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib CFLAGS="${CFLAGS:-}-O2 -g -pipe -fPIC" LDFLAGS="${LDFLAGS:-}-fPIC" libbz2.a bzip2 bzip2recover)
+  
+  # Build shared library manually for macOS (upstream Makefile-libbz2_so is Linux-specific)
+  (cd "$src" && \
+   cc -c -O2 -g -pipe -fPIC -D_FILE_OFFSET_BITS=64 blocksort.c huffman.c crctable.c randtable.c compress.c decompress.c bzlib.c && \
+   cc -shared -Wl,-install_name -Wl,"$PREFIX/lib/libbz2.1.0.dylib" -o "libbz2.${BZIP2_VERSION}.dylib" \
+      blocksort.o huffman.o crctable.o randtable.o compress.o decompress.o bzlib.o && \
+   rm -f libbz2.dylib libbz2.1.0.dylib && \
+   ln -s "libbz2.${BZIP2_VERSION}.dylib" libbz2.1.0.dylib && \
+   ln -s "libbz2.${BZIP2_VERSION}.dylib" libbz2.dylib && \
+   make -j"$PARALLEL" CC=cc CFLAGS="-O2 -g -pipe -fPIC" bzip2 bzip2recover)
+
   install -d "$PREFIX/lib" "$PREFIX/include" "$PREFIX/share/man/man1" "$PREFIX/bin"
-  install -m 644 "$src"/libbz2.a "$PREFIX/lib/"
+  install -m 755 "$src/libbz2.${BZIP2_VERSION}.dylib" "$PREFIX/lib/"
+  (cd "$PREFIX/lib" && ln -sf "libbz2.${BZIP2_VERSION}.dylib" libbz2.1.0.dylib && ln -sf "libbz2.${BZIP2_VERSION}.dylib" libbz2.dylib)
   install -m 644 "$src"/bzlib.h "$PREFIX/include/"
   install -m 755 "$src"/bzip2 "$PREFIX/bin" 2>/dev/null || true
   install -m 755 "$src"/bzip2recover "$PREFIX/bin" 2>/dev/null || true
@@ -119,14 +130,14 @@ build_lz4() {
   local name="lz4-${LZ4_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "https://github.com/lz4/lz4/archive/refs/tags/v${LZ4_VERSION}.tar.gz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
-  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib BUILD_SHARED=yes PREFIX="$PREFIX" && make install PREFIX="$PREFIX" BUILD_SHARED=yes)
+  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib BUILD_SHARED=yes BUILD_STATIC=no PREFIX="$PREFIX" && make install PREFIX="$PREFIX" BUILD_SHARED=yes BUILD_STATIC=no)
 }
 
 build_zstd() {
   local name="zstd-${ZSTD_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "https://github.com/facebook/zstd/releases/download/v${ZSTD_VERSION}/$name.tar.gz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
-  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib PREFIX="$PREFIX" BUILD_SHARED=1 && make install PREFIX="$PREFIX" BUILD_SHARED=1)
+  (cd "$src" && make -j"$PARALLEL" CC=cc AR=ar RANLIB=ranlib PREFIX="$PREFIX" BUILD_SHARED=1 BUILD_STATIC=0 && make install PREFIX="$PREFIX" BUILD_SHARED=1 BUILD_STATIC=0)
 }
 
 build_libb2() {
