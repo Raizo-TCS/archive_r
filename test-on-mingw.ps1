@@ -19,9 +19,9 @@ $cmd = @(
 	'cd "$repo"'
 	'pwd'
 	'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
-	'python3 "$timeout_py" 120 ./run_tests.sh'
-	'python3 "$timeout_py" 120 ./bindings/ruby/run_binding_tests.sh'
-	'python3 "$timeout_py" 120 ./bindings/python/run_binding_tests.sh'
+	'python3 "$timeout_py" 120 bash -lc "./run_tests.sh"'
+	'python3 "$timeout_py" 120 bash -lc "./bindings/ruby/run_binding_tests.sh"'
+	'python3 "$timeout_py" 120 bash -lc "./bindings/python/run_binding_tests.sh"'
 ) -join ' && '
 
 & $bashPath -lc $cmd
