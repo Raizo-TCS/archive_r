@@ -60,7 +60,21 @@ export LIBARCHIVE_RUNTIME_DIRS="$PREFIX/lib:$PREFIX/lib64"
 fetch() {
   local url="$1" out="$2"
   if [[ -f "$out" ]]; then return; fi
-  curl -L --fail --retry 3 -o "$out" "$url"
+  local tries="${FETCH_RETRIES:-5}"
+  local base_sleep="${FETCH_RETRY_DELAY:-10}"
+  local attempt=1
+  while (( attempt <= tries )); do
+    if curl -L --fail --connect-timeout 20 --max-time 180 -o "$out" "$url"; then
+      return
+    fi
+    if (( attempt == tries )); then
+      return 1
+    fi
+    local sleep_for=$(( base_sleep * attempt ))
+    echo "[fetch] attempt ${attempt}/${tries} failed for ${url}; sleeping ${sleep_for}s before retry" >&2
+    sleep "$sleep_for"
+    attempt=$((attempt+1))
+  done
 }
 
 extract() {

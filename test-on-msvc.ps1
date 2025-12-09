@@ -1,11 +1,27 @@
 $ErrorActionPreference = 'Stop'
+
+function Get-GitBashPath {
+	$candidates = @(
+		(Join-Path $Env:ProgramFiles 'Git\bin\bash.exe'),
+		(Join-Path $Env:ProgramFiles 'Git\usr\bin\bash.exe'),
+		(Join-Path ${Env:ProgramW6432} 'Git\bin\bash.exe'),
+		(Join-Path ${Env:ProgramFiles(x86)} 'Git\bin\bash.exe')
+	)
+	foreach ($p in $candidates) {
+		if ($p -and (Test-Path $p)) { return $p }
+	}
+	$cmd = Get-Command bash.exe -ErrorAction SilentlyContinue
+	if ($cmd) { return $cmd.Source }
+	throw "Git Bash not found. Install Git for Windows."
+}
+
 $repoRoot = $PSScriptRoot
-$bash = (Get-Command bash.exe -ErrorAction Stop).Source
+$bash = Get-GitBashPath
 Push-Location $repoRoot
 try {
-	& python ./run_with_timeout.py 120 bash ./run_tests.sh
-	& python ./run_with_timeout.py 120 bash ./bindings/ruby/run_binding_tests.sh
-	& python ./run_with_timeout.py 120 bash ./bindings/python/run_binding_tests.sh
+	& python ./run_with_timeout.py 120 $bash ./run_tests.sh
+	& python ./run_with_timeout.py 120 $bash ./bindings/ruby/run_binding_tests.sh
+	& python ./run_with_timeout.py 120 $bash ./bindings/python/run_binding_tests.sh
 } finally {
 	Pop-Location
 }

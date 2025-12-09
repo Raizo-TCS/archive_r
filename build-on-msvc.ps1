@@ -7,7 +7,22 @@ Push-Location $PSScriptRoot
 try {
 
 # Use Git Bash to run the existing build.sh to avoid WSL.
-$bash = (Get-Command bash.exe -ErrorAction Stop).Source
+function Get-GitBashPath {
+  $candidates = @(
+    (Join-Path $Env:ProgramFiles 'Git\bin\bash.exe'),
+    (Join-Path $Env:ProgramFiles 'Git\usr\bin\bash.exe'),
+    (Join-Path ${Env:ProgramW6432} 'Git\bin\bash.exe'),
+    (Join-Path ${Env:ProgramFiles(x86)} 'Git\bin\bash.exe')
+  )
+  foreach ($p in $candidates) {
+    if ($p -and (Test-Path $p)) { return $p }
+  }
+  $cmd = Get-Command bash.exe -ErrorAction SilentlyContinue
+  if ($cmd) { return $cmd.Source }
+  throw "Git Bash not found. Install Git for Windows."
+}
+
+$bash = Get-GitBashPath
 $buildArgs = @('--rebuild-all')
 
 switch ($PackageMode) {
