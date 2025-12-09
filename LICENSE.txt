@@ -66,13 +66,13 @@ The following components are redistributed only because libarchive (bundled with
    - Purpose: libarchive dependency providing Zstandard compression; shipped within archive_r binaries.
    - License: BSD License (https://github.com/facebook/zstd)
 
-8. OpenSSL 3
-   - Purpose: libarchive dependency providing cryptographic support for encrypted archives; included with archive_r packages.
-   - License: Apache License 2.0 with OpenSSL exception (https://www.openssl.org/source/license.html)
+8. Nettle
+   - Purpose: libarchive dependency providing cryptographic support; bundled with archive_r binaries.
+   - License: GNU LGPLv3+ or GNU GPLv2+ (https://www.lysator.liu.se/~nisse/nettle/)
 
-9. libiconv / libcharset
-   - Purpose: libxml2/libarchive dependency for character set conversion; redistributed with archive_r artifacts.
-   - License: GNU LGPLv2.1+ (https://www.gnu.org/software/libiconv/)
+9. mini-gmp
+   - Purpose: Nettle dependency for arithmetic operations; bundled with archive_r binaries.
+   - License: GNU LGPLv3+ or GNU GPLv2+ (https://gmplib.org/)
 
 10. lz4
    - Purpose: libarchive dependency providing LZ4 compression; shipped with archive_r artifacts when required.
