@@ -107,7 +107,6 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    std::cout << "set_descent(false) behavior succeeded (entries=" << total_entries << ")" << std::endl;
   } catch (const std::exception &e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
