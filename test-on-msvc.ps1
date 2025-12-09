@@ -33,6 +33,13 @@ if ($vcpkgRoot) {
 	$env:VCPKG_BIN_WIN = $vcpkgBin
 	$vcpkgBinUnix = (& $bash -lc 'cygpath -u "$VCPKG_BIN_WIN"').Trim()
 	Write-Host "[msvc] Prepending vcpkg bin to PATH: $vcpkgBinUnix"
+	
+	# Copy DLLs to build directory to ensure they are found first (DLL Hell fix)
+	$buildDir = Join-Path $repoRoot "build"
+	Write-Host "[msvc] Copying vcpkg DLLs from $vcpkgBin to $buildDir"
+	Get-ChildItem $vcpkgBin -Filter "*.dll" | Copy-Item -Destination $buildDir -Force
+	Get-ChildItem $buildDir -Filter "*.dll" | ForEach-Object { Write-Host "[msvc] DLL in build: $($_.Name)" }
+
 	$pathExport = 'export PATH="{1}:{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix, $vcpkgBinUnix
 } else {
 	Write-Warning "[msvc] LIBARCHIVE_ROOT not set, using default PATH"
