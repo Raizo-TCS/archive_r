@@ -8,8 +8,8 @@ $repoPathMsys = (& $bashPath -lc "cygpath -u \"$repoRoot\"").Trim()
 $timeoutPy = "$repoPathMsys/run_with_timeout.py"
 $cmd = @(
 	'set -euo pipefail'
-	"repo=\"$repoPathMsys\""
-	"timeout_py=\"$timeoutPy\""
+	"repo=`"$repoPathMsys`""
+	"timeout_py=`"$timeoutPy`""
 	'echo "[mingw] repo path: $repo"'
 	'if [ ! -d "$repo" ]; then echo "[mingw] repo path not found" >&2; exit 1; fi'
 	'cd "$repo"'
