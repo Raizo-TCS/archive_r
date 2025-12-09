@@ -25,7 +25,7 @@ $testLog = Join-Path $logDir "msvc-run-tests.log"
 $rubyLog = Join-Path $logDir "msvc-ruby-binding-tests.log"
 $pythonLog = Join-Path $logDir "msvc-python-binding-tests.log"
 $repoRootUnix = $repoRoot -replace '\\','/'
-$pathExport = 'export PATH="{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH";' -f $repoRootUnix
+$pathExport = 'export PATH="{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix
 
 function Invoke-WithLog {
 	param(
@@ -59,7 +59,13 @@ try {
 	}
 
 	$bashPrefix = @($bash, '-lc')
-	$envDump = "set -eo pipefail; $pathExport echo \"[msvc/bash] uname: $(uname -a)\"; echo \"[msvc/bash] PATH=$PATH\"; pwd"
+	$envDump = @(
+		'set -eo pipefail'
+		$pathExport
+		'echo "[msvc/bash] uname: $(uname -a)"'
+		'echo "[msvc/bash] PATH=$PATH"'
+		'pwd'
+	) -join '; '
 
 	Invoke-WithLog "run_tests.sh" ($bashPrefix + @("$envDump; ./run_tests.sh")) $testLog
 	Invoke-WithLog "ruby binding tests" ($bashPrefix + @("$envDump; ./bindings/ruby/run_binding_tests.sh")) $rubyLog

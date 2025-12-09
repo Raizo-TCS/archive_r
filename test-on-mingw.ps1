@@ -13,11 +13,11 @@ $runTestsCmd = "cd `"$repoPathMsys`" && ./run_tests.sh"
 $rubyBindingCmd = "cd `"$repoPathMsys`" && ./bindings/ruby/run_binding_tests.sh"
 $pythonBindingCmd = "cd `"$repoPathMsys`" && ./bindings/python/run_binding_tests.sh"
 
-$cmd = @(
+$cmdLines = @(
 	'set -euo pipefail'
-	"repo=`"$repoPathMsys`""
-	"timeout_py=`"$timeoutPy`""
-	"bash_exe=`"$bashPath`""
+	"repo=\"$repoPathMsys\""
+	"timeout_py=\"$timeoutPy\""
+	"bash_exe=\"$bashPath\""
 	'echo "[mingw] repo path: $repo"'
 	'echo "[mingw] bash path: $bash_exe"'
 	'if [ ! -d "$repo" ]; then echo "[mingw] repo path not found" >&2; exit 1; fi'
@@ -25,9 +25,11 @@ $cmd = @(
 	'cd "$repo"'
 	'pwd'
 	'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
-	"python3 \"$timeout_py\" 120 \"$bash_exe\" -lc \"$runTestsCmd\""
-	"python3 \"$timeout_py\" 120 \"$bash_exe\" -lc \"$rubyBindingCmd\""
-	"python3 \"$timeout_py\" 120 \"$bash_exe\" -lc \"$pythonBindingCmd\""
-) -join ' && '
+	('python3 "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $runTestsCmd)
+	('python3 "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $rubyBindingCmd)
+	('python3 "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $pythonBindingCmd)
+)
+
+$cmd = $cmdLines -join ' && '
 
 & $bashPath -lc $cmd
