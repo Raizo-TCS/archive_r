@@ -32,6 +32,11 @@ switch ($PackageMode) {
   default  { $buildArgs += '--package-python' ; $buildArgs += '--package-ruby' }
 }
 
+# Force CMake to use the Visual Studio generator instead of defaulting to MinGW Makefiles
+# when running inside Git Bash.
+$Env:CMAKE_GENERATOR = "Visual Studio 17 2022"
+$Env:CMAKE_GENERATOR_PLATFORM = "x64"
+
   & $bash ./build.sh @buildArgs
 } finally {
   Pop-Location
