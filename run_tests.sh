@@ -23,14 +23,22 @@ find_executable() {
     local name="$1"
     if [ -x "$BUILD_DIR/$name.exe" ]; then
         echo "$BUILD_DIR/$name.exe"
+    elif [ -x "$BUILD_DIR/core/$name.exe" ]; then
+        echo "$BUILD_DIR/core/$name.exe"
     elif [ -x "$BUILD_DIR/Release/$name.exe" ]; then
         echo "$BUILD_DIR/Release/$name.exe"
+    elif [ -x "$BUILD_DIR/core/Release/$name.exe" ]; then
+        echo "$BUILD_DIR/core/Release/$name.exe"
     elif [ -x "$BUILD_DIR/$name" ]; then
         echo "$BUILD_DIR/$name"
     elif [ -f "$BUILD_DIR/$name.exe" ]; then
         echo "$BUILD_DIR/$name.exe"
+    elif [ -f "$BUILD_DIR/core/$name.exe" ]; then
+        echo "$BUILD_DIR/core/$name.exe"
     elif [ -f "$BUILD_DIR/Release/$name.exe" ]; then
         echo "$BUILD_DIR/Release/$name.exe"
+    elif [ -f "$BUILD_DIR/core/Release/$name.exe" ]; then
+        echo "$BUILD_DIR/core/Release/$name.exe"
     elif [ -f "$BUILD_DIR/$name" ]; then
         echo "$BUILD_DIR/$name"
     else
@@ -47,6 +55,7 @@ EXECUTABLE=$(find_executable "find_and_traverse")
 if [ -z "$EXECUTABLE" ]; then
     EXECUTABLE="$BUILD_DIR/find_and_traverse" # Fallback for error message
 fi
+echo "Using test executable: $EXECUTABLE"
 TIMEOUT=20
 WRAPPER_TIMEOUT_DEFAULT=600
 WRAPPER_TIMEOUT="${RUN_TESTS_WRAPPER_TIMEOUT:-$WRAPPER_TIMEOUT_DEFAULT}"
