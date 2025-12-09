@@ -65,6 +65,14 @@ try {
 		$pathExport
 		'echo "[msvc/bash] uname: $(uname -a)"'
 		'echo "[msvc/bash] PATH=$PATH"'
+		'echo "[msvc/bash] which timeout: $(which timeout)"'
+		'echo "[msvc/bash] timeout version: $(timeout --version || echo "not gnu timeout")"'
+		'echo "[msvc/bash] DLLs in build:"'
+		'find build -name "*.dll"'
+		'echo "[msvc/bash] Executable location:"'
+		'find build -name "find_and_traverse.exe"'
+		'echo "[msvc/bash] ldd on executable:"'
+		'ldd $(find build -name "find_and_traverse.exe" | head -n 1) || echo "ldd failed"'
 		'pwd'
 	) -join '; '
 
