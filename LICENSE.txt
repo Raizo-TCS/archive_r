@@ -67,26 +67,30 @@ The following components are redistributed only because libarchive (bundled with
    - License: BSD License (https://github.com/facebook/zstd)
 
 8. Nettle
-   - Purpose: libarchive dependency providing cryptographic support; bundled with archive_r binaries.
+   - Purpose: libarchive dependency providing cryptographic support (macOS/Linux); bundled with archive_r binaries.
    - License: GNU LGPLv3+ or GNU GPLv2+ (https://www.lysator.liu.se/~nisse/nettle/)
 
 9. mini-gmp
-   - Purpose: Nettle dependency for arithmetic operations; bundled with archive_r binaries.
+   - Purpose: Nettle dependency for arithmetic operations (macOS/Linux); bundled with archive_r binaries.
    - License: GNU LGPLv3+ or GNU GPLv2+ (https://gmplib.org/)
 
-10. lz4
+10. OpenSSL 3
+    - Purpose: libarchive dependency providing cryptographic support (Windows); bundled with archive_r binaries.
+    - License: Apache License 2.0 with OpenSSL exception (https://www.openssl.org/source/license.html)
+
+11. lz4
    - Purpose: libarchive dependency providing LZ4 compression; shipped with archive_r artifacts when required.
    - License: BSD 2-Clause (https://github.com/lz4/lz4)
 
-11. libb2 (BLAKE2)
+12. libb2 (BLAKE2)
    - Purpose: libarchive dependency providing BLAKE2 hashing; bundled when archive formats require it.
    - License: CC0 1.0 Universal (https://github.com/BLAKE2/libb2)
 
-12. libattr
+13. libattr
    - Purpose: libarchive dependency providing extended attribute support on POSIX platforms; included in POSIX builds only.
    - License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/attr)
 
-13. libacl
+14. libacl
    - Purpose: libarchive dependency providing POSIX ACL support; included in POSIX builds only.
    - License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/acl)
 Users of archive_r should review the linked third-party licenses to ensure
