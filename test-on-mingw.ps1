@@ -9,6 +9,9 @@ $env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
 
 $repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
 $timeoutPy = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
+$runTestsCmd = "cd `"$repoPathMsys`" && ./run_tests.sh"
+$rubyBindingCmd = "cd `"$repoPathMsys`" && ./bindings/ruby/run_binding_tests.sh"
+$pythonBindingCmd = "cd `"$repoPathMsys`" && ./bindings/python/run_binding_tests.sh"
 
 $cmd = @(
 	'set -euo pipefail'
@@ -22,9 +25,9 @@ $cmd = @(
 	'cd "$repo"'
 	'pwd'
 	'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
-	'python3 "$timeout_py" 120 "$bash_exe" -lc "./run_tests.sh"'
-	'python3 "$timeout_py" 120 "$bash_exe" -lc "./bindings/ruby/run_binding_tests.sh"'
-	'python3 "$timeout_py" 120 "$bash_exe" -lc "./bindings/python/run_binding_tests.sh"'
+	"python3 \"$timeout_py\" 120 \"$bash_exe\" -lc \"$runTestsCmd\""
+	"python3 \"$timeout_py\" 120 \"$bash_exe\" -lc \"$rubyBindingCmd\""
+	"python3 \"$timeout_py\" 120 \"$bash_exe\" -lc \"$pythonBindingCmd\""
 ) -join ' && '
 
 & $bashPath -lc $cmd
