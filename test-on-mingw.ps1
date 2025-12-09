@@ -15,9 +15,9 @@ $pythonBindingCmd = "cd `"$repoPathMsys`" && ./bindings/python/run_binding_tests
 
 $cmdLines = @(
 	'set -euo pipefail'
-	"repo=\"$repoPathMsys\""
-	"timeout_py=\"$timeoutPy\""
-	"bash_exe=\"$bashPath\""
+	'repo="{0}"' -f $repoPathMsys
+	'timeout_py="{0}"' -f $timeoutPy
+	'bash_exe="{0}"' -f $bashPath
 	'echo "[mingw] repo path: $repo"'
 	'echo "[mingw] bash path: $bash_exe"'
 	'if [ ! -d "$repo" ]; then echo "[mingw] repo path not found" >&2; exit 1; fi'

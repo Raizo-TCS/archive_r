@@ -24,7 +24,8 @@ $logDir = Join-Path $repoRoot "build/logs"
 $testLog = Join-Path $logDir "msvc-run-tests.log"
 $rubyLog = Join-Path $logDir "msvc-ruby-binding-tests.log"
 $pythonLog = Join-Path $logDir "msvc-python-binding-tests.log"
-$repoRootUnix = $repoRoot -replace '\\','/'
+$env:ARCHIVE_R_REPO_WIN = $repoRoot
+$repoRootUnix = (& $bash -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
 $pathExport = 'export PATH="{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix
 
 function Invoke-WithLog {
