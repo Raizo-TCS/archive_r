@@ -5,7 +5,7 @@ $bashPath = Join-Path $msysRoot "usr\bin\bash.exe"
 if (-not (Test-Path $bashPath)) { throw "MSYS2 bash not found at $bashPath" }
 
 $repoPathMsys = (& $bashPath -lc "cygpath -u \"$repoRoot\"").Trim()
-$timeoutPy = "$repoPathMsys/run_with_timeout.py"
+$timeoutPy = (& $bashPath -lc "cygpath -u \"$repoRoot/run_with_timeout.py\"").Trim()
 $cmd = @(
 	'set -euo pipefail'
 	"repo=`"$repoPathMsys`""

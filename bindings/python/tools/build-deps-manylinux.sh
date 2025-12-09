@@ -96,10 +96,18 @@ export LDFLAGS="-L$PREFIX/lib -L$PREFIX/lib64 ${LDFLAGS:-}"
 export LD_LIBRARY_PATH="$PREFIX/lib:$PREFIX/lib64:${LD_LIBRARY_PATH:-}"
 
 fetch() {
-  local url="$1" out="$2"
+  local out="$1"
+  shift
   if [[ -f "$out" ]]; then return; fi
   # manylinux curl can be older; avoid --retry-all-errors for compatibility
-  curl -L --fail --retry 5 --retry-delay 5 --retry-max-time 300 --connect-timeout 10 --max-time 600 -o "$out" "$url"
+  for url in "$@"; do
+    if curl -L --fail --retry 5 --retry-delay 5 --retry-max-time 300 --connect-timeout 10 --max-time 600 -o "$out" "$url"; then
+      return 0
+    fi
+    echo "[fetch] retrying with next mirror after failure: $url" >&2
+  done
+  echo "[fetch] all mirrors failed for $out" >&2
+  return 1
 }
 
 extract() {
@@ -110,7 +118,9 @@ extract() {
 
 build_zlib() {
   local name="zlib-${ZLIB_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirror.ghproxy.com/https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/$name.tar.gz" \
+    "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
   local jobs="$PARALLEL"
@@ -142,7 +152,9 @@ build_zlib() {
 
 build_bzip2() {
   local name="bzip2-${BZIP2_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://sourceware.org/pub/bzip2/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://distfiles.macports.org/bzip2/$name.tar.gz" \
+    "https://sourceware.org/pub/bzip2/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_pic
   cflags_pic=${CFLAGS:-"-O2 -g -pipe -fno-lto -fno-tree-vectorize"}
@@ -162,7 +174,9 @@ build_bzip2() {
 
 build_xz() {
   local name="xz-${XZ_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://tukaani.org/xz/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://distfiles.macports.org/xz/$name.tar.gz" \
+    "https://tukaani.org/xz/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
   cflags_safe=${CFLAGS:-"-O0 -g -pipe -fno-lto -fno-tree-vectorize"}
@@ -183,7 +197,9 @@ build_xz() {
 
 build_lz4() {
   local name="lz4-${LZ4_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://github.com/lz4/lz4/archive/refs/tags/v${LZ4_VERSION}.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirror.ghproxy.com/https://github.com/lz4/lz4/archive/refs/tags/v${LZ4_VERSION}.tar.gz" \
+    "https://github.com/lz4/lz4/archive/refs/tags/v${LZ4_VERSION}.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local jobs="$PARALLEL"
   if [[ -n "$HOST" ]]; then
@@ -194,7 +210,9 @@ build_lz4() {
 
 build_zstd() {
   local name="zstd-${ZSTD_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://github.com/facebook/zstd/releases/download/v${ZSTD_VERSION}/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirror.ghproxy.com/https://github.com/facebook/zstd/releases/download/v${ZSTD_VERSION}/$name.tar.gz" \
+    "https://github.com/facebook/zstd/releases/download/v${ZSTD_VERSION}/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local jobs="$PARALLEL"
   if [[ -n "$HOST" ]]; then
@@ -206,14 +224,18 @@ build_zstd() {
 
 build_libb2() {
   local name="libb2-${LIBB2_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://github.com/BLAKE2/libb2/releases/download/v${LIBB2_VERSION}/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirror.ghproxy.com/https://github.com/BLAKE2/libb2/releases/download/v${LIBB2_VERSION}/$name.tar.gz" \
+    "https://github.com/BLAKE2/libb2/releases/download/v${LIBB2_VERSION}/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
 build_libxml2() {
   local name="libxml2-${LIBXML2_VERSION}"; local tarball="$WORKDIR/$name.tar.xz"
-  fetch "https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION%.*}/$name.tar.xz" "$tarball"
+  fetch "$tarball" \
+    "https://mirror.init7.net/gnome/sources/libxml2/${LIBXML2_VERSION%.*}/$name.tar.xz" \
+    "https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION%.*}/$name.tar.xz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
   cflags_safe=${CFLAGS:-"-O1 -g -pipe -fno-lto -fno-tree-vectorize"}
@@ -222,28 +244,36 @@ build_libxml2() {
 
 build_nettle() {
   local name="nettle-${NETTLE_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://ftp.gnu.org/gnu/nettle/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirrors.kernel.org/gnu/nettle/$name.tar.gz" \
+    "https://ftp.gnu.org/gnu/nettle/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static --enable-mini-gmp ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
 build_attr() {
   local name="attr-${ATTR_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://download.savannah.gnu.org/releases/attr/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirrors.kernel.org/savannah/attr/$name.tar.gz" \
+    "https://download.savannah.gnu.org/releases/attr/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
 build_acl() {
   local name="acl-${ACL_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://download.savannah.gnu.org/releases/acl/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://mirrors.kernel.org/savannah/acl/$name.tar.gz" \
+    "https://download.savannah.gnu.org/releases/acl/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
 build_libarchive() {
   local name="libarchive-${LIBARCHIVE_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
-  fetch "https://www.libarchive.org/downloads/$name.tar.gz" "$tarball"
+  fetch "$tarball" \
+    "https://distfiles.macports.org/libarchive/$name.tar.gz" \
+    "https://www.libarchive.org/downloads/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} \
     --with-nettle --without-openssl --without-mbedtls --without-gnutls \

@@ -18,11 +18,12 @@ function Get-GitBashPath {
 $repoRoot = $PSScriptRoot
 $bash = Get-GitBashPath
 $timeoutPy = Join-Path $repoRoot "run_with_timeout.py"
+$python = (Get-Command python -ErrorAction Stop).Source
 Push-Location $repoRoot
 try {
-	& python $timeoutPy 120 $bash ./run_tests.sh
-	& python $timeoutPy 120 $bash ./bindings/ruby/run_binding_tests.sh
-	& python $timeoutPy 120 $bash ./bindings/python/run_binding_tests.sh
+	& $python $timeoutPy 120 $bash ./run_tests.sh
+	& $python $timeoutPy 120 $bash ./bindings/ruby/run_binding_tests.sh
+	& $python $timeoutPy 120 $bash ./bindings/python/run_binding_tests.sh
 } finally {
 	Pop-Location
 }
