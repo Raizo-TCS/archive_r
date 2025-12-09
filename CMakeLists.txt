@@ -8,6 +8,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Ensure symbols are exported on Windows (MSVC) to generate .lib for DLL
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+
 if(UNIX)
     add_definitions(-D_FILE_OFFSET_BITS=64)
 endif()
