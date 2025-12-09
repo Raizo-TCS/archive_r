@@ -38,7 +38,6 @@ if ($vcpkgRoot) {
 	$buildDir = Join-Path $repoRoot "build"
 	Write-Host "[msvc] Copying vcpkg DLLs from $vcpkgBin to $buildDir"
 	Get-ChildItem $vcpkgBin -Filter "*.dll" | Copy-Item -Destination $buildDir -Force
-	Get-ChildItem $buildDir -Filter "*.dll" | ForEach-Object { Write-Host "[msvc] DLL in build: $($_.Name)" }
 
 	$pathExport = 'export PATH="{1}:{0}/build/bindings/python/.libs:{0}/build/core:{0}/build/core/Release:{0}/build/Release:{0}/build:$PATH"' -f $repoRootUnix, $vcpkgBinUnix
 } else {
@@ -81,16 +80,6 @@ try {
 	$envDump = @(
 		'set -eo pipefail'
 		$pathExport
-		'echo "[msvc/bash] uname: $(uname -a)"'
-		'echo "[msvc/bash] PATH=$PATH"'
-		'echo "[msvc/bash] which timeout: $(which timeout)"'
-		'echo "[msvc/bash] timeout version: $(timeout --version || echo "not gnu timeout")"'
-		'echo "[msvc/bash] DLLs in build:"'
-		'find build -name "*.dll"'
-		'echo "[msvc/bash] Executable location:"'
-		'find build -name "find_and_traverse.exe"'
-		'echo "[msvc/bash] ldd on executable:"'
-		'ldd $(find build -name "find_and_traverse.exe" | head -n 1) || echo "ldd failed"'
 		'pwd'
 	) -join '; '
 
