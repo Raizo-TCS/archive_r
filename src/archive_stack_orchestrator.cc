@@ -5,6 +5,7 @@
 #include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/entry_fault.h"
 #include "system_file_stream.h"
+#include "simple_profiler.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -38,6 +39,7 @@ StreamArchive *ArchiveStackOrchestrator::current_archive() { return _head.curren
 // 4. When leaving a multi-volume context, rewind the parent archive by skipping to EOF to
 //    avoid re-reading already processed entries.
 bool ArchiveStackOrchestrator::advance(bool descend_request) {
+  ARCHIVE_R_PROFILE("Orchestrator::advance");
   bool request_descend = descend_request;
 
   while (true) {
@@ -47,6 +49,7 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     try {
       if (request_descend) {
         request_descend = false;
+        ARCHIVE_R_PROFILE("Orchestrator::head_descend");
         _head.descend();
       }
     } catch (const EntryFaultError &error) {
@@ -55,7 +58,12 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     }
 
     try {
-      if (_head.next()) {
+      bool has_next = false;
+      {
+          ARCHIVE_R_PROFILE("Orchestrator::head_next");
+          has_next = _head.next();
+      }
+      if (has_next) {
         return true;
       }
     } catch (const EntryFaultError &error) {
@@ -73,7 +81,10 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     }
 
     PathHierarchy prev_ascend_hierarchy = _head.current_entry_hierarchy();
-    _head.ascend();
+    {
+        ARCHIVE_R_PROFILE("Orchestrator::head_ascend");
+        _head.ascend();
+    }
 
     if (!pathhierarchy_is_multivolume(prev_ascend_hierarchy)) {
       continue;

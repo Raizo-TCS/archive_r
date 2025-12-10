@@ -10,6 +10,7 @@
 #include "archive_type.h"
 #include "entry_fault_error.h"
 #include "system_file_stream.h"
+#include "simple_profiler.h"
 #include <filesystem>
 #include <memory>
 #include <stdexcept>
@@ -85,6 +86,7 @@ public:
   }
 
   void advance() {
+    ARCHIVE_R_PROFILE("Traverser::advance");
     if (_at_end) {
       return;
     }
@@ -158,6 +160,7 @@ private:
   }
 
   bool fetch_from_archive(bool request_descend_into_archive) {
+    ARCHIVE_R_PROFILE("Traverser::fetch_from_archive");
     if (!archive_active()) {
       return false;
     }
