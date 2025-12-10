@@ -28,12 +28,18 @@ jobs:
       - name: Test (Ubuntu x86_64)
         run: ./test-on-ubuntu.sh
 
+      - name: Create Source Archive
+        run: |
+          VERSION=$(cat VERSION | tr -d '\n')
+          git archive --format=tar.gz --prefix=archive_r-core-${VERSION}/ HEAD > archive_r-core-${VERSION}.tar.gz
+
       - name: Upload PF1.0 artifacts
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: archive-r-pf1-x86_64-${{ github.sha }}
           path: |
+            archive_r-core-*.tar.gz
             build/bindings/python/dist/**/*
             build/bindings/ruby/**/*.gem
             build/logs/**/*.log

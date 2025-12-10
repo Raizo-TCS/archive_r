@@ -84,8 +84,9 @@ jobs:
         id: resolve_run
         run: |
           RUN_ID="${{ inputs.run_id }}"
+          COMMIT_SHA="${{ needs.validate-tag.outputs.commit_sha }}"
+          
           if [[ -z "$RUN_ID" ]]; then
-            COMMIT_SHA="${{ needs.validate-tag.outputs.commit_sha }}"
             echo "Searching for CI run for commit $COMMIT_SHA..."
             # Find the latest successful run of 'CI' workflow for this commit
             RUN_ID=$(gh run list --workflow ci.yml --commit "$COMMIT_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
@@ -99,19 +100,38 @@ jobs:
           fi
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
 
+          # Also find Build Wheels run
+          echo "Searching for Build Wheels run for commit $COMMIT_SHA..."
+          WHEELS_RUN_ID=$(gh run list --workflow build-wheels.yml --commit "$COMMIT_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          if [[ -n "$WHEELS_RUN_ID" ]]; then
+            echo "Found Wheels Run ID: $WHEELS_RUN_ID"
+            echo "wheels_run_id=$WHEELS_RUN_ID" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No successful Build Wheels run found for commit $COMMIT_SHA. Wheels will not be included."
+          fi
+
       - name: Download artifacts
         run: |
           RUN_ID="${{ steps.resolve_run.outputs.run_id }}"
           echo "Downloading artifacts from run $RUN_ID..."
           gh run download "$RUN_ID" --dir artifacts
 
+          WHEELS_RUN_ID="${{ steps.resolve_run.outputs.wheels_run_id }}"
+          if [[ -n "$WHEELS_RUN_ID" ]]; then
+            echo "Downloading artifacts from wheels run $WHEELS_RUN_ID..."
+            gh run download "$WHEELS_RUN_ID" --dir artifacts
+          fi
+
       - name: Collect release assets (filter official wheels only)
         run: |
           set -euo pipefail
           mkdir -p release/python release/ruby
 
+          # Source Archive (Core)
+          find artifacts -type f -name "archive_r-core-*.tar.gz" -exec cp {} release/ \;
+
           # sdist
-          find artifacts -type f -name "*.tar.gz" -exec cp {} release/python/ \;
+          find artifacts -type f -name "*.tar.gz" ! -name "archive_r-core-*.tar.gz" -exec cp {} release/python/ \;
 
           # Official wheels: manylinux, macOS (including universal2), Windows
           while IFS= read -r wheel; do
@@ -133,8 +153,7 @@ jobs:
             echo "::error::No Ruby gems were collected"
             exit 1
           fi
-          echo "Python artifacts:" && ls -al release/python
-          echo "Ruby artifacts:" && ls -al release/ruby
+          echo "Release assets:" && ls -R release/
 
       - name: Create GitHub Release
         if: ${{ env.ACT != 'true' }}
@@ -145,6 +164,7 @@ jobs:
           draft: false
           prerelease: ${{ contains(inputs.tag, '-rc') }}
           files: |
+            release/archive_r-core-*.tar.gz
             release/python/*
             release/ruby/*
 
