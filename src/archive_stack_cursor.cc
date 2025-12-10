@@ -185,9 +185,11 @@ void ArchiveStackCursor::reset() {
   options_snapshot = ArchiveOption{};
   _current_stream = nullptr;
   _current_archive = nullptr;
+  _cached_hierarchy.reset();
 }
 
 bool ArchiveStackCursor::descend() {
+  ensure_stream_created();
   if (!_current_stream) {
     throw std::logic_error("current stream is empty");
   }
@@ -203,6 +205,7 @@ bool ArchiveStackCursor::descend() {
   auto archive_ptr = std::make_shared<StreamArchive>(std::move(stream), options_snapshot);
   _current_archive = archive_ptr;
   _current_stream = nullptr;
+  _cached_hierarchy.reset();
   return true;
 }
 
@@ -217,6 +220,7 @@ bool ArchiveStackCursor::ascend() {
   } else {
     _current_stream = nullptr;
   }
+  _cached_hierarchy.reset();
 
   return true;
 }
@@ -228,6 +232,7 @@ bool ArchiveStackCursor::next() {
   }
 
   _current_stream = nullptr;
+  _cached_hierarchy.reset();
 
   while (true) {
     if (!archive->skip_to_next_header()) {
@@ -238,7 +243,6 @@ bool ArchiveStackCursor::next() {
     }
   }
 
-  _current_stream = create_stream(current_entry_hierarchy());
   return true;
 }
 
@@ -283,6 +287,7 @@ ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
     return archive->read_current(buff, len);
   }
 
+  ensure_stream_created();
   if (_current_stream) {
     return _current_stream->read(buff, len);
   }
@@ -293,9 +298,14 @@ StreamArchive *ArchiveStackCursor::current_archive() {
   return _current_archive.get();
 }
 
-PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
+const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
+  if (_cached_hierarchy) {
+    return *_cached_hierarchy;
+  }
+
   if (depth() == 0 || (!_current_stream && !_current_archive)) {
-    return {};
+    static const PathHierarchy empty;
+    return empty;
   }
 
   if (StreamArchive *archive = current_archive()) {
@@ -303,10 +313,17 @@ PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
     if (!archive->current_entryname.empty()) {
       append_single(path, archive->current_entryname);
     }
-    return path;
+    _cached_hierarchy = std::move(path);
+    return *_cached_hierarchy;
   }
 
-  return _current_stream->source_hierarchy();
+  if (_current_stream) {
+    _cached_hierarchy = _current_stream->source_hierarchy();
+    return *_cached_hierarchy;
+  }
+
+  static const PathHierarchy empty;
+  return empty;
 }
 
 std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarchy &hierarchy) {
@@ -319,6 +336,12 @@ std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarc
     return std::make_shared<SystemFileStream>(hierarchy);
   }
   return std::make_shared<EntryPayloadStream>(_current_archive, hierarchy);
+}
+
+void ArchiveStackCursor::ensure_stream_created() {
+  if (!_current_stream) {
+    _current_stream = create_stream(current_entry_hierarchy());
+  }
 }
 
 } // namespace archive_r

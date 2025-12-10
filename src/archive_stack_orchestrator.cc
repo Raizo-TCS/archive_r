@@ -119,7 +119,7 @@ const std::string &ArchiveStackOrchestrator::current_entryname() {
   return archive->current_entryname;
 }
 
-PathHierarchy ArchiveStackOrchestrator::current_entry_hierarchy() { return _head.current_entry_hierarchy(); }
+const PathHierarchy &ArchiveStackOrchestrator::current_entry_hierarchy() { return _head.current_entry_hierarchy(); }
 
 bool ArchiveStackOrchestrator::synchronize_to_hierarchy(const PathHierarchy &path_hierarchy) {
   try {

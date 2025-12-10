@@ -30,7 +30,7 @@ public:
   const std::string &current_entryname();
 
   size_t depth() const;
-  PathHierarchy current_entry_hierarchy();
+  const PathHierarchy &current_entry_hierarchy();
   bool synchronize_to_hierarchy(const PathHierarchy &path_hierarchy);
 
   StreamArchive *current_archive();

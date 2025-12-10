@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -98,7 +99,7 @@ struct ArchiveStackCursor {
 
   StreamArchive *current_archive();
 
-  PathHierarchy current_entry_hierarchy();
+  const PathHierarchy &current_entry_hierarchy();
 
   std::shared_ptr<IDataStream> create_stream(const PathHierarchy &hierarchy);
 
@@ -107,6 +108,8 @@ struct ArchiveStackCursor {
 private:
   std::shared_ptr<IDataStream> _current_stream;
   std::shared_ptr<StreamArchive> _current_archive;
+  mutable std::optional<PathHierarchy> _cached_hierarchy;
+  void ensure_stream_created();
 };
 
 } // namespace archive_r
