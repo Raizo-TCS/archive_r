@@ -150,15 +150,8 @@ void EntryPayloadStream::open_single_part(const PathHierarchy &single_part) {
 }
 
 void EntryPayloadStream::close_single_part() {
-  if (_parent_archive->current_entryname.empty()) {
-    return;
-  }
-
-  try {
-    _parent_archive->skip_data();
-  } catch (...) {
-    // Ignore errors during cleanup to prevent terminate() in destructor
-  }
+  // libarchive automatically skips unread data when reading the next header,
+  // so explicit skipping here is unnecessary and avoids potential exceptions in destructor.
 }
 
 ssize_t EntryPayloadStream::read_from_single_part(void *buffer, size_t size) {
