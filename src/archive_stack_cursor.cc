@@ -4,7 +4,6 @@
 #include "archive_stack_cursor.h"
 
 #include "archive_r/path_hierarchy_utils.h"
-#include "simple_profiler.h"
 #include "system_file_stream.h"
 #include <exception>
 #include <memory>
@@ -49,7 +48,7 @@ void StreamArchive::open_archive() {
   });
 
   _ar = ar.release();
-  current_entryname.clear();
+  current_entryname_ptr = nullptr;
   _at_eof = false;
   _current_entry_content_ready = false;
 }
@@ -190,7 +189,6 @@ void ArchiveStackCursor::reset() {
 }
 
 bool ArchiveStackCursor::descend() {
-  ARCHIVE_R_PROFILE("Cursor::descend");
   ensure_stream_created();
   if (!_current_stream) {
     throw std::logic_error("current stream is empty");
@@ -212,7 +210,6 @@ bool ArchiveStackCursor::descend() {
 }
 
 bool ArchiveStackCursor::ascend() {
-  ARCHIVE_R_PROFILE("Cursor::ascend");
   if (depth() <= 0) {
     return false;
   }
@@ -229,7 +226,6 @@ bool ArchiveStackCursor::ascend() {
 }
 
 bool ArchiveStackCursor::next() {
-  ARCHIVE_R_PROFILE("Cursor::next");
   StreamArchive *archive = current_archive();
   if (!archive) {
     return false;
@@ -242,7 +238,7 @@ bool ArchiveStackCursor::next() {
     if (!archive->skip_to_next_header()) {
       return false;
     }
-    if (!archive->current_entryname.empty()) {
+    if (archive->current_entryname_ptr && *archive->current_entryname_ptr != '\0') {
       break;
     }
   }
@@ -283,7 +279,6 @@ bool ArchiveStackCursor::synchronize_to_hierarchy(const PathHierarchy &target_hi
 }
 
 ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
-  ARCHIVE_R_PROFILE("Cursor::read");
   if (len == 0) {
     return 0;
   }
@@ -304,7 +299,6 @@ StreamArchive *ArchiveStackCursor::current_archive() {
 }
 
 const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
-  ARCHIVE_R_PROFILE("Cursor::current_entry_hierarchy");
   if (_cached_hierarchy) {
     return *_cached_hierarchy;
   }
@@ -316,8 +310,8 @@ const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
 
   if (StreamArchive *archive = current_archive()) {
     PathHierarchy path = archive->source_hierarchy();
-    if (!archive->current_entryname.empty()) {
-      append_single(path, archive->current_entryname);
+    if (archive->current_entryname_ptr) {
+      append_single(path, archive->current_entryname_ptr);
     }
     _cached_hierarchy = std::move(path);
     return *_cached_hierarchy;
@@ -330,6 +324,32 @@ const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
 
   static const PathHierarchy empty;
   return empty;
+}
+
+PathHierarchy ArchiveStackCursor::consume_current_entry_hierarchy() {
+  if (_cached_hierarchy) {
+    PathHierarchy path = std::move(*_cached_hierarchy);
+    _cached_hierarchy.reset();
+    return path;
+  }
+
+  if (depth() == 0 || (!_current_stream && !_current_archive)) {
+    return {};
+  }
+
+  if (StreamArchive *archive = current_archive()) {
+    PathHierarchy path = archive->source_hierarchy();
+    if (archive->current_entryname_ptr) {
+      append_single(path, archive->current_entryname_ptr);
+    }
+    return path;
+  }
+
+  if (_current_stream) {
+    return _current_stream->source_hierarchy();
+  }
+
+  return {};
 }
 
 std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarchy &hierarchy) {
@@ -345,7 +365,6 @@ std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarc
 }
 
 void ArchiveStackCursor::ensure_stream_created() {
-  ARCHIVE_R_PROFILE("Cursor::ensure_stream_created");
   if (!_current_stream) {
     _current_stream = create_stream(current_entry_hierarchy());
   }

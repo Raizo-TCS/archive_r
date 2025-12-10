@@ -49,7 +49,6 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     try {
       if (request_descend) {
         request_descend = false;
-        ARCHIVE_R_PROFILE("Orchestrator::head_descend");
         _head.descend();
       }
     } catch (const EntryFaultError &error) {
@@ -60,7 +59,6 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     try {
       bool has_next = false;
       {
-          ARCHIVE_R_PROFILE("Orchestrator::head_next");
           has_next = _head.next();
       }
       if (has_next) {
@@ -82,7 +80,6 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
 
     PathHierarchy prev_ascend_hierarchy = _head.current_entry_hierarchy();
     {
-        ARCHIVE_R_PROFILE("Orchestrator::head_ascend");
         _head.ascend();
     }
 
@@ -110,16 +107,17 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
   }
 }
 
-const std::string &ArchiveStackOrchestrator::current_entryname() {
+std::string ArchiveStackOrchestrator::current_entryname() {
   StreamArchive *archive = current_archive();
-  if (!archive) {
-    static const std::string empty;
-    return empty;
+  if (!archive || !archive->current_entryname_ptr) {
+    return {};
   }
-  return archive->current_entryname;
+  return archive->current_entryname_ptr;
 }
 
 const PathHierarchy &ArchiveStackOrchestrator::current_entry_hierarchy() { return _head.current_entry_hierarchy(); }
+
+PathHierarchy ArchiveStackOrchestrator::consume_current_entry_hierarchy() { return _head.consume_current_entry_hierarchy(); }
 
 bool ArchiveStackOrchestrator::synchronize_to_hierarchy(const PathHierarchy &path_hierarchy) {
   try {

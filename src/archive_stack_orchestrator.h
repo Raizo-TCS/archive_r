@@ -27,10 +27,11 @@ public:
   void open_root_hierarchy(const PathHierarchy &root_hierarchy);
 
   bool advance(bool descend_request = true);
-  const std::string &current_entryname();
+  std::string current_entryname();
 
   size_t depth() const;
   const PathHierarchy &current_entry_hierarchy();
+  PathHierarchy consume_current_entry_hierarchy();
   bool synchronize_to_hierarchy(const PathHierarchy &path_hierarchy);
 
   StreamArchive *current_archive();

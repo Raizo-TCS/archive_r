@@ -49,7 +49,7 @@ struct Archive {
   bool skip_to_entry(const std::string &entryname);
   bool skip_to_eof();
 
-  std::string current_entryname;
+  const char *current_entryname_ptr = nullptr;
   struct archive_entry *current_entry;
   ssize_t read_current(void *buff, size_t len);
 

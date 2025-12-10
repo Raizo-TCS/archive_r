@@ -87,6 +87,8 @@ struct ArchiveStackCursor {
   bool synchronize_to_hierarchy(const PathHierarchy &hierarchy);
   ssize_t read(void *buffer, size_t len);
 
+  PathHierarchy consume_current_entry_hierarchy();
+
   size_t depth() const {
     size_t d = 0;
     auto a = _current_archive;

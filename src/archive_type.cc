@@ -115,8 +115,9 @@ archive_ptr new_read_archive_common(const std::vector<std::string> &passphrases,
 }
 
 Archive::Archive()
-    : _ar(nullptr)
+    : current_entryname_ptr(nullptr)
     , current_entry(nullptr)
+    , _ar(nullptr)
     , _at_eof(false)
     , _current_entry_content_ready(false) {}
 
@@ -129,13 +130,14 @@ void Archive::close_archive() {
     _ar = nullptr;
   }
   current_entry = nullptr;
-  current_entryname.clear();
+  current_entryname_ptr = nullptr;
+  _at_eof = false;
   _current_entry_content_ready = false;
 }
 
 void Archive::rewind() {
   close_archive();
-  current_entryname.clear();
+  current_entryname_ptr = nullptr;
   current_entry = nullptr;
   _at_eof = false;
   open_archive();
@@ -149,7 +151,7 @@ bool Archive::skip_to_next_header() {
 
   if (_at_eof) {
     current_entry = nullptr;
-    current_entryname.clear();
+    current_entryname_ptr = nullptr;
     _current_entry_content_ready = false;
     return false;
   }
@@ -159,7 +161,7 @@ bool Archive::skip_to_next_header() {
   if (r == ARCHIVE_EOF) {
     _at_eof = true;
     current_entry = nullptr;
-    current_entryname.clear();
+    current_entryname_ptr = nullptr;
     _current_entry_content_ready = false;
     return false;
   }
@@ -168,7 +170,7 @@ bool Archive::skip_to_next_header() {
     const std::string message = format_archive_error(_ar, "Failed to read next header");
     _at_eof = true;
     current_entry = nullptr;
-    current_entryname.clear();
+    current_entryname_ptr = nullptr;
     _current_entry_content_ready = false;
     raise_archive_error(message);
   }
@@ -177,7 +179,7 @@ bool Archive::skip_to_next_header() {
   if (name == nullptr) {
     throw make_entry_fault_error("Failed to retrieve entry pathname (archive_entry_pathname returned null)", {}, 0);
   }
-  current_entryname = std::string(name);
+  current_entryname_ptr = name;
   _current_entry_content_ready = true;
   return true;
 }
@@ -197,7 +199,7 @@ bool Archive::skip_data() {
 
 bool Archive::skip_to_entry(const std::string &entryname) {
 
-  if (current_entryname == entryname && _current_entry_content_ready) {
+  if (current_entryname_ptr && entryname == current_entryname_ptr && _current_entry_content_ready) {
     return true;
   }
 
@@ -205,7 +207,7 @@ bool Archive::skip_to_entry(const std::string &entryname) {
     rewind();
   }
 
-  const std::string start_position = current_entryname;
+  const std::string start_position = current_entryname_ptr ? current_entryname_ptr : "";
 
   if (search_forward_until_eof(entryname)) {
     return true;
@@ -229,7 +231,7 @@ bool Archive::skip_to_eof() {
 
 bool Archive::search_forward_until_eof(const std::string &entryname) {
   while (skip_to_next_header()) {
-    if (current_entryname == entryname) {
+    if (current_entryname_ptr && entryname == current_entryname_ptr) {
       return true;
     }
     if (!skip_data()) {
@@ -241,10 +243,10 @@ bool Archive::search_forward_until_eof(const std::string &entryname) {
 
 bool Archive::search_until_position(const std::string &entryname, const std::string &stop_position) {
   while (skip_to_next_header()) {
-    if (current_entryname == entryname) {
+    if (current_entryname_ptr && entryname == current_entryname_ptr) {
       return true;
     }
-    if (current_entryname == stop_position) {
+    if (current_entryname_ptr && stop_position == current_entryname_ptr) {
       break;
     }
     if (!skip_data()) {

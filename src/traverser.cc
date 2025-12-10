@@ -86,7 +86,6 @@ public:
   }
 
   void advance() {
-    ARCHIVE_R_PROFILE("Traverser::advance");
     if (_at_end) {
       return;
     }
@@ -160,7 +159,6 @@ private:
   }
 
   bool fetch_from_archive(bool request_descend_into_archive) {
-    ARCHIVE_R_PROFILE("Traverser::fetch_from_archive");
     if (!archive_active()) {
       return false;
     }
@@ -168,7 +166,7 @@ private:
 
     try {
       if (orchestrator.advance(request_descend_into_archive)) {
-        set_current_entry(orchestrator.current_entry_hierarchy());
+        set_current_entry(orchestrator.consume_current_entry_hierarchy());
         return true;
       }
     } catch (const EntryFaultError &error) {
