@@ -5,7 +5,6 @@
 #include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/entry_fault.h"
 #include "system_file_stream.h"
-#include "simple_profiler.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -39,7 +38,6 @@ StreamArchive *ArchiveStackOrchestrator::current_archive() { return _head.curren
 // 4. When leaving a multi-volume context, rewind the parent archive by skipping to EOF to
 //    avoid re-reading already processed entries.
 bool ArchiveStackOrchestrator::advance(bool descend_request) {
-  internal::ScopeProfile p("Orchestrator::advance");
   bool request_descend = descend_request;
 
   while (true) {
@@ -57,12 +55,7 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     }
 
     try {
-      bool has_next = false;
-      {
-          internal::ScopeProfile p("Orchestrator::head_next");
-          has_next = _head.next();
-      }
-      if (has_next) {
+      if (_head.next()) {
         return true;
       }
     } catch (const EntryFaultError &error) {
@@ -78,15 +71,12 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     } catch (const EntryFaultError &error) {
       dispatch_fault(error.fault());
     }
-    {
-        internal::ScopeProfile p("Orchestrator::ascend");
 
     PathHierarchy prev_ascend_hierarchy = _head.current_entry_hierarchy();
-        _head.ascend();
+    _head.ascend();
 
     if (!pathhierarchy_is_multivolume(prev_ascend_hierarchy)) {
       continue;
-    }
     }
 
     try {
@@ -109,17 +99,16 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
   }
 }
 
-std::string ArchiveStackOrchestrator::current_entryname() {
+const std::string &ArchiveStackOrchestrator::current_entryname() {
   StreamArchive *archive = current_archive();
-  if (!archive || !archive->current_entryname_ptr) {
-    return {};
+  if (!archive) {
+    static const std::string empty;
+    return empty;
   }
-  return archive->current_entryname_ptr;
+  return archive->current_entryname;
 }
 
-const PathHierarchy &ArchiveStackOrchestrator::current_entry_hierarchy() { return _head.current_entry_hierarchy(); }
-
-void ArchiveStackOrchestrator::consume_current_entry_hierarchy(PathHierarchy &dest) { _head.consume_current_entry_hierarchy(dest); }
+PathHierarchy ArchiveStackOrchestrator::current_entry_hierarchy() { return _head.current_entry_hierarchy(); }
 
 bool ArchiveStackOrchestrator::synchronize_to_hierarchy(const PathHierarchy &path_hierarchy) {
   try {
@@ -146,7 +135,6 @@ void ArchiveStackOrchestrator::mark_entry_as_multi_volume(const PathHierarchy &e
 }
 
 bool ArchiveStackOrchestrator::descend_pending_multi_volumes() {
-  internal::ScopeProfile p("Orchestrator::descend_pending_multi_volumes");
   const PathHierarchy current_hierarchy = _head.current_entry_hierarchy();
   PathHierarchy multi_volume_target;
   if (!_multi_volume_manager.pop_multi_volume_group(current_hierarchy, multi_volume_target)) {

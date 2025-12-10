@@ -2,7 +2,6 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_type.h"
-#include "simple_profiler.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -116,9 +115,8 @@ archive_ptr new_read_archive_common(const std::vector<std::string> &passphrases,
 }
 
 Archive::Archive()
-    : current_entryname_ptr(nullptr)
+    : _ar(nullptr)
     , current_entry(nullptr)
-    , _ar(nullptr)
     , _at_eof(false)
     , _current_entry_content_ready(false) {}
 
@@ -131,14 +129,13 @@ void Archive::close_archive() {
     _ar = nullptr;
   }
   current_entry = nullptr;
-  current_entryname_ptr = nullptr;
-  _at_eof = false;
+  current_entryname.clear();
   _current_entry_content_ready = false;
 }
 
 void Archive::rewind() {
   close_archive();
-  current_entryname_ptr = nullptr;
+  current_entryname.clear();
   current_entry = nullptr;
   _at_eof = false;
   open_archive();
@@ -146,28 +143,23 @@ void Archive::rewind() {
 }
 
 bool Archive::skip_to_next_header() {
-  internal::ScopeProfile p("Archive::skip_to_next_header");
   if (!_ar) {
     throw std::logic_error("Archive handle is not initialized");
   }
 
   if (_at_eof) {
     current_entry = nullptr;
-    current_entryname_ptr = nullptr;
+    current_entryname.clear();
     _current_entry_content_ready = false;
     return false;
   }
 
-  int r;
-  {
-    internal::ScopeProfile p("Libarchive::next_header");
-    r = archive_read_next_header(_ar, &current_entry);
-  }
+  const int r = archive_read_next_header(_ar, &current_entry);
 
   if (r == ARCHIVE_EOF) {
     _at_eof = true;
     current_entry = nullptr;
-    current_entryname_ptr = nullptr;
+    current_entryname.clear();
     _current_entry_content_ready = false;
     return false;
   }
@@ -176,20 +168,17 @@ bool Archive::skip_to_next_header() {
     const std::string message = format_archive_error(_ar, "Failed to read next header");
     _at_eof = true;
     current_entry = nullptr;
-    current_entryname_ptr = nullptr;
+    current_entryname.clear();
     _current_entry_content_ready = false;
     raise_archive_error(message);
   }
 
-  {
-    internal::ScopeProfile p("Libarchive::entry_pathname");
   const char *name = archive_entry_pathname(current_entry);
   if (name == nullptr) {
     throw make_entry_fault_error("Failed to retrieve entry pathname (archive_entry_pathname returned null)", {}, 0);
   }
-  current_entryname_ptr = name;
+  current_entryname = std::string(name);
   _current_entry_content_ready = true;
-  }
   return true;
 }
 
@@ -208,7 +197,7 @@ bool Archive::skip_data() {
 
 bool Archive::skip_to_entry(const std::string &entryname) {
 
-  if (current_entryname_ptr && entryname == current_entryname_ptr && _current_entry_content_ready) {
+  if (current_entryname == entryname && _current_entry_content_ready) {
     return true;
   }
 
@@ -216,7 +205,7 @@ bool Archive::skip_to_entry(const std::string &entryname) {
     rewind();
   }
 
-  const std::string start_position = current_entryname_ptr ? current_entryname_ptr : "";
+  const std::string start_position = current_entryname;
 
   if (search_forward_until_eof(entryname)) {
     return true;
@@ -240,7 +229,7 @@ bool Archive::skip_to_eof() {
 
 bool Archive::search_forward_until_eof(const std::string &entryname) {
   while (skip_to_next_header()) {
-    if (current_entryname_ptr && entryname == current_entryname_ptr) {
+    if (current_entryname == entryname) {
       return true;
     }
     if (!skip_data()) {
@@ -252,10 +241,10 @@ bool Archive::search_forward_until_eof(const std::string &entryname) {
 
 bool Archive::search_until_position(const std::string &entryname, const std::string &stop_position) {
   while (skip_to_next_header()) {
-    if (current_entryname_ptr && entryname == current_entryname_ptr) {
+    if (current_entryname == entryname) {
       return true;
     }
-    if (current_entryname_ptr && stop_position == current_entryname_ptr) {
+    if (current_entryname == stop_position) {
       break;
     }
     if (!skip_data()) {

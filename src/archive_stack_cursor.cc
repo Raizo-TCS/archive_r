@@ -2,7 +2,6 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_stack_cursor.h"
-#include "simple_profiler.h"
 
 #include "archive_r/path_hierarchy_utils.h"
 #include "system_file_stream.h"
@@ -49,7 +48,7 @@ void StreamArchive::open_archive() {
   });
 
   _ar = ar.release();
-  current_entryname_ptr = nullptr;
+  current_entryname.clear();
   _at_eof = false;
   _current_entry_content_ready = false;
 }
@@ -186,11 +185,9 @@ void ArchiveStackCursor::reset() {
   options_snapshot = ArchiveOption{};
   _current_stream = nullptr;
   _current_archive = nullptr;
-  _cached_hierarchy.reset();
 }
 
 bool ArchiveStackCursor::descend() {
-  ensure_stream_created();
   if (!_current_stream) {
     throw std::logic_error("current stream is empty");
   }
@@ -206,7 +203,6 @@ bool ArchiveStackCursor::descend() {
   auto archive_ptr = std::make_shared<StreamArchive>(std::move(stream), options_snapshot);
   _current_archive = archive_ptr;
   _current_stream = nullptr;
-  _cached_hierarchy.reset();
   return true;
 }
 
@@ -221,30 +217,28 @@ bool ArchiveStackCursor::ascend() {
   } else {
     _current_stream = nullptr;
   }
-  _cached_hierarchy.reset();
 
   return true;
 }
 
 bool ArchiveStackCursor::next() {
-  internal::ScopeProfile p("Cursor::next");
   StreamArchive *archive = current_archive();
   if (!archive) {
     return false;
   }
 
   _current_stream = nullptr;
-  _cached_hierarchy.reset();
 
   while (true) {
     if (!archive->skip_to_next_header()) {
       return false;
     }
-    if (archive->current_entryname_ptr && *archive->current_entryname_ptr != '\0') {
+    if (!archive->current_entryname.empty()) {
       break;
     }
   }
 
+  _current_stream = create_stream(current_entry_hierarchy());
   return true;
 }
 
@@ -289,7 +283,6 @@ ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
     return archive->read_current(buff, len);
   }
 
-  ensure_stream_created();
   if (_current_stream) {
     return _current_stream->read(buff, len);
   }
@@ -300,57 +293,20 @@ StreamArchive *ArchiveStackCursor::current_archive() {
   return _current_archive.get();
 }
 
-const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
-  if (_cached_hierarchy) {
-    return *_cached_hierarchy;
-  }
-
+PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
   if (depth() == 0 || (!_current_stream && !_current_archive)) {
-    static const PathHierarchy empty;
-    return empty;
+    return {};
   }
 
   if (StreamArchive *archive = current_archive()) {
     PathHierarchy path = archive->source_hierarchy();
-    if (archive->current_entryname_ptr) {
-      append_single(path, archive->current_entryname_ptr);
+    if (!archive->current_entryname.empty()) {
+      append_single(path, archive->current_entryname);
     }
-    _cached_hierarchy = std::move(path);
-    return *_cached_hierarchy;
+    return path;
   }
 
-  if (_current_stream) {
-    _cached_hierarchy = _current_stream->source_hierarchy();
-    return *_cached_hierarchy;
-  }
-
-  static const PathHierarchy empty;
-  return empty;
-}
-
-void ArchiveStackCursor::consume_current_entry_hierarchy(PathHierarchy &dest) {
-  internal::ScopeProfile p("Cursor::consume_hierarchy");
-  StreamArchive *archive = current_archive();
-  if (!archive) {
-    dest.clear();
-    return;
-  }
-
-  if (_cached_hierarchy.has_value()) {
-    dest = std::move(*_cached_hierarchy);
-    _cached_hierarchy.reset();
-    return;
-  }
-
-  if (_current_archive) {
-    dest = _current_archive->get_stream()->source_hierarchy();
-  } else {
-    dest.clear();
-  }
-
-  if (archive->current_entryname_ptr) {
-    dest.emplace_back(archive->current_entryname_ptr);
-  }
+  return _current_stream->source_hierarchy();
 }
 
 std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarchy &hierarchy) {
@@ -363,12 +319,6 @@ std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarc
     return std::make_shared<SystemFileStream>(hierarchy);
   }
   return std::make_shared<EntryPayloadStream>(_current_archive, hierarchy);
-}
-
-void ArchiveStackCursor::ensure_stream_created() {
-  if (!_current_stream) {
-    _current_stream = create_stream(current_entry_hierarchy());
-  }
 }
 
 } // namespace archive_r

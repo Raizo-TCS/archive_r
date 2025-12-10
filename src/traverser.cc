@@ -2,7 +2,6 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/traverser.h"
-#include "simple_profiler.h"
 #include "archive_r/entry.h"
 #include "archive_r/path_hierarchy.h"
 #include "archive_r/path_hierarchy_utils.h"
@@ -11,7 +10,6 @@
 #include "archive_type.h"
 #include "entry_fault_error.h"
 #include "system_file_stream.h"
-#include "simple_profiler.h"
 #include <filesystem>
 #include <memory>
 #include <stdexcept>
@@ -97,12 +95,7 @@ public:
       request_descend_into_archive = false;
       attempt_descend_into_root(_current_entry->path_hierarchy());
     } 
-    
-    internal::ScopeProfile p("Traverser::advance");
-    {
-      internal::ScopeProfile p2("Traverser::reset_entry");
-      _current_entry.reset();
-    }
+    _current_entry.reset();
 
     if (fetch_from_archive(request_descend_into_archive)) {
       return;
@@ -137,7 +130,6 @@ public:
 
 private:
   std::shared_ptr<ArchiveStackOrchestrator> ensure_shared_orchestrator() {
-    internal::ScopeProfile p("Traverser::ensure_orchestrator");
     if (!_shared_orchestrator) {
       _shared_orchestrator = std::make_shared<ArchiveStackOrchestrator>(_archive_options);
     }
@@ -153,7 +145,6 @@ private:
   }
 
   bool fetch_from_directory() {
-    internal::ScopeProfile p("Traverser::fetch_from_directory");
     if (_directory_iterator == _directory_end) {
       return false;
     }
@@ -167,18 +158,14 @@ private:
   }
 
   bool fetch_from_archive(bool request_descend_into_archive) {
-    internal::ScopeProfile p("Traverser::fetch_from_archive");
     if (!archive_active()) {
       return false;
     }
-    
     ArchiveStackOrchestrator &orchestrator = *ensure_shared_orchestrator();
 
     try {
       if (orchestrator.advance(request_descend_into_archive)) {
-        PathHierarchy h;
-        orchestrator.consume_current_entry_hierarchy(h);
-        set_current_entry(std::move(h));
+        set_current_entry(orchestrator.current_entry_hierarchy());
         return true;
       }
     } catch (const EntryFaultError &error) {
@@ -189,7 +176,6 @@ private:
   }
 
   bool advance_to_next_root() {
-    internal::ScopeProfile p("Traverser::advance_to_next_root");
     if (_current_path_index >= _paths.size()) {
       return false;
     }
@@ -210,7 +196,6 @@ private:
   }
 
   bool descend_pending_multi_volumes() {
-    internal::ScopeProfile p("Traverser::descend_pending_multi_volumes");
     auto orchestrator = ensure_shared_orchestrator();
     try {
       if (orchestrator->descend_pending_multi_volumes()) {
@@ -234,7 +219,6 @@ private:
   }
 
   void set_current_entry(PathHierarchy hierarchy) {
-    internal::ScopeProfile p("Traverser::set_current_entry");
     _current_entry = Entry::create(std::move(hierarchy), ensure_shared_orchestrator(), _default_descent);
   }
 
