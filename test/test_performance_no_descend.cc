@@ -78,6 +78,10 @@ bool iterate_with_raw_libarchive(const std::string &path, std::size_t &entry_cou
             break;
         }
 
+        // Access pathname to match archive_r behavior (fair comparison)
+        volatile const char* p = archive_entry_pathname(entry);
+        (void)p;
+
         if (header_result == ARCHIVE_WARN) {
             std::cerr << "libarchive warning: " << archive_error_string(handle.get()) << std::endl;
         } else if (header_result != ARCHIVE_OK) {
