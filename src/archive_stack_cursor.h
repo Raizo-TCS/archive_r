@@ -31,6 +31,9 @@ public:
   void rewind() override;
 
   PathHierarchy source_hierarchy() const;
+  std::shared_ptr<StreamArchive> parent_archive() const;
+
+  std::shared_ptr<IDataStream> get_stream() const { return _stream; }
 
 private:
   static la_ssize_t read_callback_bridge(struct archive *a, void *client_data, const void **buff);
@@ -75,7 +78,7 @@ struct ArchiveStackCursor {
 
   void configure(const ArchiveOption &options);
   void reset();
-  bool has_stream() const { return !stream_stack.empty(); }
+  bool has_stream() const { return _current_stream != nullptr; }
 
   bool descend();
   bool ascend();
@@ -83,7 +86,16 @@ struct ArchiveStackCursor {
   bool synchronize_to_hierarchy(const PathHierarchy &hierarchy);
   ssize_t read(void *buffer, size_t len);
 
-  size_t depth() const { return stream_stack.size(); }
+  size_t depth() const {
+    size_t d = 0;
+    auto a = _current_archive;
+    while (a) {
+      d++;
+      a = a->parent_archive();
+    }
+    return d;
+  }
+
   StreamArchive *current_archive();
 
   PathHierarchy current_entry_hierarchy();
@@ -91,7 +103,10 @@ struct ArchiveStackCursor {
   std::shared_ptr<IDataStream> create_stream(const PathHierarchy &hierarchy);
 
   ArchiveOption options_snapshot;
-  std::vector<std::shared_ptr<IDataStream>> stream_stack;
+
+private:
+  std::shared_ptr<IDataStream> _current_stream;
+  std::shared_ptr<StreamArchive> _current_archive;
 };
 
 } // namespace archive_r

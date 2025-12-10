@@ -60,6 +60,11 @@ void StreamArchive::rewind() {
 
 PathHierarchy StreamArchive::source_hierarchy() const { return _stream->source_hierarchy(); }
 
+std::shared_ptr<StreamArchive> StreamArchive::parent_archive() const {
+  auto entry_stream = std::dynamic_pointer_cast<EntryPayloadStream>(_stream);
+  return entry_stream ? entry_stream->parent_archive() : nullptr;
+}
+
 la_ssize_t StreamArchive::read_callback_bridge(struct archive *a, void *client_data, const void **buff) {
   auto *archive = static_cast<StreamArchive *>(client_data);
 
@@ -170,7 +175,8 @@ int64_t EntryPayloadStream::size_of_single_part(const PathHierarchy &single_part
 
 ArchiveStackCursor::ArchiveStackCursor()
     : options_snapshot()
-    , stream_stack() {}
+    , _current_stream(nullptr)
+    , _current_archive(nullptr) {}
 
 void ArchiveStackCursor::configure(const ArchiveOption &options) {
   options_snapshot = options;
@@ -178,15 +184,16 @@ void ArchiveStackCursor::configure(const ArchiveOption &options) {
 
 void ArchiveStackCursor::reset() {
   options_snapshot = ArchiveOption{};
-  stream_stack.clear();
+  _current_stream = nullptr;
+  _current_archive = nullptr;
 }
 
 bool ArchiveStackCursor::descend() {
-  if (stream_stack.empty()) {
-    throw std::logic_error("stream stack is empty");
+  if (!_current_stream) {
+    throw std::logic_error("current stream is empty");
   }
 
-  auto stream = stream_stack.back();
+  auto stream = _current_stream;
 
   if (auto *archive = current_archive()) {
     if (stream && !archive->current_entry_content_ready()) {
@@ -196,17 +203,22 @@ bool ArchiveStackCursor::descend() {
 
   PathHierarchy dummy_hierarchy = stream->source_hierarchy();
   auto archive_ptr = std::make_shared<StreamArchive>(std::move(stream), options_snapshot);
-  append_single(dummy_hierarchy, std::string{});
-  stream_stack.emplace_back(std::make_shared<EntryPayloadStream>(archive_ptr, std::move(dummy_hierarchy)));
+  _current_archive = archive_ptr;
+  _current_stream = nullptr;
   return true;
 }
 
 bool ArchiveStackCursor::ascend() {
-  if (stream_stack.size() <= 0) {
+  if (depth() <= 0) {
     return false;
   }
 
-  stream_stack.pop_back();
+  if (_current_archive) {
+    _current_stream = _current_archive->get_stream();
+    _current_archive = _current_archive->parent_archive();
+  } else {
+    _current_stream = nullptr;
+  }
 
   return true;
 }
@@ -225,7 +237,7 @@ bool ArchiveStackCursor::next() {
       break;
     }
   }
-  stream_stack.back() = create_stream(current_entry_hierarchy());
+  _current_stream = create_stream(current_entry_hierarchy());
   return true;
 }
 
@@ -233,33 +245,32 @@ bool ArchiveStackCursor::synchronize_to_hierarchy(const PathHierarchy &target_hi
   if (target_hierarchy.empty()) {
     throw_entry_fault("target hierarchy cannot be empty", {});
   }
- 
-  const size_t last_depth = target_hierarchy.size() - 1;
-  if (stream_stack.size() < target_hierarchy.size()) {
-    stream_stack.resize(target_hierarchy.size());
-  }
-  for (size_t depth = 0; depth < target_hierarchy.size(); ++depth) {
-    auto prefix = pathhierarchy_prefix_until(target_hierarchy, depth);
-    auto stream = stream_stack[depth];
 
-    // Reuse the existing stream when it already matches this prefix.
-    if (stream && hierarchies_equal(stream->source_hierarchy(), prefix)) {
-      continue;
+  // 1. Ascend until we find a common ancestor
+  while (depth() > 0) {
+    auto current_h = _current_archive->source_hierarchy();
+    if (current_h.size() <= target_hierarchy.size() &&
+        hierarchies_equal(current_h, pathhierarchy_prefix_until(target_hierarchy, current_h.size() - 1))) {
+      break;
     }
-    // Shrink the stack to the current depth before creating a fresh stream.
-    stream_stack.resize(depth+1);
-    stream = create_stream(prefix);
-    stream_stack.back() = stream;
-    stream->rewind();
- 
-    if (depth == last_depth) {
-      return true;
-    }
-    // Descend into the archive for the next level of the hierarchy.
-    descend();
+    ascend();
   }
-  
-   return true;
+
+  // 2. Descend to target
+  for (size_t d = depth(); d < target_hierarchy.size(); ++d) {
+    auto prefix = pathhierarchy_prefix_until(target_hierarchy, d);
+
+    if (!_current_stream || !hierarchies_equal(_current_stream->source_hierarchy(), prefix)) {
+      _current_stream = create_stream(prefix);
+      _current_stream->rewind();
+    }
+
+    if (d < target_hierarchy.size() - 1) {
+      descend();
+    }
+  }
+
+  return true;
 }
 
 ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
@@ -267,38 +278,22 @@ ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
     return 0;
   }
 
-  if (stream_stack.empty()) {
-    throw_entry_fault("Stream stack is empty", {});
+  if (StreamArchive *archive = current_archive()) {
+    return archive->read_current(buff, len);
   }
 
-  auto stream = stream_stack.back();
-  ssize_t bytes = 0;
-  bytes = stream->read(buff, len);
-
-  if (bytes < 0) {
-    const std::string message = "Failed to read from active stream";
-    throw_entry_fault(message, current_entry_hierarchy());
+  if (_current_stream) {
+    return _current_stream->read(buff, len);
   }
-
-  return bytes;
+  return 0;
 }
 
 StreamArchive *ArchiveStackCursor::current_archive() {
-  if (stream_stack.size() <= 0) {
-    return nullptr;
-  }
-
-  const auto stream = std::dynamic_pointer_cast<EntryPayloadStream>(stream_stack.back());
-  if (!stream) {
-    return nullptr;
-  }
-
-  auto parent_archive = stream->parent_archive();
-  return parent_archive ? parent_archive.get() : nullptr;
+  return _current_archive.get();
 }
 
 PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
-  if (stream_stack.empty() || !stream_stack.front()) {
+  if (depth() == 0 || (!_current_stream && !_current_archive)) {
     return {};
   }
 
@@ -310,7 +305,7 @@ PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
     return path;
   }
 
-  return stream_stack.front()->source_hierarchy();
+  return _current_stream->source_hierarchy();
 }
 
 std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarchy &hierarchy) {
@@ -322,9 +317,7 @@ std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarc
     }
     return std::make_shared<SystemFileStream>(hierarchy);
   }
-  auto stream = std::dynamic_pointer_cast<EntryPayloadStream>(stream_stack.back());
-
-  return std::make_shared<EntryPayloadStream>(stream->parent_archive(), hierarchy);
+  return std::make_shared<EntryPayloadStream>(_current_archive, hierarchy);
 }
 
 } // namespace archive_r
