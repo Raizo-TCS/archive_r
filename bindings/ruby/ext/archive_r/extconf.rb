@@ -46,6 +46,7 @@ end
 archive_r_include = File.join(archive_r_root, 'include')
 archive_r_src = File.join(archive_r_root, 'src')
 archive_r_lib_dir = File.join(archive_r_root, 'build')
+archive_r_local_libs = File.expand_path('.libs', __dir__)
 glue_source = File.join(__dir__, 'archive_r_ext.cc')
 
 # Ensure make can locate vendored sources via VPATH
@@ -58,6 +59,11 @@ $VPATH << archive_r_src
 # Add include paths
 $INCFLAGS << " -I#{archive_r_include}"
 $INCFLAGS << " -I#{archive_r_src}"
+$LIBPATH.unshift(archive_r_local_libs)
+
+unless Gem.win_platform?
+  $LDFLAGS << ' -Wl,-rpath,$ORIGIN/.libs'
+end
 
 # C++17 standard
 $CXXFLAGS << " -std=c++17"
@@ -82,31 +88,30 @@ if ENV['LIBARCHIVE_LIBRARY_DIRS']
 end
 
 # Check for libarchive
-unless have_library('archive')
-  # Try alternative names for Windows/Static builds
-  unless have_library('archive_static') || have_library('libarchive')
-    abort "libarchive is required but not found"
-  end
+unless have_library('archive') || have_library('libarchive')
+  abort "libarchive is required but not found"
 end
 
-# Try to link with pre-built static library first
-prebuilt_lib = File.join(archive_r_lib_dir, 'libarchive_r_core.a')
-prebuilt_lib_win = File.join(archive_r_lib_dir, 'archive_r_core.lib')
-prebuilt_lib_win_release = File.join(archive_r_lib_dir, 'Release', 'archive_r_core.lib')
+shared_candidates = [
+  File.join(archive_r_lib_dir, 'libarchive_r_core.so'),
+  File.join(archive_r_lib_dir, 'libarchive_r_core.dylib'),
+  File.join(archive_r_lib_dir, 'archive_r_core.dll'),
+  File.join(archive_r_lib_dir, 'archive_r_core.lib'),
+  File.join(archive_r_lib_dir, 'Release', 'archive_r_core.dll'),
+  File.join(archive_r_lib_dir, 'Release', 'archive_r_core.lib'),
+  File.join(archive_r_local_libs, 'libarchive_r_core.so'),
+  File.join(archive_r_local_libs, 'libarchive_r_core.dylib'),
+  File.join(archive_r_local_libs, 'archive_r_core.dll'),
+]
 
-if File.exist?(prebuilt_lib)
-  $LOCAL_LIBS << " #{prebuilt_lib}"
-  puts "Using pre-built archive_r core library (Unix style)"
-elsif File.exist?(prebuilt_lib_win)
-  $LOCAL_LIBS << " \"#{prebuilt_lib_win}\""
-  puts "Using pre-built archive_r core library (Windows style)"
-elsif File.exist?(prebuilt_lib_win_release)
-  $LOCAL_LIBS << " \"#{prebuilt_lib_win_release}\""
-  puts "Using pre-built archive_r core library (Windows Release style)"
+found_shared = shared_candidates.find { |path| File.exist?(path) }
+
+if found_shared
+  $LIBPATH.unshift(File.dirname(found_shared))
+  $libs = "-larchive_r_core #{$libs}"
+  puts "Using pre-built shared archive_r core: #{found_shared}"
 else
-  # Build from source as fallback (ensure the Ruby glue source is compiled too)
-  puts "Pre-built library not found, will build from source"
-
+  puts "Pre-built shared library not found, will build from source"
   srcs = [glue_source] + Dir.glob(File.join(archive_r_src, '*.cc'))
   $srcs = srcs
 end

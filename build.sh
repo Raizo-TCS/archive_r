@@ -11,12 +11,20 @@ set -e
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$ROOT_DIR/build"
 
-# Detect Python interpreter
+# Detect Python interpreter (prefer /opt/python/<tag> when PYTHON_TAG is given, e.g., manylinux)
 PYTHON_EXEC=""
-if command -v python3 >/dev/null 2>&1; then
+if [[ -n "${PYTHON_TAG:-}" && -x "/opt/python/${PYTHON_TAG}/bin/python" ]]; then
+    PYTHON_EXEC="/opt/python/${PYTHON_TAG}/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
     PYTHON_EXEC="python3"
 elif command -v python >/dev/null 2>&1; then
     PYTHON_EXEC="python"
+fi
+
+# Extra pip flags for externally managed Python installations (e.g., Debian PEP 668)
+PIP_INSTALL_EXTRA=()
+if [ -n "$PYTHON_EXEC" ] && "$PYTHON_EXEC" -m pip help install 2>/dev/null | grep -q -- "--break-system-packages"; then
+    PIP_INSTALL_EXTRA+=(--break-system-packages)
 fi
 
 # Color codes for output
@@ -25,6 +33,11 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Default macOS deployment target to keep wheel compatibility
+if [[ "$(uname -s)" == "Darwin" && -z "${MACOSX_DEPLOYMENT_TARGET:-}" ]]; then
+    export MACOSX_DEPLOYMENT_TARGET="11.0"
+fi
 
 # === Utility Functions ===
 log_info() {
@@ -41,6 +54,27 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}✗${NC} $1"
+}
+
+pip_install_with_retry() {
+    local attempts=${1:-3}
+    shift
+
+    local n=1
+    while true; do
+        if "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" "$@"; then
+            return 0
+        fi
+
+        if (( n >= attempts )); then
+            log_error "pip install failed after ${attempts} attempts: $*"
+            return 1
+        fi
+
+        log_warning "pip install failed (attempt ${n}/${attempts}); retrying in 5s..."
+        sleep 5
+        n=$((n+1))
+    done
 }
 
 # archive_r Build Script
@@ -341,15 +375,35 @@ if [ "$BINDINGS_ONLY" = false ]; then
     lib_path=""
     exe_path=""
 
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
+    if [ -f "$BUILD_DIR/libarchive_r_core.so" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.so"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.dylib" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.dylib"
+    elif [ -f "$BUILD_DIR/archive_r_core.dll" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/archive_r_core.dll"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.dll" ]; then
+        # MinGW produces a lib-prefixed DLL
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.dll"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.a" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/libarchive_r_core.a"
+    elif [ -f "$BUILD_DIR/libarchive_r_core.dll.a" ]; then
+        # Import library produced alongside the DLL
+        lib_found=true
+        lib_path="$BUILD_DIR/libarchive_r_core.dll.a"
     elif [ -f "$BUILD_DIR/archive_r_core.lib" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/archive_r_core.lib"
     elif [ -f "$BUILD_DIR/Release/archive_r_core.lib" ]; then
         lib_found=true
         lib_path="$BUILD_DIR/Release/archive_r_core.lib"
+    elif [ -f "$BUILD_DIR/Release/libarchive_r_core.dll" ]; then
+        lib_found=true
+        lib_path="$BUILD_DIR/Release/libarchive_r_core.dll"
     fi
 
     if [ -f "$BUILD_DIR/find_and_traverse" ]; then
@@ -358,9 +412,18 @@ if [ "$BINDINGS_ONLY" = false ]; then
     elif [ -f "$BUILD_DIR/find_and_traverse.exe" ]; then
         exe_found=true
         exe_path="$BUILD_DIR/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/examples/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/examples/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/examples/find_and_traverse" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/examples/find_and_traverse"
     elif [ -f "$BUILD_DIR/Release/find_and_traverse.exe" ]; then
         exe_found=true
         exe_path="$BUILD_DIR/Release/find_and_traverse.exe"
+    elif [ -f "$BUILD_DIR/Release/examples/find_and_traverse.exe" ]; then
+        exe_found=true
+        exe_path="$BUILD_DIR/Release/examples/find_and_traverse.exe"
     fi
 
     if [ "$lib_found" = true ] && [ "$exe_found" = true ]; then
@@ -372,12 +435,21 @@ if [ "$BINDINGS_ONLY" = false ]; then
     else
         log_error "Core build failed - expected files not found"
         log_error "Checked locations:"
+        log_error "  $BUILD_DIR/libarchive_r_core.so"
+        log_error "  $BUILD_DIR/libarchive_r_core.dylib"
+        log_error "  $BUILD_DIR/archive_r_core.dll"
+        log_error "  $BUILD_DIR/libarchive_r_core.dll"
         log_error "  $BUILD_DIR/libarchive_r_core.a"
+        log_error "  $BUILD_DIR/libarchive_r_core.dll.a"
         log_error "  $BUILD_DIR/archive_r_core.lib"
         log_error "  $BUILD_DIR/Release/archive_r_core.lib"
+        log_error "  $BUILD_DIR/Release/libarchive_r_core.dll"
         log_error "  $BUILD_DIR/find_and_traverse"
         log_error "  $BUILD_DIR/find_and_traverse.exe"
+        log_error "  $BUILD_DIR/examples/find_and_traverse"
+        log_error "  $BUILD_DIR/examples/find_and_traverse.exe"
         log_error "  $BUILD_DIR/Release/find_and_traverse.exe"
+        log_error "  $BUILD_DIR/Release/examples/find_and_traverse.exe"
         exit 1
     fi
 
@@ -417,7 +489,16 @@ build_ruby_binding() {
     # Build
     make
 
-    if [ ! -f "archive_r.so" ]; then
+    local built_ext=""
+    if [ -f "archive_r.so" ]; then
+        built_ext="archive_r.so"
+    elif [ -f "archive_r.bundle" ]; then
+        built_ext="archive_r.bundle"
+    elif [ -f "archive_r.dll" ]; then
+        built_ext="archive_r.dll"
+    fi
+
+    if [ -z "$built_ext" ]; then
         cd "$ROOT_DIR"
         log_error "Ruby binding build failed"
         return 1
@@ -425,10 +506,10 @@ build_ruby_binding() {
 
     local ruby_output_dir="$BUILD_DIR/bindings/ruby"
     mkdir -p "$ruby_output_dir"
-    cp "archive_r.so" "$ruby_output_dir/"
+    cp "$built_ext" "$ruby_output_dir/"
 
     log_success "Ruby binding built successfully"
-    log_success "  Extension: $ruby_output_dir/archive_r.so"
+    log_success "  Extension: $ruby_output_dir/$built_ext"
 
     cd "$ROOT_DIR"
     purge_ruby_binding_artifacts
@@ -502,6 +583,12 @@ build_python_binding() {
     
     if [ -z "$PYTHON_EXEC" ]; then
         log_warning "Python not found - skipping Python binding"
+        return 1
+    fi
+
+    # Ensure setuptools/wheel/pybind11 are present for setup.py builds
+    if ! "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" --upgrade pip setuptools wheel pybind11 >/dev/null 2>&1; then
+        log_error "Failed to prepare Python build dependencies via pip"
         return 1
     fi
     
@@ -615,13 +702,9 @@ package_python_binding() {
         return 1
     fi
 
-    if ! "$PYTHON_EXEC" -c "import build" >/dev/null 2>&1; then
-        log_error "Python module 'build' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade build"
-        return 1
-    fi
-
-    if ! "$PYTHON_EXEC" -c "import twine" >/dev/null 2>&1; then
-        log_error "Python module 'twine' is required. Install it via: $PYTHON_EXEC -m pip install --upgrade twine"
+    # Ensure build toolchain is available in manylinux images
+    if ! pip_install_with_retry 3 --upgrade pip setuptools wheel build twine; then
+        log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
     fi
 

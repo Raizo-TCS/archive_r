@@ -10,7 +10,6 @@
 #include "archive_type.h"
 #include "entry_fault_error.h"
 #include "system_file_stream.h"
-#include <iostream>
 #include <filesystem>
 #include <memory>
 #include <stdexcept>

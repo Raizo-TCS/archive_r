@@ -21,12 +21,26 @@ detect_timeout_cmd() {
 # Helper to find executable (Unix or Windows/MSVC)
 find_executable() {
     local name="$1"
-    if [ -f "$BUILD_DIR/$name" ]; then
+    if [ -x "$BUILD_DIR/$name.exe" ]; then
+        echo "$BUILD_DIR/$name.exe"
+    elif [ -x "$BUILD_DIR/core/$name.exe" ]; then
+        echo "$BUILD_DIR/core/$name.exe"
+    elif [ -x "$BUILD_DIR/Release/$name.exe" ]; then
+        echo "$BUILD_DIR/Release/$name.exe"
+    elif [ -x "$BUILD_DIR/core/Release/$name.exe" ]; then
+        echo "$BUILD_DIR/core/Release/$name.exe"
+    elif [ -x "$BUILD_DIR/$name" ]; then
         echo "$BUILD_DIR/$name"
     elif [ -f "$BUILD_DIR/$name.exe" ]; then
         echo "$BUILD_DIR/$name.exe"
+    elif [ -f "$BUILD_DIR/core/$name.exe" ]; then
+        echo "$BUILD_DIR/core/$name.exe"
     elif [ -f "$BUILD_DIR/Release/$name.exe" ]; then
         echo "$BUILD_DIR/Release/$name.exe"
+    elif [ -f "$BUILD_DIR/core/Release/$name.exe" ]; then
+        echo "$BUILD_DIR/core/Release/$name.exe"
+    elif [ -f "$BUILD_DIR/$name" ]; then
+        echo "$BUILD_DIR/$name"
     else
         echo ""
     fi
@@ -41,6 +55,7 @@ EXECUTABLE=$(find_executable "find_and_traverse")
 if [ -z "$EXECUTABLE" ]; then
     EXECUTABLE="$BUILD_DIR/find_and_traverse" # Fallback for error message
 fi
+echo "Using test executable: $EXECUTABLE"
 TIMEOUT=20
 WRAPPER_TIMEOUT_DEFAULT=600
 WRAPPER_TIMEOUT="${RUN_TESTS_WRAPPER_TIMEOUT:-$WRAPPER_TIMEOUT_DEFAULT}"
@@ -49,11 +64,6 @@ PERF_RAW_AVG=""
 PERF_TRAVERSER_AVG=""
 PERF_RATIO=""
 PERF_ARCHIVE_PATH="$TEST_DATA_DIR/test_perf.zip"
-RUBY_GEM_HOME="$BUILD_DIR/ruby_gem_home"
-RUBY_TEST_ENV=()
-LOG_DIR="$BUILD_DIR/logs"
-RUBY_GEM_INSTALL_LOG="$LOG_DIR/ruby_gem_install.log"
-
 # Color codes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -173,106 +183,6 @@ log_test_header() {
     echo -e "${CYAN}========================================${NC}"
     echo -e "${CYAN}  TEST: $1${NC}"
     echo -e "${CYAN}========================================${NC}"
-}
-
-prepare_ruby_gem_env() {
-    RUBY_TEST_ENV=()
-
-    if ! command -v ruby >/dev/null 2>&1; then
-        log_warning "Ruby not found - skipping Ruby gem setup"
-        return 1
-    fi
-
-    if ! command -v gem >/dev/null 2>&1; then
-        log_error "RubyGems (gem) command not found"
-        return 1
-    fi
-
-    local gemspec="$ROOT_DIR/bindings/ruby/archive_r.gemspec"
-    if [ ! -f "$gemspec" ]; then
-        log_error "Ruby gemspec not found: $gemspec"
-        return 1
-    fi
-
-    local gem_cache_dir="$BUILD_DIR/bindings/ruby"
-    mkdir -p "$gem_cache_dir"
-
-    local gem_name
-    gem_name=$(ruby -rrubygems -e "spec = Gem::Specification.load('$gemspec'); puts spec.name" 2>/dev/null || echo "archive_r")
-    gem_name=$(echo "$gem_name" | tr -d '\r')
-
-    local gem_file
-    # Use portable find (avoid -printf)
-    # Try to find gem with exact name first, then fallback to broader search
-    gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}-*.gem" | sort | tail -n 1)
-    
-    if [ -z "$gem_file" ]; then
-        # Fallback: try finding any gem starting with the name (handling potential underscore/hyphen mismatch)
-        gem_file=$(find "$gem_cache_dir" -maxdepth 1 -type f -name "${gem_name}*.gem" | sort | tail -n 1)
-    fi
-    
-    gem_file=$(basename "$gem_file")
-
-    if [ -z "$gem_file" ] || [ ! -f "$gem_cache_dir/$gem_file" ]; then
-        log_error "Ruby gem not found in $gem_cache_dir. Please run ./build.sh --with-ruby first."
-        return 1
-    fi
-
-    rm -rf "$RUBY_GEM_HOME"
-    mkdir -p "$RUBY_GEM_HOME"
-    mkdir -p "$LOG_DIR"
-
-    local path_sep
-    path_sep=$(ruby -e 'print File::PATH_SEPARATOR')
-
-    local ruby_gem_home_env="$RUBY_GEM_HOME"
-    # Convert to Windows path format if needed (for MinGW/MSYS2 environments)
-    if [ "$path_sep" = ";" ] && command -v cygpath >/dev/null 2>&1; then
-        ruby_gem_home_env=$(cygpath -m "$RUBY_GEM_HOME")
-    fi
-
-    local ruby_system_paths
-    ruby_system_paths="$(ruby -rrubygems -e "puts Gem.path.join('$path_sep')" 2>/dev/null || true)"
-
-    local ruby_gem_path="$ruby_gem_home_env"
-    if [ -n "$ruby_system_paths" ]; then
-        ruby_gem_path="${ruby_gem_path}${path_sep}${ruby_system_paths}"
-    fi
-
-    local install_env=("GEM_HOME=$ruby_gem_home_env" "GEM_PATH=$ruby_gem_path")
-    
-    local core_root="$BUILD_DIR"
-    if [ "$path_sep" = ";" ] && command -v cygpath >/dev/null 2>&1; then
-        core_root=$(cygpath -m "$BUILD_DIR")
-    fi
-
-    if [ -f "$BUILD_DIR/libarchive_r_core.a" ] || [ -f "$BUILD_DIR/libarchive_r_core.lib" ] || [ -f "$BUILD_DIR/Release/libarchive_r_core.lib" ]; then
-        install_env+=("ARCHIVE_R_CORE_ROOT=$core_root")
-    fi
-
-    # Pass libarchive configuration to gem install
-    if [ -n "$LIBARCHIVE_ROOT" ]; then
-        install_env+=("LIBARCHIVE_ROOT=$LIBARCHIVE_ROOT")
-    fi
-    if [ -n "$LIBARCHIVE_INCLUDE_DIRS" ]; then
-        install_env+=("LIBARCHIVE_INCLUDE_DIRS=$LIBARCHIVE_INCLUDE_DIRS")
-    fi
-    if [ -n "$LIBARCHIVE_LIBRARY_DIRS" ]; then
-        install_env+=("LIBARCHIVE_LIBRARY_DIRS=$LIBARCHIVE_LIBRARY_DIRS")
-    fi
-
-    : > "$RUBY_GEM_INSTALL_LOG"
-    log_info "Installing Ruby gem from $gem_cache_dir/$gem_file (log: $RUBY_GEM_INSTALL_LOG)"
-
-    if ! env "${install_env[@]}" \
-        gem install --local --no-document --install-dir "$RUBY_GEM_HOME" "$gem_cache_dir/$gem_file" \
-        2>&1 | tee "$RUBY_GEM_INSTALL_LOG"; then
-        log_error "Failed to install Ruby gem for tests"
-        return 1
-    fi
-
-    RUBY_TEST_ENV=("GEM_HOME=$ruby_gem_home_env" "GEM_PATH=$ruby_gem_path")
-    return 0
 }
 
 # === Test Function ===
@@ -808,58 +718,7 @@ if [ -n "$TEST_EXE" ]; then
 fi
 
 # === Binding Tests ===
-log_info "Running Binding tests..."
-
-# Ruby Binding Tests (via packaged gem)
-if [ -f "$ROOT_DIR/bindings/ruby/archive_r.gemspec" ]; then
-    if prepare_ruby_gem_env; then
-        log_test_header "ruby_binding"
-        TESTS_RUN=$((TESTS_RUN + 1))
-
-        pushd "$ROOT_DIR/bindings/ruby" >/dev/null
-        if env "${RUBY_TEST_ENV[@]}" ruby test/test_traverser.rb > "$LOG_DIR/ruby_test.log" 2>&1; then
-            log_success "Test PASSED: ruby_binding"
-            TESTS_PASSED=$((TESTS_PASSED + 1))
-        else
-            log_error "Test FAILED: ruby_binding"
-            echo "--- Ruby Test Output ---"
-            cat "$LOG_DIR/ruby_test.log"
-            echo "------------------------"
-            TESTS_FAILED=$((TESTS_FAILED + 1))
-        fi
-        popd >/dev/null
-    else
-        log_info "Ruby gem setup unavailable - skipping Ruby tests"
-    fi
-else
-    log_info "Ruby binding sources not found - skipping Ruby tests"
-fi
-
-# Python Binding Tests
-if [ -d "$ROOT_DIR/bindings/python" ] && (ls "$ROOT_DIR/bindings/python"/*.so >/dev/null 2>&1 || ls "$ROOT_DIR/bindings/python"/*.pyd >/dev/null 2>&1); then
-    log_test_header "python_binding"
-    TESTS_RUN=$((TESTS_RUN + 1))
-    
-    cd "$ROOT_DIR/bindings/python"
-    python_cmd="python3"
-    if ! command -v python3 >/dev/null 2>&1; then
-        python_cmd="python"
-    fi
-    
-    if $python_cmd test/test_traverser.py > "$LOG_DIR/python_test.log" 2>&1; then
-        log_success "Test PASSED: python_binding"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-    else
-        log_error "Test FAILED: python_binding"
-        echo "--- Python Test Output ---"
-        cat "$LOG_DIR/python_test.log"
-        echo "--------------------------"
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-    fi
-    cd "$ROOT_DIR"
-else
-    log_info "Python binding not built - skipping Python tests"
-fi
+log_info "Binding tests moved to bindings/ruby/run_binding_tests.sh and bindings/python/run_binding_tests.sh"
 
 # === Summary ===
 echo ""

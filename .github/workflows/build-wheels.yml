@@ -4,13 +4,9 @@ on:
   workflow_dispatch:
   workflow_call:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
-  packages: read
+  packages: write
 
 jobs:
   build-manylinux-wheels:
@@ -18,19 +14,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - x86_64
-          - aarch64
-        python-tag:
-          - cp39-cp39
-          - cp310-cp310
-          - cp311-cp311
-          - cp312-cp312
+        platform: [x86_64, aarch64]
+        python-tag: [cp310-cp310, cp311-cp311, cp312-cp312, cp313-cp313, cp314-cp314]
     env:
-      LIBARCHIVE_VERSION: 3.7.4
+      LIBARCHIVE_VERSION: 3.7.5
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up QEMU
         if: matrix.platform == 'aarch64'
@@ -42,31 +31,49 @@ jobs:
           PLATFORM: ${{ matrix.platform }}
         run: |
           set -euo pipefail
+          retry_cmd() {
+            local attempts=$1
+            local delay=$2
+            shift 2
+            local n=1
+            while true; do
+              if "$@"; then
+                return 0
+              fi
+              if (( n >= attempts )); then
+                return 1
+              fi
+              echo "[retry ${n}/${attempts}] $* failed; sleeping ${delay}s" >&2
+              sleep "$delay"
+              n=$((n+1))
+            done
+          }
           HOST_UID="$(id -u)"
           HOST_GID="$(id -g)"
-          
+          OWNER_LOWER="${{ github.repository_owner }}"
+          OWNER_LOWER="${OWNER_LOWER,,}"
           if [[ "${PLATFORM}" == "aarch64" ]]; then
-            MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_aarch64:latest"
+            MANYLINUX_IMAGE="ghcr.io/${OWNER_LOWER}/archive_r/manylinux_2_28_aarch64_deps:latest"
+            DEPS_PREFIX="/opt/archive_r_deps"
+            DOCKER_PLATFORM_ARG="--platform linux/arm64"
+            BUILD_CMD="ARCHIVE_R_DEPS_PREFIX=${DEPS_PREFIX} bash bindings/python/tools/build-wheel-manylinux.sh"
           else
             MANYLINUX_IMAGE="quay.io/pypa/manylinux_2_28_x86_64:latest"
+            DEPS_PREFIX="/opt/archive_r_deps"
+            BUILD_CMD="bash bindings/python/tools/build-deps-manylinux.sh --prefix ${DEPS_PREFIX} && ARCHIVE_R_DEPS_PREFIX=${DEPS_PREFIX} bash bindings/python/tools/build-wheel-manylinux.sh"
           fi
-          
+          retry_cmd 3 5 docker pull "${MANYLINUX_IMAGE}" || true
           docker run --rm \
+            ${DOCKER_PLATFORM_ARG:-} \
             -e HOST_UID="${HOST_UID}" \
             -e HOST_GID="${HOST_GID}" \
             -e PYTHON_TAG="${PYTHON_TAG}" \
+            -e PLATFORM="${PLATFORM}" \
             -e LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION}" \
+            -e GITHUB_ENV="/tmp/github_env" \
             -v "${{ github.workspace }}:/io" \
             "${MANYLINUX_IMAGE}" \
-            /bin/bash -c "/io/.github/scripts/ci/build_manylinux_wheels.sh"
-
-      - name: List built wheels for ${{ matrix.python-tag }}
-        run: |
-          set -x
-          ls -al bindings/python
-          ls -al bindings/python/dist || true
-          find bindings/python/dist -maxdepth 2 -type f -name '*.whl' || true
-          find . -maxdepth 6 -type f -name '*.whl'
+            /bin/bash -c "cd /io && ${BUILD_CMD}"
 
       - name: Upload wheels for ${{ matrix.python-tag }} (${{ matrix.platform }})
         uses: actions/upload-artifact@v4
@@ -76,7 +83,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  build-macos-arch-wheels:
+  build-macos-wheels:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     env:
@@ -84,63 +91,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-13, macos-14]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        runner: [macos-15-intel, macos-15]
         include:
-          - runner: macos-13
+          - runner: macos-15-intel
             arch: x86_64
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
+          - runner: macos-15
+            arch: universal2
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install libarchive (Build from source)
-        run: |
-          set -euo pipefail
-          # Build libarchive and dependencies from source to ensure MACOSX_DEPLOYMENT_TARGET=11.0
-          ./.github/scripts/ci/build_macos_deps.sh
-          
-          LIBARCHIVE_ROOT="${PWD}/libs"
-          echo "LIBARCHIVE_ROOT=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
-          echo "CMAKE_PREFIX_PATH=${LIBARCHIVE_ROOT}" >>"$GITHUB_ENV"
-          echo "LDFLAGS=-L${LIBARCHIVE_ROOT}/lib" >>"$GITHUB_ENV"
-          echo "CPPFLAGS=-I${LIBARCHIVE_ROOT}/include" >>"$GITHUB_ENV"
-          echo "PKG_CONFIG_PATH=${LIBARCHIVE_ROOT}/lib/pkgconfig" >>"$GITHUB_ENV"
-          # Link statically against libarchive and its dependencies (zstd, lzma)
-          # We also include system libraries (z, bz2, iconv) that libarchive might use
-          echo "LIBARCHIVE_LIBRARIES=archive,zstd,lzma,z,bz2,iconv" >>"$GITHUB_ENV"
+      - name: Build dependencies (macOS)
+        run: bash bindings/python/tools/build-deps-macos.sh --prefix "$(pwd)/libs"
 
-      - name: Build and validate ${{ matrix.arch }} wheel
+      - name: Build wheel (macOS ${{ matrix.arch }})
         env:
-          ARCH_NAME: ${{ matrix.arch }}
           PY_VERSION: ${{ matrix.python-version }}
-        run: |
-          set -euo pipefail
-          cd bindings/python
-          python -m pip install --upgrade pip setuptools wheel pybind11 build delocate
-          # MACOSX_DEPLOYMENT_TARGET is set in job env
-          deployment_tag="${MACOSX_DEPLOYMENT_TARGET//./_}"
-          export ARCHFLAGS="-arch ${ARCH_NAME}"
-          plat_name="macosx_${deployment_tag}_${ARCH_NAME}"
-          target_dir="dist/macos-${ARCH_NAME}-${PY_VERSION}"
-          mkdir -p "$target_dir"
-          python -m pip wheel . -w "$target_dir" --no-deps --config-settings="--build-option=--plat-name=${plat_name}"
-          original_wheel=$(ls "$target_dir"/*.whl | head -n 1)
-          repair_dir=$(mktemp -d)
-          delocate-wheel -v -w "$repair_dir" "$original_wheel"
-          rm -f "$target_dir"/*.whl
-          mv "$repair_dir"/*.whl "$target_dir"/
-          repaired_wheel=$(ls "$target_dir"/*.whl | head -n 1)
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --no-index "$repaired_wheel"
-          python -c "import archive_r; print(f'${ARCH_NAME} validated {archive_r.__version__}')"
+          ARCH: ${{ matrix.arch }}
+        run: bash bindings/python/tools/build-wheel-macos.sh
 
       - name: Upload ${{ matrix.arch }} wheels
         uses: actions/upload-artifact@v4
@@ -150,69 +125,15 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  build-macos-universal-wheels:
-    runs-on: macos-14
-    needs: build-macos-arch-wheels
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Download arm64 wheel
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-wheels-arm64-py${{ matrix.python-version }}-${{ github.sha }}
-          path: bindings/python/dist/universal-input/arm64
-
-      - name: Download x86_64 wheel
-        uses: actions/download-artifact@v4
-        with:
-          name: macos-wheels-x86_64-py${{ matrix.python-version }}-${{ github.sha }}
-          path: bindings/python/dist/universal-input/x86_64
-
-      - name: Fuse wheels into universal2
-        env:
-          PY_VERSION: ${{ matrix.python-version }}
-        run: |
-          set -euo pipefail
-          cd bindings/python
-          python -m pip install --upgrade pip delocate wheel
-          arm_wheel=$(ls dist/universal-input/arm64/*.whl | head -n 1)
-          x86_wheel=$(ls dist/universal-input/x86_64/*.whl | head -n 1)
-          universal_dir="dist/macos-universal-${PY_VERSION}"
-          mkdir -p "$universal_dir"
-          delocate-merge -w "$universal_dir" "$arm_wheel" "$x86_wheel"
-          universal_wheel=$(ls "$universal_dir"/*.whl | head -n 1)
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --no-index "$universal_wheel"
-          python -c "import archive_r; print(f'universal validated {archive_r.__version__}')"
-
-      - name: Upload universal macOS wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-wheels-universal-py${{ matrix.python-version }}-${{ github.sha }}
-          path: bindings/python/dist/macos-universal-${{ matrix.python-version }}/*.whl
-          if-no-files-found: error
-          retention-days: 7
-
   build-windows-wheels:
     runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        arch: [x86_64]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -220,59 +141,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
-      - name: Install libarchive
+      - name: Install dependencies (MSVC)
         shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          Write-Host "Installing libarchive via vcpkg..."
-          # vcpkg is pre-installed on windows-2022 runner
-          vcpkg install libarchive:x64-windows
-          
-          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
-          if (-not $vcpkgRoot) { $vcpkgRoot = "C:\vcpkg" }
-          $prefix = "$vcpkgRoot\installed\x64-windows"
-          
-          if (-not (Test-Path $prefix)) {
-             throw "Failed to install libarchive: $prefix does not exist"
-          }
-          
-          $binPath = Join-Path $prefix 'bin'
-          $includePath = Join-Path $prefix 'include'
-          $libPath = Join-Path $prefix 'lib'
-          $pkgConfigPath = Join-Path $libPath 'pkgconfig'
-          
-          Write-Host "Setting environment variables..."
-          Add-Content -Path $env:GITHUB_ENV -Value "LIBARCHIVE_ROOT=$prefix" -Encoding utf8
-          Add-Content -Path $env:GITHUB_ENV -Value "CMAKE_PREFIX_PATH=$prefix" -Encoding utf8
-          Add-Content -Path $env:GITHUB_ENV -Value "CPPFLAGS=-I$includePath" -Encoding utf8
-          Add-Content -Path $env:GITHUB_ENV -Value "LDFLAGS=-L$libPath" -Encoding utf8
-          Add-Content -Path $env:GITHUB_ENV -Value "PKG_CONFIG_PATH=$pkgConfigPath" -Encoding utf8
-          Add-Content -Path $env:GITHUB_ENV -Value "PATH=$binPath;$env:PATH" -Encoding utf8
+        run: pwsh -File install-deps-msvc.ps1
 
-      - name: Build and repair Windows wheel
+      - name: Build wheel (MSVC ${{ matrix.arch }})
         shell: pwsh
-        env:
-          PY_VERSION: ${{ matrix.python-version }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          cd bindings\python
-          python -m pip install --upgrade pip setuptools wheel pybind11 build delvewheel
-          $targetDir = "dist\windows-${env:PY_VERSION}"
-          if (Test-Path $targetDir) { Remove-Item $targetDir -Recurse -Force }
-          New-Item -ItemType Directory -Path $targetDir | Out-Null
-          python -m pip wheel . -w $targetDir --no-deps
-          $original = Get-ChildItem $targetDir -Filter *.whl | Select-Object -First 1
-          delvewheel repair $original.FullName -w $targetDir --add-path "$env:LIBARCHIVE_ROOT\bin"
-          $repaired = Get-ChildItem $targetDir -Filter *.whl | Sort-Object LastWriteTime | Select-Object -Last 1
-          Get-ChildItem $targetDir -Filter *.whl | Where-Object { $_.FullName -ne $repaired.FullName } | Remove-Item -Force
-          python -m venv .venv
-          .\.venv\Scripts\pip install $repaired.FullName
-          .\.venv\Scripts\python -c "import archive_r; print(f'validated {archive_r.__version__}')"
+        run: pwsh -File bindings/python/tools/build-wheel-msvc.ps1 -PythonVersion "${{ matrix.python-version }}" -Arch ${{ matrix.arch }}
 
       - name: Upload Windows wheels
         uses: actions/upload-artifact@v4
         with:
-          name: windows-wheels-py${{ matrix.python-version }}-${{ github.sha }}
-          path: bindings/python/dist/windows-${{ matrix.python-version }}/*.whl
+          name: windows-wheels-${{ matrix.arch }}-py${{ matrix.python-version }}-${{ github.sha }}
+          path: bindings/python/dist/win_*/*.whl
           if-no-files-found: error
           retention-days: 7
