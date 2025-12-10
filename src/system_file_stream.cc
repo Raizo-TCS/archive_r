@@ -106,8 +106,10 @@ void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
 }
 
 void SystemFileStream::close_single_part() {
-  std::fclose(_handle);
-  _handle = nullptr;
+  if (_handle) {
+    std::fclose(_handle);
+    _handle = nullptr;
+  }
   _active_path.clear();
 }
 
