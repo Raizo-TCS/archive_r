@@ -1,6 +1,7 @@
 #include "archive_r/entry.h"
 #include "archive_r/path_hierarchy.h"
 #include "archive_r/traverser.h"
+#include "simple_profiler.h"
 
 #include <archive.h>
 #include <archive_entry.h>
@@ -76,6 +77,10 @@ bool iterate_with_raw_libarchive(const std::string &path, std::size_t &entry_cou
         if (header_result == ARCHIVE_EOF) {
             break;
         }
+
+        // Access pathname to match archive_r behavior (fair comparison)
+        volatile const char* p = archive_entry_pathname(entry);
+        (void)p;
 
         if (header_result == ARCHIVE_WARN) {
             std::cerr << "libarchive warning: " << archive_error_string(handle.get()) << std::endl;
@@ -183,9 +188,13 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    archive_r::internal::SimpleProfiler::instance().reset();
+
     const auto traverser_result = run_benchmark(
             "archive_r Traverser", kIterations,
             [&](std::size_t &entries) { return iterate_with_traverser(archive_path, entries); });
+
+    archive_r::internal::SimpleProfiler::instance().report();
 
     if (!traverser_result) {
         return 1;
