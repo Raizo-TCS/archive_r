@@ -2,6 +2,7 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_type.h"
+#include "simple_profiler.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -145,6 +146,7 @@ void Archive::rewind() {
 }
 
 bool Archive::skip_to_next_header() {
+  internal::ScopeProfile p("Archive::skip_to_next_header");
   if (!_ar) {
     throw std::logic_error("Archive handle is not initialized");
   }
@@ -156,7 +158,11 @@ bool Archive::skip_to_next_header() {
     return false;
   }
 
-  const int r = archive_read_next_header(_ar, &current_entry);
+  int r;
+  {
+    internal::ScopeProfile p("Libarchive::next_header");
+    r = archive_read_next_header(_ar, &current_entry);
+  }
 
   if (r == ARCHIVE_EOF) {
     _at_eof = true;

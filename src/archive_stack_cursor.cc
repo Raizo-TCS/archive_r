@@ -2,6 +2,7 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_stack_cursor.h"
+#include "simple_profiler.h"
 
 #include "archive_r/path_hierarchy_utils.h"
 #include "system_file_stream.h"
@@ -226,6 +227,7 @@ bool ArchiveStackCursor::ascend() {
 }
 
 bool ArchiveStackCursor::next() {
+  internal::ScopeProfile p("Cursor::next");
   StreamArchive *archive = current_archive();
   if (!archive) {
     return false;
@@ -350,6 +352,31 @@ PathHierarchy ArchiveStackCursor::consume_current_entry_hierarchy() {
   }
 
   return {};
+}
+
+void ArchiveStackCursor::consume_current_entry_hierarchy(PathHierarchy &dest) {
+  internal::ScopeProfile p("Cursor::consume_hierarchy");
+  StreamArchive *archive = current_archive();
+  if (!archive) {
+    dest.clear();
+    return;
+  }
+
+  if (_cached_hierarchy.has_value()) {
+    dest = std::move(*_cached_hierarchy);
+    _cached_hierarchy.reset();
+    return;
+  }
+
+  if (_current_archive) {
+    dest = _current_archive->get_stream()->source_hierarchy();
+  } else {
+    dest.clear();
+  }
+
+  if (archive->current_entryname_ptr) {
+    dest.push_back(PathHierarchyItem(archive->current_entryname_ptr));
+  }
 }
 
 std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarchy &hierarchy) {

@@ -2,6 +2,7 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/traverser.h"
+#include "simple_profiler.h"
 #include "archive_r/entry.h"
 #include "archive_r/path_hierarchy.h"
 #include "archive_r/path_hierarchy_utils.h"
@@ -96,6 +97,8 @@ public:
       request_descend_into_archive = false;
       attempt_descend_into_root(_current_entry->path_hierarchy());
     } 
+    
+    internal::ScopeProfile p("Traverser::advance");
     _current_entry.reset();
 
     if (fetch_from_archive(request_descend_into_archive)) {
@@ -220,6 +223,7 @@ private:
   }
 
   void set_current_entry(PathHierarchy hierarchy) {
+    internal::ScopeProfile p("Traverser::set_current_entry");
     _current_entry = Entry::create(std::move(hierarchy), ensure_shared_orchestrator(), _default_descent);
   }
 
