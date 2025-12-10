@@ -39,7 +39,7 @@ StreamArchive *ArchiveStackOrchestrator::current_archive() { return _head.curren
 // 4. When leaving a multi-volume context, rewind the parent archive by skipping to EOF to
 //    avoid re-reading already processed entries.
 bool ArchiveStackOrchestrator::advance(bool descend_request) {
-  ARCHIVE_R_PROFILE("Orchestrator::advance");
+  internal::ScopeProfile p("Orchestrator::advance");
   bool request_descend = descend_request;
 
   while (true) {
@@ -59,6 +59,7 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     try {
       bool has_next = false;
       {
+          internal::ScopeProfile p("Orchestrator::head_next");
           has_next = _head.next();
       }
       if (has_next) {
@@ -80,6 +81,7 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
 
     PathHierarchy prev_ascend_hierarchy = _head.current_entry_hierarchy();
     {
+        internal::ScopeProfile p("Orchestrator::ascend");
         _head.ascend();
     }
 
@@ -144,6 +146,7 @@ void ArchiveStackOrchestrator::mark_entry_as_multi_volume(const PathHierarchy &e
 }
 
 bool ArchiveStackOrchestrator::descend_pending_multi_volumes() {
+  internal::ScopeProfile p("Orchestrator::descend_pending_multi_volumes");
   const PathHierarchy current_hierarchy = _head.current_entry_hierarchy();
   PathHierarchy multi_volume_target;
   if (!_multi_volume_manager.pop_multi_volume_group(current_hierarchy, multi_volume_target)) {

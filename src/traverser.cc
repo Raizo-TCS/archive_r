@@ -99,7 +99,10 @@ public:
     } 
     
     internal::ScopeProfile p("Traverser::advance");
-    _current_entry.reset();
+    {
+      internal::ScopeProfile p2("Traverser::reset_entry");
+      _current_entry.reset();
+    }
 
     if (fetch_from_archive(request_descend_into_archive)) {
       return;
@@ -134,6 +137,7 @@ public:
 
 private:
   std::shared_ptr<ArchiveStackOrchestrator> ensure_shared_orchestrator() {
+    internal::ScopeProfile p("Traverser::ensure_orchestrator");
     if (!_shared_orchestrator) {
       _shared_orchestrator = std::make_shared<ArchiveStackOrchestrator>(_archive_options);
     }
@@ -149,6 +153,7 @@ private:
   }
 
   bool fetch_from_directory() {
+    internal::ScopeProfile p("Traverser::fetch_from_directory");
     if (_directory_iterator == _directory_end) {
       return false;
     }
@@ -162,9 +167,11 @@ private:
   }
 
   bool fetch_from_archive(bool request_descend_into_archive) {
+    internal::ScopeProfile p("Traverser::fetch_from_archive");
     if (!archive_active()) {
       return false;
     }
+    
     ArchiveStackOrchestrator &orchestrator = *ensure_shared_orchestrator();
 
     try {
@@ -182,6 +189,7 @@ private:
   }
 
   bool advance_to_next_root() {
+    internal::ScopeProfile p("Traverser::advance_to_next_root");
     if (_current_path_index >= _paths.size()) {
       return false;
     }
@@ -202,6 +210,7 @@ private:
   }
 
   bool descend_pending_multi_volumes() {
+    internal::ScopeProfile p("Traverser::descend_pending_multi_volumes");
     auto orchestrator = ensure_shared_orchestrator();
     try {
       if (orchestrator->descend_pending_multi_volumes()) {
