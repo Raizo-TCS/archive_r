@@ -9,6 +9,7 @@
 #include <utility>
 #include <variant>
 #include <vector>
+#include <memory>
 
 namespace archive_r {
 
@@ -29,10 +30,10 @@ public:
 
   using NodeList = std::vector<PathEntry>;
 
-  PathEntry() = default;
+  PathEntry() : _value(std::make_shared<std::string>()) {}
 
   explicit PathEntry(std::string value)
-      : _value(std::move(value)) {}
+      : _value(std::make_shared<std::string>(std::move(value))) {}
 
   explicit PathEntry(Parts parts)
       : _value(std::move(parts)) {}
@@ -57,17 +58,17 @@ public:
     return PathEntry(std::move(hierarchies));
   }
 
-  bool is_single() const { return std::holds_alternative<std::string>(_value); }
+  bool is_single() const { return std::holds_alternative<std::shared_ptr<std::string>>(_value); }
   bool is_multi_volume() const { return std::holds_alternative<Parts>(_value); }
   bool is_nested() const { return std::holds_alternative<NodeList>(_value); }
-  const std::string &single_value() const { return std::get<std::string>(_value); }
+  const std::string &single_value() const { return *std::get<std::shared_ptr<std::string>>(_value); }
   const Parts &multi_volume_parts() const { return std::get<Parts>(_value); }
   Parts &multi_volume_parts_mut() { return std::get<Parts>(_value); }
   const NodeList &nested_nodes() const { return std::get<NodeList>(_value); }
   NodeList &nested_nodes_mut() { return std::get<NodeList>(_value); }
 
 private:
-  std::variant<std::string, Parts, NodeList> _value;
+  std::variant<std::shared_ptr<std::string>, Parts, NodeList> _value;
 };
 
 using PathHierarchy = std::vector<PathEntry>;

@@ -181,12 +181,15 @@ bool Archive::skip_to_next_header() {
     raise_archive_error(message);
   }
 
+  {
+    internal::ScopeProfile p("Libarchive::entry_pathname");
   const char *name = archive_entry_pathname(current_entry);
   if (name == nullptr) {
     throw make_entry_fault_error("Failed to retrieve entry pathname (archive_entry_pathname returned null)", {}, 0);
   }
   current_entryname_ptr = name;
   _current_entry_content_ready = true;
+  }
   return true;
 }
 

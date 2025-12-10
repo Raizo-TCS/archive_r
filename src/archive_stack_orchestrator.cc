@@ -78,15 +78,15 @@ bool ArchiveStackOrchestrator::advance(bool descend_request) {
     } catch (const EntryFaultError &error) {
       dispatch_fault(error.fault());
     }
-
-    PathHierarchy prev_ascend_hierarchy = _head.current_entry_hierarchy();
     {
         internal::ScopeProfile p("Orchestrator::ascend");
+
+    PathHierarchy prev_ascend_hierarchy = _head.current_entry_hierarchy();
         _head.ascend();
-    }
 
     if (!pathhierarchy_is_multivolume(prev_ascend_hierarchy)) {
       continue;
+    }
     }
 
     try {
