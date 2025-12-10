@@ -580,4 +580,5 @@ The Python bindings are distributed under the MIT License, consistent with the a
 
 ---
 
-**Note**: This document describes archive_r Python bindings version 0.1.5.
+**Note**: This document describes archive_r Python bindings version 0.1.6.
+
