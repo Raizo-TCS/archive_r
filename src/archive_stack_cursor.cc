@@ -4,6 +4,7 @@
 #include "archive_stack_cursor.h"
 
 #include "archive_r/path_hierarchy_utils.h"
+#include "simple_profiler.h"
 #include "system_file_stream.h"
 #include <exception>
 #include <memory>
@@ -189,6 +190,7 @@ void ArchiveStackCursor::reset() {
 }
 
 bool ArchiveStackCursor::descend() {
+  ARCHIVE_R_PROFILE("Cursor::descend");
   ensure_stream_created();
   if (!_current_stream) {
     throw std::logic_error("current stream is empty");
@@ -210,6 +212,7 @@ bool ArchiveStackCursor::descend() {
 }
 
 bool ArchiveStackCursor::ascend() {
+  ARCHIVE_R_PROFILE("Cursor::ascend");
   if (depth() <= 0) {
     return false;
   }
@@ -226,6 +229,7 @@ bool ArchiveStackCursor::ascend() {
 }
 
 bool ArchiveStackCursor::next() {
+  ARCHIVE_R_PROFILE("Cursor::next");
   StreamArchive *archive = current_archive();
   if (!archive) {
     return false;
@@ -279,6 +283,7 @@ bool ArchiveStackCursor::synchronize_to_hierarchy(const PathHierarchy &target_hi
 }
 
 ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
+  ARCHIVE_R_PROFILE("Cursor::read");
   if (len == 0) {
     return 0;
   }
@@ -299,6 +304,7 @@ StreamArchive *ArchiveStackCursor::current_archive() {
 }
 
 const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
+  ARCHIVE_R_PROFILE("Cursor::current_entry_hierarchy");
   if (_cached_hierarchy) {
     return *_cached_hierarchy;
   }
@@ -339,6 +345,7 @@ std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarc
 }
 
 void ArchiveStackCursor::ensure_stream_created() {
+  ARCHIVE_R_PROFILE("Cursor::ensure_stream_created");
   if (!_current_stream) {
     _current_stream = create_stream(current_entry_hierarchy());
   }

@@ -5,6 +5,7 @@
 #include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/platform_compat.h"
 #include "entry_fault_error.h"
+#include "simple_profiler.h"
 
 #include <algorithm>
 #include <cerrno>
@@ -83,6 +84,7 @@ SystemFileStream::~SystemFileStream() {
 }
 
 void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
+  ARCHIVE_R_PROFILE("SystemFileStream::open_single_part");
   const PathEntry &entry = single_part.back();
 
   const std::string path = entry.single_value();
@@ -114,6 +116,7 @@ void SystemFileStream::close_single_part() {
 }
 
 ssize_t SystemFileStream::read_from_single_part(void *buffer, size_t size) {
+  ARCHIVE_R_PROFILE("SystemFileStream::read_from_single_part");
   errno = 0;
   const std::size_t bytes_read = std::fread(buffer, 1, size, _handle);
   if (bytes_read > 0) {
@@ -131,6 +134,7 @@ ssize_t SystemFileStream::read_from_single_part(void *buffer, size_t size) {
 }
 
 int64_t SystemFileStream::seek_within_single_part(int64_t offset, int whence) {
+  ARCHIVE_R_PROFILE("SystemFileStream::seek_within_single_part");
   int64_t position = -1;
 #if defined(_WIN32)
   if (_fseeki64(_handle, offset, whence) == 0) {
@@ -153,6 +157,7 @@ int64_t SystemFileStream::seek_within_single_part(int64_t offset, int whence) {
 }
 
 int64_t SystemFileStream::size_of_single_part(const PathHierarchy &single_part) {
+  ARCHIVE_R_PROFILE("SystemFileStream::size_of_single_part");
   const PathEntry &entry = single_part.back();
 
   struct stat st;
