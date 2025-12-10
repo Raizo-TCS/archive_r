@@ -31,7 +31,7 @@ public:
 
   size_t depth() const;
   const PathHierarchy &current_entry_hierarchy();
-  PathHierarchy consume_current_entry_hierarchy();
+  void consume_current_entry_hierarchy(PathHierarchy &dest);
   bool synchronize_to_hierarchy(const PathHierarchy &path_hierarchy);
 
   StreamArchive *current_archive();

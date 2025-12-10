@@ -328,32 +328,6 @@ const PathHierarchy &ArchiveStackCursor::current_entry_hierarchy() {
   return empty;
 }
 
-PathHierarchy ArchiveStackCursor::consume_current_entry_hierarchy() {
-  if (_cached_hierarchy) {
-    PathHierarchy path = std::move(*_cached_hierarchy);
-    _cached_hierarchy.reset();
-    return path;
-  }
-
-  if (depth() == 0 || (!_current_stream && !_current_archive)) {
-    return {};
-  }
-
-  if (StreamArchive *archive = current_archive()) {
-    PathHierarchy path = archive->source_hierarchy();
-    if (archive->current_entryname_ptr) {
-      append_single(path, archive->current_entryname_ptr);
-    }
-    return path;
-  }
-
-  if (_current_stream) {
-    return _current_stream->source_hierarchy();
-  }
-
-  return {};
-}
-
 void ArchiveStackCursor::consume_current_entry_hierarchy(PathHierarchy &dest) {
   internal::ScopeProfile p("Cursor::consume_hierarchy");
   StreamArchive *archive = current_archive();
@@ -375,7 +349,7 @@ void ArchiveStackCursor::consume_current_entry_hierarchy(PathHierarchy &dest) {
   }
 
   if (archive->current_entryname_ptr) {
-    dest.push_back(PathHierarchyItem(archive->current_entryname_ptr));
+    dest.emplace_back(archive->current_entryname_ptr);
   }
 }
 

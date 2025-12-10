@@ -117,7 +117,7 @@ std::string ArchiveStackOrchestrator::current_entryname() {
 
 const PathHierarchy &ArchiveStackOrchestrator::current_entry_hierarchy() { return _head.current_entry_hierarchy(); }
 
-PathHierarchy ArchiveStackOrchestrator::consume_current_entry_hierarchy() { return _head.consume_current_entry_hierarchy(); }
+void ArchiveStackOrchestrator::consume_current_entry_hierarchy(PathHierarchy &dest) { _head.consume_current_entry_hierarchy(dest); }
 
 bool ArchiveStackOrchestrator::synchronize_to_hierarchy(const PathHierarchy &path_hierarchy) {
   try {

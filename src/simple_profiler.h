@@ -94,12 +94,12 @@ private:
     std::mutex mutex_;
 };
 
-class ScopedTimer {
+class ScopeProfile {
 public:
-    ScopedTimer(const std::string& name) : name_(name) {
+    ScopeProfile(const std::string& name) : name_(name) {
         SimpleProfiler::instance().start(name_);
     }
-    ~ScopedTimer() {
+    ~ScopeProfile() {
         SimpleProfiler::instance().stop(name_);
     }
 private:
@@ -112,7 +112,7 @@ private:
 #ifdef ARCHIVE_R_SIMPLE_PROFILER_DISABLED
 #define ARCHIVE_R_PROFILE(name) ((void)0)
 #else
-#define ARCHIVE_R_PROFILE(name) ::archive_r::internal::ScopedTimer ARCHIVE_R_PROFILE_UNIQUE_NAME(name)(name)
+#define ARCHIVE_R_PROFILE(name) ::archive_r::internal::ScopeProfile ARCHIVE_R_PROFILE_UNIQUE_NAME(name)(name)
 #endif
 
 #define ARCHIVE_R_PROFILE_UNIQUE_NAME(name) ARCHIVE_R_PROFILE_CONCAT(_archive_r_profiler_scope_, __COUNTER__)

@@ -169,7 +169,9 @@ private:
 
     try {
       if (orchestrator.advance(request_descend_into_archive)) {
-        set_current_entry(orchestrator.consume_current_entry_hierarchy());
+        PathHierarchy h;
+        orchestrator.consume_current_entry_hierarchy(h);
+        set_current_entry(std::move(h));
         return true;
       }
     } catch (const EntryFaultError &error) {
