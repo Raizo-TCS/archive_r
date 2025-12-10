@@ -118,7 +118,7 @@ public:
   }
 
   ~RubyUserStream() override {
-    release_active_io();
+    release_active_io_resources(false);
     rb_gc_unregister_address(&_ruby_stream);
   }
 
@@ -140,7 +140,7 @@ protected:
 
   void close_single_part() override {
     if (_has_open_part_io) {
-      release_active_io();
+      release_active_io_resources(true);
       if (_has_close_part_io) {
         rb_funcall(_ruby_stream, rb_id_close_part_io_method, 0);
       }
@@ -250,7 +250,7 @@ private:
     if (!rb_respond_to(io, rb_id_read_method)) {
       rb_raise(rb_eTypeError, "open_part_io must return an object responding to #read");
     }
-    release_active_io();
+    release_active_io_resources(true);
     _active_io = io;
     rb_gc_register_address(&_active_io);
     _active_io_seekable = rb_respond_to(io, rb_id_seek_method);
@@ -259,11 +259,11 @@ private:
     _active_io_has_size = rb_respond_to(io, rb_id_size_method);
   }
 
-  void release_active_io() {
+  void release_active_io_resources(bool close_io) {
     if (_active_io == Qnil) {
       return;
     }
-    if (_active_io_has_close) {
+    if (close_io && _active_io_has_close) {
       rb_funcall(_active_io, rb_id_close_method, 0);
     }
     rb_gc_unregister_address(&_active_io);
