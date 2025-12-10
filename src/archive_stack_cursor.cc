@@ -125,7 +125,9 @@ EntryPayloadStream::EntryPayloadStream(std::shared_ptr<StreamArchive> parent_arc
   }
 }
 
-EntryPayloadStream::~EntryPayloadStream() = default;
+EntryPayloadStream::~EntryPayloadStream() {
+  deactivate_active_part();
+}
 
 std::shared_ptr<StreamArchive> EntryPayloadStream::parent_archive() const { return _parent_archive; }
 
@@ -152,7 +154,11 @@ void EntryPayloadStream::close_single_part() {
     return;
   }
 
-  _parent_archive->skip_data();
+  try {
+    _parent_archive->skip_data();
+  } catch (...) {
+    // Ignore errors during cleanup to prevent terminate() in destructor
+  }
 }
 
 ssize_t EntryPayloadStream::read_from_single_part(void *buffer, size_t size) {
@@ -194,7 +200,6 @@ bool ArchiveStackCursor::descend() {
   }
 
   auto stream = _current_stream;
-
   if (auto *archive = current_archive()) {
     if (stream && !archive->current_entry_content_ready()) {
       stream->rewind();
@@ -229,6 +234,8 @@ bool ArchiveStackCursor::next() {
     return false;
   }
 
+  _current_stream = nullptr;
+
   while (true) {
     if (!archive->skip_to_next_header()) {
       return false;
@@ -237,6 +244,7 @@ bool ArchiveStackCursor::next() {
       break;
     }
   }
+
   _current_stream = create_stream(current_entry_hierarchy());
   return true;
 }

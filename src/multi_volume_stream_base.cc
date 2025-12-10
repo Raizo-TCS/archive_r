@@ -20,6 +20,7 @@ struct MultiVolumeStreamBase::Impl {
   std::vector<int64_t> part_offsets;
   std::size_t total_parts = 0;
   std::size_t active_part_index = 0;
+  std::size_t open_part_index = 0;
   bool part_open = false;
   int64_t logical_offset = 0;
   int64_t total_size = -1;
@@ -84,7 +85,7 @@ void MultiVolumeStreamBase::rewind() {
 }
 
 bool MultiVolumeStreamBase::at_end() const {
-  return (_impl->active_part_index >= _impl->total_parts) && !_impl->part_open;
+  return _impl->active_part_index >= _impl->total_parts;
 }
 
 int64_t MultiVolumeStreamBase::seek(int64_t offset, int whence) {
@@ -122,14 +123,14 @@ int64_t MultiVolumeStreamBase::seek(int64_t offset, int whence) {
 int64_t MultiVolumeStreamBase::tell() const { return _impl->logical_offset; }
 
 void MultiVolumeStreamBase::Impl::ensure_part_active(std::size_t part_index) {
-  if (part_open && active_part_index == part_index) {
+  if (part_open && open_part_index == part_index) {
     return;
   }
 
   self.deactivate_active_part();
   PathHierarchy single_part = pathhierarchy_select_single_part(self._logical_path, part_index);
   self.open_single_part(single_part);
-  active_part_index = part_index;
+  open_part_index = part_index;
   part_open = true;
 }
 
@@ -144,7 +145,6 @@ bool MultiVolumeStreamBase::Impl::advance_to_next_part() {
   if (active_part_index >= total_parts) {
     return false;
   }
-  self.deactivate_active_part();
   ++active_part_index;
   return active_part_index < total_parts;
 }

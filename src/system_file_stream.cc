@@ -78,7 +78,9 @@ SystemFileStream::SystemFileStream(PathHierarchy logical_path)
   }
 }
 
-SystemFileStream::~SystemFileStream() = default;
+SystemFileStream::~SystemFileStream() {
+  deactivate_active_part();
+}
 
 void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
   const PathEntry &entry = single_part.back();
