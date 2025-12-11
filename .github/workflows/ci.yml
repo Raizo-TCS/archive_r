@@ -60,7 +60,7 @@ jobs:
         run: |
           IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/archive_r/ci-linux-arm64:latest"
           IMAGE_NAME="${IMAGE_NAME,,}"
-          if docker pull "$IMAGE_NAME"; then
+          if docker pull --platform linux/arm64 "$IMAGE_NAME"; then
             echo "CI_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
           else
             echo "Image not found, building locally..."
