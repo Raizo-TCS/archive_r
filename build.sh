@@ -1,7 +1,7 @@
+#!/bin/bash
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 archive_r Team
 
-#!/bin/bash
 # archive_r Build Script
 # Usage: ./build.sh [OPTIONS]
 

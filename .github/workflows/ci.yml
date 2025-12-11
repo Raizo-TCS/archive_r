@@ -100,7 +100,7 @@ jobs:
             "$CI_IMAGE" \
             bash -c "set -euo pipefail; \
               if ! getent group \"${HOST_GID}\" >/dev/null; then groupadd -g \"${HOST_GID}\" hostgroup; fi; \
-              if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" hostuser; fi; \
+              if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" -s /bin/bash hostuser; fi; \
               su - hostuser -c 'cd /io && ./build.sh --bindings-only --with-python --with-ruby && ./run_tests.sh'"
 
       - name: Upload PF1.1 artifacts
