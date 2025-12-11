@@ -18,7 +18,8 @@ RUN choco install -y git cmake ninja python3 ruby
 
 # - visualstudio2022buildtools: C++ compiler (MSVC)
 # Split into separate RUN to isolate failures and fix quoting
-RUN choco install -y visualstudio2022buildtools --execution-timeout 7200 --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart"
+# Use --add=... to avoid space parsing issues in arguments passed to the installer
+RUN choco install -y visualstudio2022buildtools --execution-timeout 7200 --package-parameters "--add=Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart"
 
 # Set up environment variables for tools
 ENV VCPKG_ROOT=C:\vcpkg
