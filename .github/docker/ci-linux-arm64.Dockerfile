@@ -24,5 +24,5 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --upgrade --break-system-packages \
-    pip setuptools wheel pybind11 build twine
+RUN python3 -m pip install --break-system-packages \
+    pybind11 build twine
