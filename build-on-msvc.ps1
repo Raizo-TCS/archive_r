@@ -41,6 +41,7 @@ $Env:CMAKE_GENERATOR_PLATFORM = "x64"
 $Env:PATH = "$PSScriptRoot\build\Release;$Env:PATH"
 
   & $bash ./build.sh @buildArgs
+  if ($LastExitCode -ne 0) { throw "Build failed with exit code $LastExitCode" }
 } finally {
   Pop-Location
 }
