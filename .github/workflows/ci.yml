@@ -79,11 +79,12 @@ jobs:
           HOST_GID=$(id -g)
           # Run build.sh --rebuild to build Core and Tests (but not bindings)
           # We run as root for simplicity and chown artifacts back to host user
+          # Ensure chown runs even if build fails to avoid permission issues
           docker run --rm \
             -v "${{ github.workspace }}:/io" \
             -w /io \
             ci-linux-arm64-cross:local \
-            bash -c "git config --global --add safe.directory /io && ./build.sh --rebuild && chown -R ${HOST_UID}:${HOST_GID} build"
+            bash -c "git config --global --add safe.directory /io && (./build.sh --rebuild || (chown -R ${HOST_UID}:${HOST_GID} build && exit 1)) && chown -R ${HOST_UID}:${HOST_GID} build"
 
       - name: Build Bindings & Test (QEMU)
         run: |
