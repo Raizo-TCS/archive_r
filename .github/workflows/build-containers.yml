@@ -76,8 +76,3 @@ jobs:
           $ImageName = "ghcr.io/${{ env.OWNER }}/archive_r/ci-windows-msvc:latest"
           docker build -t $ImageName -f .github/docker/ci-windows-msvc.Dockerfile .
           docker push $ImageName
-
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/${{ env.OWNER }}/archive_r/ci-linux-arm64:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

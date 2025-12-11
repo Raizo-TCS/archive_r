@@ -16,7 +16,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
 # - python3, ruby: For bindings and tests
 # - visualstudio2022buildtools: C++ compiler (MSVC)
 RUN choco install -y git cmake ninja python3 ruby; `
-    choco install -y visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart"
+    choco install -y visualstudio2022buildtools --package-parameters "'--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended --passive --norestart'"
 
 # Set up environment variables for tools
 ENV VCPKG_ROOT=C:\vcpkg
