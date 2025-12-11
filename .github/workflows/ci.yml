@@ -81,7 +81,7 @@ jobs:
             bash -c "set -euo pipefail; \
               if ! getent group \"${HOST_GID}\" >/dev/null; then groupadd -g \"${HOST_GID}\" hostgroup; fi; \
               if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" hostuser; fi; \
-              su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=full ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
+              su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=bindings ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
