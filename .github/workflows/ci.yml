@@ -47,7 +47,7 @@ jobs:
           retention-days: 7
 
   pf1-linux-arm64:
-    name: PF1.1 Linux arm64 Build & Test (QEMU)
+    name: PF1.1 Linux arm64 Build & Test (Hybrid)
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -56,7 +56,11 @@ jobs:
       - name: Set up QEMU (aarch64)
         uses: docker/setup-qemu-action@v3
 
-      - name: Prepare CI Container
+      - name: Prepare Cross-Build Image
+        run: |
+          docker build -t ci-linux-arm64-cross:local -f .github/docker/ci-linux-arm64-cross.Dockerfile .
+
+      - name: Prepare Test Image (QEMU)
         run: |
           IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/archive_r/ci-linux-arm64:latest"
           IMAGE_NAME="${IMAGE_NAME,,}"
@@ -68,11 +72,26 @@ jobs:
             echo "CI_IMAGE=ci-linux-arm64:local" >> $GITHUB_ENV
           fi
 
-      - name: Build & Test on arm64
+      - name: Build Core (Cross-Compile)
         run: |
           set -euo pipefail
           HOST_UID=$(id -u)
           HOST_GID=$(id -g)
+          # Run build.sh --rebuild to build Core and Tests (but not bindings)
+          # We run as root for simplicity and chown artifacts back to host user
+          docker run --rm \
+            -v "${{ github.workspace }}:/io" \
+            -w /io \
+            ci-linux-arm64-cross:local \
+            bash -c "git config --global --add safe.directory /io && ./build.sh --rebuild && chown -R ${HOST_UID}:${HOST_GID} build"
+
+      - name: Build Bindings & Test (QEMU)
+        run: |
+          set -euo pipefail
+          HOST_UID=$(id -u)
+          HOST_GID=$(id -g)
+          # Run build.sh --bindings-only to build Python/Ruby bindings linking against the cross-compiled core
+          # Then run tests
           docker run --rm --platform linux/arm64 \
             -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             -v "${{ github.workspace }}:/io" \
@@ -81,7 +100,7 @@ jobs:
             bash -c "set -euo pipefail; \
               if ! getent group \"${HOST_GID}\" >/dev/null; then groupadd -g \"${HOST_GID}\" hostgroup; fi; \
               if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" hostuser; fi; \
-              su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=bindings ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
+              su - hostuser -c 'cd /io && ./build.sh --bindings-only --with-python --with-ruby && ./run_tests.sh'"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
