@@ -160,6 +160,10 @@ jobs:
         with:
           ruby-version: '3.2'
 
+      - name: Install Ninja
+        shell: pwsh
+        run: choco install ninja --version 1.13.1 --force
+
       - name: Install dependencies (MSVC)
         shell: pwsh
         run: ./install-deps-msvc.ps1
