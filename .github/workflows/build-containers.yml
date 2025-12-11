@@ -48,6 +48,35 @@ jobs:
           context: .
           file: .github/docker/ci-linux-arm64.Dockerfile
           platforms: linux/arm64
+          push: true
+          tags: ghcr.io/${{ env.OWNER }}/archive_r/ci-linux-arm64:latest
+
+  build-ci-windows-msvc:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase Registry Owner
+        shell: bash
+        run: |
+          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        shell: pwsh
+        run: |
+          $ImageName = "ghcr.io/${{ env.OWNER }}/archive_r/ci-windows-msvc:latest"
+          docker build -t $ImageName -f .github/docker/ci-windows-msvc.Dockerfile .
+          docker push $ImageName
+
           push: ${{ github.event_name != 'pull_request' }}
           tags: ghcr.io/${{ env.OWNER }}/archive_r/ci-linux-arm64:latest
           cache-from: type=gha

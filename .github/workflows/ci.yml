@@ -164,37 +164,36 @@ jobs:
   pf3-msvc:
     name: PF3.0 Windows MSVC Build & Test
     runs-on: windows-2022
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-
-      - name: Install Ninja
+      - name: Prepare CI Container
         shell: pwsh
-        run: choco install ninja --version 1.13.1 --force
+        run: |
+          $ImageName = "ghcr.io/${{ github.repository_owner }}/archive_r/ci-windows-msvc:latest"
+          $ImageName = $ImageName.ToLower()
+          try {
+            docker pull $ImageName
+            "CI_IMAGE=$ImageName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } catch {
+            Write-Host "Image not found, building locally..."
+            docker build -t ci-windows-msvc:local -f .github/docker/ci-windows-msvc.Dockerfile .
+            "CI_IMAGE=ci-windows-msvc:local" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
-      - name: Install dependencies (MSVC)
+      - name: Build & Test (MSVC Container)
         shell: pwsh
-        run: ./install-deps-msvc.ps1
-
-      - name: Build (MSVC x64)
-        shell: pwsh
-        run: ./build-on-msvc.ps1 -PackageMode full
-
-      - name: Test (MSVC x64)
-        shell: pwsh
-        run: ./test-on-msvc.ps1
+        run: |
+          # Run build and test inside the container
+          # We map the workspace to C:\io
+          docker run --rm `
+            -v "${{ github.workspace }}:C:\io" `
+            -w "C:\io" `
+            $env:CI_IMAGE `
+            powershell -Command ".\build-on-msvc.ps1 -PackageMode full; if ($LastExitCode -eq 0) { .\test-on-msvc.ps1 }"
 
       - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}
