@@ -56,6 +56,18 @@ jobs:
       - name: Set up QEMU (aarch64)
         uses: docker/setup-qemu-action@v3
 
+      - name: Prepare CI Container
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/archive_r/ci-linux-arm64:latest"
+          IMAGE_NAME="${IMAGE_NAME,,}"
+          if docker pull "$IMAGE_NAME"; then
+            echo "CI_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
+          else
+            echo "Image not found, building locally..."
+            docker build -t ci-linux-arm64:local -f .github/docker/ci-linux-arm64.Dockerfile --platform linux/arm64 .
+            echo "CI_IMAGE=ci-linux-arm64:local" >> $GITHUB_ENV
+          fi
+
       - name: Build & Test on arm64
         run: |
           set -euo pipefail
@@ -65,14 +77,11 @@ jobs:
             -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             -v "${{ github.workspace }}:/io" \
             -w /io \
-            ubuntu:24.04 \
+            "$CI_IMAGE" \
             bash -c "set -euo pipefail; \
               if ! getent group \"${HOST_GID}\" >/dev/null; then groupadd -g \"${HOST_GID}\" hostgroup; fi; \
               if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" hostuser; fi; \
-              apt-get update; \
-              apt-get install -y sudo python3-venv python3-virtualenv; \
-              ./install-deps-ubuntu.sh; \
-                su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=full ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
+              su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=full ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
