@@ -193,7 +193,7 @@ jobs:
             -v "${{ github.workspace }}:C:\io" `
             -w "C:\io" `
             $env:CI_IMAGE `
-            powershell -Command ".\build-on-msvc.ps1 -PackageMode full; if ($LastExitCode -eq 0) { .\test-on-msvc.ps1 }"
+            powershell -Command ".\build-on-msvc.ps1 -PackageMode full; if (`$LastExitCode -eq 0) { .\test-on-msvc.ps1 }"
 
       - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}

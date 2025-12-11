@@ -37,6 +37,9 @@ switch ($PackageMode) {
 $Env:CMAKE_GENERATOR = "Visual Studio 17 2022"
 $Env:CMAKE_GENERATOR_PLATFORM = "x64"
 
+# Add build output directory to PATH so that Python tests can find archive_r_core.dll
+$Env:PATH = "$PSScriptRoot\build\Release;$Env:PATH"
+
   & $bash ./build.sh @buildArgs
 } finally {
   Pop-Location
