@@ -719,9 +719,11 @@ package_python_binding() {
     
     local build_args=("--sdist" "--wheel" "--outdir" "$dist_dir")
     if [ "${ARCHIVE_R_BUILD_NO_ISOLATION:-0}" -eq 1 ]; then
+        log_info "Disabling build isolation (ARCHIVE_R_BUILD_NO_ISOLATION=1)"
         build_args+=("--no-isolation")
     fi
     
+    log_info "Running python -m build with args: ${build_args[*]}"
     "$PYTHON_EXEC" -m build "${build_args[@]}"
     popd >/dev/null
 

@@ -8,7 +8,8 @@ $bashPath = Join-Path $msysRoot "usr\bin\bash.exe"
 if (-not (Test-Path $bashPath)) { throw "MSYS2 bash not found at $bashPath" }
 
 $repoPathMsys = & $bashPath -lc "cygpath -u '$repoRoot'"
-$cmd = "cd $repoPathMsys && ./build.sh --rebuild-all"
+# Explicitly export the variable to ensure it reaches the bash session
+$cmd = "export ARCHIVE_R_BUILD_NO_ISOLATION=1; cd $repoPathMsys && ./build.sh --rebuild-all"
 switch ($PackageMode) {
   'core'   { }
   'python' { $cmd += ' --python-only --package-python' }
