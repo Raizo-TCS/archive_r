@@ -12,40 +12,68 @@ Write-Host "DEBUG: repoPathMsys='$repoPathMsys'"
 $timeoutPy = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
 Write-Host "DEBUG: timeoutPy='$timeoutPy'"
 
-# Use 'python' instead of 'python3' as it is more standard in MinGW UCRT64
-# Also ensure we capture stdout/stderr of the wrapper script itself
-$runTestsCmd = "cd `"$repoPathMsys`" && echo 'DEBUG: Wrapper starting' && chmod +x run_tests.sh && ./run_tests.sh > run_tests.log 2>&1; RES=$?; echo 'DEBUG: Wrapper finished with '$RES; echo '--- run_tests.log content ---'; cat run_tests.log; echo '--- end log ---'; exit $RES"
-$rubyBindingCmd = "cd `"$repoPathMsys`" && ./build.sh --package-ruby"
-$pythonBindingCmd = "cd `"$repoPathMsys`" && ./build.sh --package-python"
+# Create the bash script content
+# Note: We escape $ for bash variables that shouldn't be expanded by PowerShell
+$scriptContent = @"
+#!/bin/bash
+export MSYSTEM=UCRT64
+export PATH=/ucrt64/bin:`$PATH
+set -x
 
-$cmdLines = @(
-        'export MSYSTEM=UCRT64'
-        'export PATH=/ucrt64/bin:$PATH'
-        'set -x'
-        'repo="{0}"' -f $repoPathMsys
-        'timeout_py="{0}"' -f $timeoutPy
-        'bash_exe="{0}"' -f $bashPath
-        'echo "[mingw] repo path: $repo"'
-        'echo "[mingw] bash path: $bash_exe"'
-        'if [ ! -d "$repo" ]; then echo "[mingw] repo path not found" >&2; exit 1; fi'
-        'if [ ! -x "$bash_exe" ]; then echo "[mingw] bash not found/executable: $bash_exe" >&2; exit 1; fi'
-        'cd "$repo"'
-        'pwd'
-        'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
-        ('python "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $runTestsCmd)
-        ('python "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $rubyBindingCmd)
-        ('python "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $pythonBindingCmd)
-)
+echo "[mingw] Starting test script"
+echo "[mingw] Repo: $repoPathMsys"
+echo "[mingw] Timeout Helper: $timeoutPy"
 
-$cmd = $cmdLines -join ' && '
+cd "$repoPathMsys" || exit 1
 
-Write-Host "DEBUG: Running bash command..."
-# Capture all output to a file to avoid console buffering issues
-# Temporarily disable Stop on Error because bash writing to stderr (e.g. set -x) triggers NativeCommandError
+# Run Core Tests
+echo "[mingw] Running core tests..."
+# We run run_tests.sh directly. It should output to stdout/stderr which we capture.
+python "$timeoutPy" 120 bash -c "chmod +x run_tests.sh && ./run_tests.sh"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Core tests failed with `$RET"
+    exit `$RET
+fi
+
+# Build Ruby Binding
+echo "[mingw] Building Ruby binding..."
+python "$timeoutPy" 120 bash -c "./build.sh --package-ruby"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Ruby binding build failed with `$RET"
+    exit `$RET
+fi
+
+# Build Python Binding
+echo "[mingw] Building Python binding..."
+python "$timeoutPy" 120 bash -c "./build.sh --package-python"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Python binding build failed with `$RET"
+    exit `$RET
+fi
+
+echo "[mingw] All tasks completed successfully"
+"@
+
+$scriptPath = Join-Path $repoRoot "test_script.sh"
+[IO.File]::WriteAllText($scriptPath, $scriptContent)
+
+$scriptPathMsys = (& $bashPath -lc "cygpath -u '$scriptPath'").Trim()
+Write-Host "DEBUG: Created bash script at $scriptPathMsys"
+
+Write-Host "DEBUG: Running bash script..."
+
+# Temporarily disable Stop on Error because bash writing to stderr (e.g. set -x) triggers NativeCommandError in PowerShell
 $oldEAP = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-& $bashPath -lc $cmd > mingw_exec.log 2>&1
+
+# Execute the script, redirecting ALL output to mingw_exec.log
+# We use a wrapper bash command to handle the redirection
+& $bashPath -lc "bash '$scriptPathMsys' > mingw_exec.log 2>&1"
 $exitCode = $LASTEXITCODE
+
 $ErrorActionPreference = $oldEAP
 
 Write-Host "--- mingw_exec.log content ---"
