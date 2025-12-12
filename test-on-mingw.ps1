@@ -15,6 +15,8 @@ Write-Host "DEBUG: timeoutPy='$timeoutPy'"
 # Use 'python' instead of 'python3' as it is more standard in MinGW UCRT64
 # Also ensure we capture stdout/stderr of the wrapper script itself
 $runTestsCmd = "cd `"$repoPathMsys`" && echo 'DEBUG: Wrapper starting' && chmod +x run_tests.sh && ./run_tests.sh > run_tests.log 2>&1; RES=$?; echo 'DEBUG: Wrapper finished with '$RES; echo '--- run_tests.log content ---'; cat run_tests.log; echo '--- end log ---'; exit $RES"
+$rubyBindingCmd = "cd `"$repoPathMsys`" && ./build.sh --package-ruby"
+$pythonBindingCmd = "cd `"$repoPathMsys`" && ./build.sh --package-python"
 
 $cmdLines = @(
         'export MSYSTEM=UCRT64'
@@ -31,14 +33,20 @@ $cmdLines = @(
         'pwd'
         'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
         ('python "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $runTestsCmd)
+        ('python "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $rubyBindingCmd)
+        ('python "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $pythonBindingCmd)
 )
 
 $cmd = $cmdLines -join ' && '
 
 Write-Host "DEBUG: Running bash command..."
 # Capture all output to a file to avoid console buffering issues
+# Temporarily disable Stop on Error because bash writing to stderr (e.g. set -x) triggers NativeCommandError
+$oldEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 & $bashPath -lc $cmd > mingw_exec.log 2>&1
 $exitCode = $LASTEXITCODE
+$ErrorActionPreference = $oldEAP
 
 Write-Host "--- mingw_exec.log content ---"
 if (Test-Path "mingw_exec.log") {
