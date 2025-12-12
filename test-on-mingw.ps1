@@ -32,7 +32,11 @@ $cmdLines = @(
 	'chmod +x run_tests.sh bindings/ruby/run_binding_tests.sh bindings/python/run_binding_tests.sh'
 	'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
 	'python3 --version || echo "python3 not found"'
-	('python3 -u "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPathForPy, $runTestsCmd)
+	'echo "[mingw] Testing run_with_timeout wrapper..."'
+	('python3 -u "{0}" 10 "{1}" -lc "echo [mingw] wrapper test success"' -f $timeoutPy, $bashPathForPy)
+	'echo "[mingw] Running C++ tests..."'
+	('python3 -u "{0}" 120 "{1}" -lc "{2} > run_tests.log 2>&1 || (cat run_tests.log && exit 1)"' -f $timeoutPy, $bashPathForPy, $runTestsCmd)
+	'cat run_tests.log'
 	('python3 -u "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPathForPy, $rubyBindingCmd)
 	('python3 -u "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPathForPy, $pythonBindingCmd)
 )
