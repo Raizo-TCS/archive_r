@@ -16,11 +16,12 @@ RUN choco install -y msys2 --params "/InstallDir:C:\msys64"
 
 # Install dependencies using pacman
 # We use bash -lc to run in the MSYS2 environment
+# Note: We must explicitly add /ucrt64/bin to PATH to find the installed python/ruby/etc.
 RUN $bashPath = 'C:\msys64\usr\bin\bash.exe'; `
     & $bashPath -lc 'pacman -Syu --noconfirm'; `
     & $bashPath -lc 'pacman -S --noconfirm git base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-libarchive mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-pip mingw-w64-ucrt-x86_64-python-setuptools mingw-w64-ucrt-x86_64-python-wheel mingw-w64-ucrt-x86_64-ruby mingw-w64-ucrt-x86_64-rust'; `
-    & $bashPath -lc 'python3 -m ensurepip --upgrade'; `
-    & $bashPath -lc 'python3 -m pip install --upgrade --force-reinstall pip setuptools wheel build'
+    & $bashPath -lc 'export PATH=/ucrt64/bin:$PATH && python -m ensurepip --upgrade'; `
+    & $bashPath -lc 'export PATH=/ucrt64/bin:$PATH && python -m pip install --upgrade --force-reinstall pip setuptools wheel build'
 
 # Define working directory
 WORKDIR C:\io
