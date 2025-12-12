@@ -125,9 +125,9 @@ jobs:
           - runner: macos-15-intel
             arch: x86_64
             label: PF2.0 macOS 15 x86_64
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
-            label: PF2.1 macOS 14 arm64
+            label: PF2.1 macOS 15 arm64
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
       HOMEBREW_NO_AUTO_UPDATE: "1"
