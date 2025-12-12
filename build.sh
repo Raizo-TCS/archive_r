@@ -736,8 +736,12 @@ package_python_binding() {
         return 1
     fi
 
-    log_info "Running twine check on built artifacts..."
-    "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
+    if [ "${ARCHIVE_R_SKIP_TWINE_CHECK:-0}" -eq 1 ]; then
+        log_info "Skipping twine check (ARCHIVE_R_SKIP_TWINE_CHECK=1)"
+    else
+        log_info "Running twine check on built artifacts..."
+        "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
+    fi
 
     verify_python_package_installation "$dist_dir" || return 1
 
