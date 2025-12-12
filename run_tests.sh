@@ -5,6 +5,8 @@
 # archive_r Test Runner Script
 # Usage: ./run_tests.sh [--perf-archive <path>]
 
+echo "DEBUG: run_tests.sh started"
+
 set -e
 set -o pipefail
 
