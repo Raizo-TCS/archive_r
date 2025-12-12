@@ -193,7 +193,7 @@ jobs:
             -v "${{ github.workspace }}:C:\io" `
             -w "C:\io" `
             $env:CI_IMAGE `
-            powershell -Command "$ErrorActionPreference = 'Stop'; .\build-on-msvc.ps1 -PackageMode full; .\test-on-msvc.ps1"
+            powershell -Command "$ErrorActionPreference = 'Stop'; .\build-on-msvc.ps1 -PackageMode python; .\test-on-msvc.ps1 -PackageMode python"
 
       - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}
