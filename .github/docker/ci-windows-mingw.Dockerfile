@@ -21,7 +21,7 @@ RUN $bashPath = 'C:\msys64\usr\bin\bash.exe'; `
     & $bashPath -lc 'pacman -Syu --noconfirm'; `
     & $bashPath -lc 'pacman -S --noconfirm git base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-libarchive mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-pip mingw-w64-ucrt-x86_64-python-setuptools mingw-w64-ucrt-x86_64-python-wheel mingw-w64-ucrt-x86_64-ruby mingw-w64-ucrt-x86_64-rust'; `
     & $bashPath -lc 'export PATH=/ucrt64/bin:$PATH && python -m ensurepip --upgrade'; `
-    & $bashPath -lc 'export PATH=/ucrt64/bin:$PATH && python -m pip install --upgrade --force-reinstall pip setuptools wheel build'
+    & $bashPath -lc 'export PATH=/ucrt64/bin:$PATH && python -m pip install --upgrade --force-reinstall pip setuptools wheel build pybind11 pytest'
 
 # Define working directory
 WORKDIR C:\io

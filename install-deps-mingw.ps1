@@ -13,4 +13,4 @@ if (-not (Test-Path $bashPath)) {
 
 # Reinstall pip stack to ensure bundled vendored modules (distlib, etc.) are present.
 & $bashPath -lc "python3 -m ensurepip --upgrade"
-& $bashPath -lc "python3 -m pip install --upgrade --force-reinstall pip setuptools wheel build"
+& $bashPath -lc "python3 -m pip install --upgrade --force-reinstall pip setuptools wheel build pybind11 pytest"
