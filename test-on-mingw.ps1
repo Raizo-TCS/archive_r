@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $repoRoot = if ($Env:GITHUB_WORKSPACE) { $Env:GITHUB_WORKSPACE } else { $PSScriptRoot }
-$msysRoot = "C:\msys64"
-$bashPath = Join-Path $msysRoot "usr\bin\bash.exe"
+$msysRoot = "C:/msys64"
+$bashPath = "$msysRoot/usr/bin/bash.exe"
 if (-not (Test-Path $bashPath)) { throw "MSYS2 bash not found at $bashPath" }
 
 $env:ARCHIVE_R_REPO_WIN = $repoRoot
@@ -9,7 +9,8 @@ $env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
 
 $repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
 $timeoutPy = (& $bashPath -lc 'cygpath -m "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
-$bashPathForPy = (& $bashPath -lc ('cygpath -m "{0}"' -f $bashPath)).Trim()
+# bashPath is already in Windows format with forward slashes, safe for Python
+$bashPathForPy = $bashPath
 
 $runTestsCmd = "cd `"$repoPathMsys`" && ./run_tests.sh"
 $rubyBindingCmd = "cd `"$repoPathMsys`" && ./bindings/ruby/run_binding_tests.sh"
