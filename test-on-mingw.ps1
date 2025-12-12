@@ -71,7 +71,9 @@ $ErrorActionPreference = 'Continue'
 
 # Execute the script, redirecting ALL output to mingw_exec.log
 # We use a wrapper bash command to handle the redirection
-& $bashPath -lc "bash '$scriptPathMsys' > mingw_exec.log 2>&1"
+# Ensure we are in the repo directory and use absolute path for log to avoid location issues
+$logPathMsys = "$repoPathMsys/mingw_exec.log"
+& $bashPath -lc "cd '$repoPathMsys' && bash '$scriptPathMsys' > '$logPathMsys' 2>&1"
 $exitCode = $LASTEXITCODE
 
 $ErrorActionPreference = $oldEAP
