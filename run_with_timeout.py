@@ -30,15 +30,19 @@ def _terminate_process(proc: subprocess.Popen[bytes], grace: float = 5.0) -> Non
 
 
 def run_with_timeout(timeout_seconds: float, command: List[str]) -> int:
+    print(f"[run_with_timeout] Starting: {command}", flush=True)
     try:
         proc = subprocess.Popen(command)
     except FileNotFoundError as exc:
-        print(f"Failed to launch command: {exc}", file=sys.stderr)
+        print(f"Failed to launch command: {exc}", file=sys.stderr, flush=True)
         return 127
 
     try:
-        return proc.wait(timeout=timeout_seconds)
+        ret = proc.wait(timeout=timeout_seconds)
+        print(f"[run_with_timeout] Finished with exit code {ret}", flush=True)
+        return ret
     except subprocess.TimeoutExpired:
+        print(f"[run_with_timeout] Timed out after {timeout_seconds}s", file=sys.stderr, flush=True)
         _terminate_process(proc)
         return 124
     except KeyboardInterrupt:

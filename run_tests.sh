@@ -256,6 +256,8 @@ if [ -n "$TEST_EXE" ]; then
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     echo ""
+else
+    log_warning "test_simple_count executable not found - skipping"
 fi
 
 TEST_EXE=$(find_executable "test_iterator")
@@ -270,6 +272,8 @@ if [ -n "$TEST_EXE" ]; then
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     echo ""
+else
+    log_warning "test_iterator executable not found - skipping"
 fi
 
 TEST_EXE=$(find_executable "test_descent")
@@ -284,6 +288,8 @@ if [ -n "$TEST_EXE" ]; then
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     echo ""
+else
+    log_warning "test_descent executable not found - skipping"
 fi
 
 TEST_EXE=$(find_executable "test_skip_descent")
@@ -298,6 +304,8 @@ if [ -n "$TEST_EXE" ]; then
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     echo ""
+else
+    log_warning "test_skip_descent executable not found - skipping"
 fi
 
 TEST_EXE=$(find_executable "test_entry_read")

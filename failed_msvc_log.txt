@@ -1,0 +1,297 @@
+PF3.0 Windows MSVC Build & Test	Set up job	﻿2025-12-11T13:57:37.8748280Z Current runner version: '2.329.0'
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8788540Z ##[group]Runner Image Provisioner
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8789290Z Hosted Compute Agent
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8789767Z Version: 20251124.448
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8790355Z Commit: fda5086b43ec66ade217e5fcd18146c879571177
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8790972Z Build Date: 2025-11-24T21:16:26Z
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8791494Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8791924Z ##[group]Operating System
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8792442Z Microsoft Windows Server 2022
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8792911Z 10.0.20348
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8793560Z Datacenter
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8794071Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8794504Z ##[group]Runner Image
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8795053Z Image: windows-2022
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8795546Z Version: 20251125.125.1
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8796501Z Included Software: https://github.com/actions/runner-images/blob/win22/20251125.125/images/windows/Windows2022-Readme.md
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8798233Z Image Release: https://github.com/actions/runner-images/releases/tag/win22%2F20251125.125
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8799569Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8800624Z ##[group]GITHUB_TOKEN Permissions
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8802875Z Contents: read
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8803472Z Metadata: read
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8803908Z Packages: read
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8804344Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8806370Z Secret source: Actions
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.8807201Z Prepare workflow directory
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.9303511Z Prepare all required actions
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:37.9361753Z Getting action download info
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:38.3298171Z Download action repository 'actions/checkout@v4' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:38.9633135Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:39.0936194Z Download action repository 'ruby/setup-ruby@v1' (SHA:d697be2f83c6234b20877c3b5eac7a7f342f0d0c)
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:39.6818640Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+PF3.0 Windows MSVC Build & Test	Set up job	2025-12-11T13:57:39.9864519Z Complete job name: PF3.0 Windows MSVC Build & Test
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	﻿2025-12-11T13:57:40.1404455Z ##[group]Run actions/checkout@v4
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1405860Z with:
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1406584Z   repository: Raizo-TCS/archive_r
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1407761Z   token: ***
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1408461Z   ssh-strict: true
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1409202Z   ssh-user: git
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1409938Z   persist-credentials: true
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1410757Z   clean: true
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1411498Z   sparse-checkout-cone-mode: true
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1412392Z   fetch-depth: 1
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1413123Z   fetch-tags: false
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1413869Z   show-progress: true
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1414622Z   lfs: false
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1415299Z   submodules: false
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1416059Z   set-safe-directory: true
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1417044Z env:
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1417760Z   MACOSX_DEPLOYMENT_TARGET: 11.0
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.1418626Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.3101335Z Syncing repository: Raizo-TCS/archive_r
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.3105079Z ##[group]Getting Git version info
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.3106456Z Working directory is 'D:\a\archive_r\archive_r'
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.4091057Z [command]"C:\Program Files\Git\bin\git.exe" version
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7013831Z git version 2.52.0.windows.1
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7066965Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7088183Z Temporarily overriding HOME='D:\a\_temp\ce71b7ff-5bc9-411c-87b3-e87e03ed798d' before making global git config changes
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7092018Z Adding repository directory to the temporary git global config as a safe directory
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7102533Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7579440Z Deleting the contents of 'D:\a\archive_r\archive_r'
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7586249Z ##[group]Initializing the repository
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.7599049Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\archive_r\archive_r
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.8405117Z Initialized empty Git repository in D:/a/archive_r/archive_r/.git/
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.8445077Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/Raizo-TCS/archive_r
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9067616Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9069782Z ##[group]Disabling automatic garbage collection
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9078807Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9331990Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9334195Z ##[group]Setting up auth
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9348634Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:40.9612078Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:42.1871239Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:42.2188000Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:42.6772979Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:42.7026437Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:43.1590342Z [command]"C:\Program Files\Git\bin\git.exe" config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:43.1844998Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:43.1845648Z ##[group]Fetching the repository
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:43.1860766Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +81f52948a6c1cacc7f5fa0f351c48f3d52fbe613:refs/remotes/origin/feature/containerize-linux-arm64-ci
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.1764224Z From https://github.com/Raizo-TCS/archive_r
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.1764954Z  * [new ref]         81f52948a6c1cacc7f5fa0f351c48f3d52fbe613 -> origin/feature/containerize-linux-arm64-ci
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2033490Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2034261Z ##[group]Determining the checkout info
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2036996Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2047226Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2420791Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2684264Z ##[group]Checking out the ref
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.2685051Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force -B feature/containerize-linux-arm64-ci refs/remotes/origin/feature/containerize-linux-arm64-ci
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.3548004Z branch 'feature/containerize-linux-arm64-ci' set up to track 'origin/feature/containerize-linux-arm64-ci'.
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.3555010Z Switched to a new branch 'feature/containerize-linux-arm64-ci'
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.3586398Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.3906475Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+PF3.0 Windows MSVC Build & Test	Run actions/checkout@v4	2025-12-11T13:57:44.4119899Z 81f52948a6c1cacc7f5fa0f351c48f3d52fbe613
+PF3.0 Windows MSVC Build & Test	Setup Python	﻿2025-12-11T13:57:44.4484224Z ##[group]Run actions/setup-python@v5
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4484581Z with:
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4484762Z   python-version: 3.11
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4484964Z   check-latest: false
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4485294Z   token: ***
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4485474Z   update-environment: true
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4485680Z   allow-prereleases: false
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4485892Z   freethreaded: false
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4486096Z env:
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4486259Z   MACOSX_DEPLOYMENT_TARGET: 11.0
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.4486465Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.6831988Z ##[group]Installed versions
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.6988903Z Successfully set up CPython (3.11.9)
+PF3.0 Windows MSVC Build & Test	Setup Python	2025-12-11T13:57:44.6990372Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	﻿2025-12-11T13:57:44.7249006Z ##[group]Run ruby/setup-ruby@v1
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7249325Z with:
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7249493Z   ruby-version: 3.2
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7249676Z   bundler-cache: false
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7249855Z env:
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7250021Z   MACOSX_DEPLOYMENT_TARGET: 11.0
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7250307Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7250720Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7251115Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7251476Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7251834Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.7252114Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.9440173Z ##[group]Downloading msys2 build tools
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:44.9441225Z https://github.com/ruby/setup-msys2-gcc/releases/latest/download/msys2-ucrt64.7z
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:50.3634804Z Took   5.42 seconds
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:50.3636908Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:57:50.3643557Z ##[group]Extracting  msys2 build tools
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.2314551Z Took  10.87 seconds
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.2315240Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.2435004Z ##[group]Setting up ridk environment
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8371543Z ACLOCAL_PATH=/ucrt64/share/aclocal:/usr/share/aclocal
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8385689Z LANG=en_US.UTF-8
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8393493Z MAKE=make
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8396226Z MANPATH=/ucrt64/share/man
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8399324Z MINGW_CHOST=x86_64-w64-mingw32
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8402333Z MINGW_PACKAGE_PREFIX=mingw-w64-ucrt-x86_64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8404760Z MINGW_PREFIX=/ucrt64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8407497Z MSYSTEM=UCRT64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8410166Z MSYSTEM_CARCH=x86_64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8414241Z MSYSTEM_CHOST=x86_64-w64-mingw32
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8417690Z MSYSTEM_PREFIX=/ucrt64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8421231Z PKG_CONFIG_PATH=/ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8425258Z PROMPT=$P$G
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8428688Z RI_DEVKIT=C:\hostedtoolcache\windows\Ruby\3.2.9\x64\msys64
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8432911Z Took   0.60 seconds
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8433438Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8438336Z ##[group]Modifying Path
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8439698Z Entries removed from Path to avoid conflicts with default Ruby:
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8440144Z   C:\hostedtoolcache\windows\Ruby\3.3.10\x64\bin
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8443884Z Entries added to Path to use selected Ruby:
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8444644Z   C:\hostedtoolcache\windows\Ruby\3.2.9\x64\bin
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8445071Z   C:\hostedtoolcache\windows\Ruby\3.2.9\x64\msys64\ucrt64\bin
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8445399Z   C:\hostedtoolcache\windows\Ruby\3.2.9\x64\msys64\usr\bin
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8449314Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.8449679Z ##[group]Print Ruby version
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9501190Z [command]C:\hostedtoolcache\windows\Ruby\3.2.9\x64\bin\ruby.exe --version
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9653387Z ruby 3.2.9 (2025-07-24 revision 8f611e0c46) [x64-mingw-ucrt]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9680615Z Took   0.12 seconds
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9682021Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9685482Z ##[group]Installing Bundler
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9690265Z Installing latest Bundler for ruby-3.2.9 on Windows because bin/bundle does not work in bash otherwise
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:01.9741552Z [command]C:\Windows\system32\cmd.exe /D /S /C "C:\hostedtoolcache\windows\Ruby\3.2.9\x64\bin\gem.cmd install bundler -v "~> 4.0""
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:05.5713440Z Successfully installed bundler-4.0.1
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:05.5713963Z 1 gem installed
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:05.5803461Z Took   3.61 seconds
+PF3.0 Windows MSVC Build & Test	Setup Ruby	2025-12-11T13:58:05.5804009Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	﻿2025-12-11T13:58:05.6009097Z ##[group]Run ./install-deps-msvc.ps1
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6009480Z [36;1m./install-deps-msvc.ps1[0m
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6178333Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6179091Z env:
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6179327Z   MACOSX_DEPLOYMENT_TARGET: 11.0
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6179723Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6180217Z   PKG_CONFIG_PATH: /ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6180706Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6181177Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6181638Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6182023Z   TMPDIR: D:\a\_temp
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6182252Z   HOME: C:\Users\runneradmin
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6182500Z   MSYS2_PATH_TYPE: inherit
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6182784Z   ACLOCAL_PATH: /ucrt64/share/aclocal:/usr/share/aclocal
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6183165Z   LANG: en_US.UTF-8
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6183365Z   MAKE: make
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6183555Z   MANPATH: /ucrt64/share/man
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6183810Z   MINGW_CHOST: x86_64-w64-mingw32
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6184087Z   MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6184382Z   MINGW_PREFIX: /ucrt64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6184598Z   MSYSTEM: UCRT64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6184790Z   MSYSTEM_CARCH: x86_64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6185016Z   MSYSTEM_CHOST: x86_64-w64-mingw32
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6185272Z   MSYSTEM_PREFIX: /ucrt64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6185497Z   PROMPT: $P$G
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6185759Z   RI_DEVKIT: C:\hostedtoolcache\windows\Ruby\3.2.9\x64\msys64
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6195182Z   Path: C:\Users\runneradmin\AppData\Roaming\Python\Python311\Scripts;C:\hostedtoolcache\windows\Python\3.11.9\x64\Scripts;C:\hostedtoolcache\windows\Python\3.11.9\x64;C:\Program Files\MongoDB\Server\7.0\bin;C:\aliyun-cli;C:\vcpkg;C:\Program Files (x86)\NSIS\;C:\tools\zstd;C:\Program Files\Mercurial\;C:\hostedtoolcache\windows\stack\3.7.1\x64;C:\cabal\bin;C:\\ghcup\bin;C:\mingw64\bin;C:\Program Files\dotnet;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\R\R-4.5.2\bin\x64;C:\SeleniumWebDrivers\GeckoDriver;C:\SeleniumWebDrivers\EdgeDriver\;C:\SeleniumWebDrivers\ChromeDriver;C:\Program Files (x86)\sbt\bin;C:\Program Files (x86)\GitHub CLI;C:\Program Files\Git\bin;C:\Program Files (x86)\pipx_bin;C:\npm\prefix;C:\hostedtoolcache\windows\go\1.24.10\x64\bin;C:\hostedtoolcache\windows\Python\3.9.13\x64\Scripts;C:\hostedtoolcache\windows\Python\3.9.13\x64;C:\Program Files\OpenSSL\bin;C:\tools\kotlinc\bin;C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.472-8\x64\bin;C:\Program Files\ImageMagick-7.1.2-Q16-HDRI;C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin;C:\ProgramData\kind;C:\ProgramData\Chocolatey\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\PowerShell\7\;C:\Program Files\Microsoft\Web Platform Installer\;C:\Program Files\TortoiseSVN\bin;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files (x86)\WiX Toolset v3.14\bin;C:\Program Files\Microsoft SQL Server\130\DTS\Binn\;C:\Program Files\Microsoft SQL Server\140\DTS\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\Program Files\Microsoft SQL Server\170\DTS\Binn\;C:\Strawberry\c\bin;C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin;C:\ProgramData\chocolatey\lib\pulumi\tools\Pulumi\bin;C:\Program Files\CMake\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.11\bin;C:\Program Files\Microsoft Service Fabric\bin\Fabric\Fabric.Code;C:\Program Files\Microsoft SDKs\Service Fabric\Tools\ServiceFabricLocalClusterManager;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Program Files\GitHub CLI\;c:\tools\php;C:\Program Files (x86)\sbt\bin;C:\Program Files\Amazon\AWSCLIV2\;C:\Program Files\Amazon\SessionManagerPlugin\bin\;C:\Program Files\Amazon\AWSSAMCLI\bin\;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files\mongosh\;C:\Program Files\LLVM\bin;C:\Program Files (x86)\LLVM\bin;C:\Users\runneradmin\.dotnet\tools;C:\Users\runneradmin\.cargo\bin;C:\Users\runneradmin\AppData\Local\Microsoft\WindowsApps
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:05.6205338Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:10.5519770Z Installing libarchive:x64-windows via vcpkg (Release only)...
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:10.8334654Z Computing installation plan...
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7133538Z The following packages will be built and installed:
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7133965Z   * bzip2[core,tool]:x64-windows-release@1.0.8#6
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7134354Z     libarchive[bzip2,core,crypto,lz4,lzma,xar,zstd]:x64-windows-release@3.8.3
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7134712Z   * liblzma:x64-windows-release@5.8.1
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7134986Z   * lz4:x64-windows-release@1.10.0
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7135211Z   * openssl:x64-windows-release@3.6.0#3
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7135466Z   * vcpkg-cmake:x64-windows@2024-04-23
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7135704Z   * vcpkg-cmake-config:x64-windows@2024-05-23
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7135972Z   * vcpkg-cmake-get-vars:x64-windows@2025-05-29
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7136242Z   * zlib:x64-windows-release@1.3.1
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7136469Z   * zstd:x64-windows-release@1.5.7
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:11.7136783Z Additional packages (*) will be modified to complete this operation.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:12.0241918Z Detecting compiler hash for triplet x64-windows...
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:12.1629934Z A suitable version of powershell-core was not found (required v7.5.3).
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:12.1630780Z Downloading https://github.com/PowerShell/PowerShell/releases/download/v7.5.3/PowerShell-7.5.3-win-x64.zip -> PowerShell-7.5.3-win-x64.zip
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:14.9908763Z Successfully downloaded PowerShell-7.5.3-win-x64.zip
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:14.9909484Z Extracting powershell-core...
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7026303Z error: vcpkg was unable to detect the active compiler's information. See above for the CMake failure output.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7027271Z error: while detecting compiler information:
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7027907Z The log file content at "C:\vcpkg\buildtrees\detect_compiler\stdout-x64-windows.log" is:
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7029216Z -- Found ninja('1.12.1') but at least version 1.13.1 is required! Trying to use internal version if possible!
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7030572Z Downloading https://github.com/ninja-build/ninja/releases/download/v1.13.1/ninja-win.zip -> ninja-win-1.13.1.zip
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7032045Z error: https://github.com/ninja-build/ninja/releases/download/v1.13.1/ninja-win.zip: failed: status code 503
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7033043Z note: If you are using a proxy, please ensure your proxy settings are correct.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7033639Z Possible causes are:
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7034297Z 1. You are actually using an HTTP proxy, but setting HTTPS_PROXY variable to `https://address:port`.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7035588Z This is not correct, because `https://` prefix claims the proxy is an HTTPS proxy, while your proxy (v2ray, shadowsocksr, etc...) is an HTTP proxy.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7036747Z Try setting `http://address:port` to both HTTP_PROXY and HTTPS_PROXY instead.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7038108Z 2. If you are using Windows, vcpkg will automatically use your Windows IE Proxy Settings set by your proxy software. See: https://github.com/microsoft/vcpkg-tool/pull/77
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7039801Z The value set by your proxy might be wrong, or have same `https://` prefix issue.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7040421Z 3. Your proxy's remote server is out of service.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7041733Z If you believe this is not a temporary download server failure and vcpkg needs to be changed to download this file from a different location, please submit an issue to https://github.com/Microsoft/vcpkg/issues
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7044549Z CMake Error at scripts/cmake/vcpkg_download_distfile.cmake:136 (message):
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7045174Z   Download failed, halting portfile.
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7046445Z Call Stack (most recent call first):
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7047051Z   scripts/cmake/vcpkg_find_acquire_program.cmake:170 (vcpkg_download_distfile)
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7047872Z   scripts/cmake/vcpkg_configure_cmake.cmake:150 (vcpkg_find_acquire_program)
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7048621Z   scripts/detect_compiler/portfile.cmake:18 (vcpkg_configure_cmake)
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7049150Z   scripts/ports.cmake:206 (include)
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7049413Z 
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:23.7049423Z 
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:24.4652720Z [31;1mException: [0mD:\a\archive_r\archive_r\install-deps-msvc.ps1:14[0m
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:24.4653673Z [31;1m[0m[36;1mLine |[0m
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:24.4654380Z [31;1m[0m[36;1m[36;1m  14 | [0m   [36;1mthrow "vcpkg prefix not found: $prefix"[0m
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:24.4654970Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:24.4655791Z [31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mvcpkg prefix not found: C:\vcpkg\installed\x64-windows-release[0m
+PF3.0 Windows MSVC Build & Test	Install dependencies (MSVC)	2025-12-11T13:58:24.4960649Z ##[error]Process completed with exit code 1.
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	﻿2025-12-11T13:58:24.5160175Z ##[group]Run actions/upload-artifact@v4
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5160504Z with:
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5160743Z   name: archive-r-pf3-81f52948a6c1cacc7f5fa0f351c48f3d52fbe613
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5161212Z   path: build/bindings/python/dist/**/*
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	build/bindings/ruby/**/*.gem
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	build/logs/**/*.log
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5161590Z   if-no-files-found: ignore
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5161781Z   retention-days: 7
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5161956Z   compression-level: 6
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5162132Z   overwrite: false
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5162309Z   include-hidden-files: false
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5162493Z env:
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5162652Z   MACOSX_DEPLOYMENT_TARGET: 11.0
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5162932Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5163300Z   PKG_CONFIG_PATH: /ucrt64/lib/pkgconfig:/ucrt64/share/pkgconfig
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5163664Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5164001Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5164380Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5164667Z   TMPDIR: D:\a\_temp
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5164844Z   HOME: C:\Users\runneradmin
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5165046Z   MSYS2_PATH_TYPE: inherit
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5165280Z   ACLOCAL_PATH: /ucrt64/share/aclocal:/usr/share/aclocal
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5165527Z   LANG: en_US.UTF-8
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5165690Z   MAKE: make
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5165850Z   MANPATH: /ucrt64/share/man
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5166051Z   MINGW_CHOST: x86_64-w64-mingw32
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5166276Z   MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5166524Z   MINGW_PREFIX: /ucrt64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5166691Z   MSYSTEM: UCRT64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5166946Z   MSYSTEM_CARCH: x86_64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5167158Z   MSYSTEM_CHOST: x86_64-w64-mingw32
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5167371Z   MSYSTEM_PREFIX: /ucrt64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5167558Z   PROMPT: $P$G
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5167774Z   RI_DEVKIT: C:\hostedtoolcache\windows\Ruby\3.2.9\x64\msys64
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5176705Z   Path: C:\Users\runneradmin\AppData\Roaming\Python\Python311\Scripts;C:\hostedtoolcache\windows\Python\3.11.9\x64\Scripts;C:\hostedtoolcache\windows\Python\3.11.9\x64;C:\Program Files\MongoDB\Server\7.0\bin;C:\aliyun-cli;C:\vcpkg;C:\Program Files (x86)\NSIS\;C:\tools\zstd;C:\Program Files\Mercurial\;C:\hostedtoolcache\windows\stack\3.7.1\x64;C:\cabal\bin;C:\\ghcup\bin;C:\mingw64\bin;C:\Program Files\dotnet;C:\Program Files\MySQL\MySQL Server 8.0\bin;C:\Program Files\R\R-4.5.2\bin\x64;C:\SeleniumWebDrivers\GeckoDriver;C:\SeleniumWebDrivers\EdgeDriver\;C:\SeleniumWebDrivers\ChromeDriver;C:\Program Files (x86)\sbt\bin;C:\Program Files (x86)\GitHub CLI;C:\Program Files\Git\bin;C:\Program Files (x86)\pipx_bin;C:\npm\prefix;C:\hostedtoolcache\windows\go\1.24.10\x64\bin;C:\hostedtoolcache\windows\Python\3.9.13\x64\Scripts;C:\hostedtoolcache\windows\Python\3.9.13\x64;C:\Program Files\OpenSSL\bin;C:\tools\kotlinc\bin;C:\hostedtoolcache\windows\Java_Temurin-Hotspot_jdk\8.0.472-8\x64\bin;C:\Program Files\ImageMagick-7.1.2-Q16-HDRI;C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin;C:\ProgramData\kind;C:\ProgramData\Chocolatey\bin;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Program Files\PowerShell\7\;C:\Program Files\Microsoft\Web Platform Installer\;C:\Program Files\TortoiseSVN\bin;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files (x86)\WiX Toolset v3.14\bin;C:\Program Files\Microsoft SQL Server\130\DTS\Binn\;C:\Program Files\Microsoft SQL Server\140\DTS\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Microsoft SQL Server\160\DTS\Binn\;C:\Program Files\Microsoft SQL Server\170\DTS\Binn\;C:\Strawberry\c\bin;C:\Strawberry\perl\site\bin;C:\Strawberry\perl\bin;C:\ProgramData\chocolatey\lib\pulumi\tools\Pulumi\bin;C:\Program Files\CMake\bin;C:\ProgramData\chocolatey\lib\maven\apache-maven-3.9.11\bin;C:\Program Files\Microsoft Service Fabric\bin\Fabric\Fabric.Code;C:\Program Files\Microsoft SDKs\Service Fabric\Tools\ServiceFabricLocalClusterManager;C:\Program Files\nodejs\;C:\Program Files\Git\cmd;C:\Program Files\Git\mingw64\bin;C:\Program Files\Git\usr\bin;C:\Program Files\GitHub CLI\;c:\tools\php;C:\Program Files (x86)\sbt\bin;C:\Program Files\Amazon\AWSCLIV2\;C:\Program Files\Amazon\SessionManagerPlugin\bin\;C:\Program Files\Amazon\AWSSAMCLI\bin\;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files\mongosh\;C:\Program Files\LLVM\bin;C:\Program Files (x86)\LLVM\bin;C:\Users\runneradmin\.dotnet\tools;C:\Users\runneradmin\.cargo\bin;C:\Users\runneradmin\AppData\Local\Microsoft\WindowsApps
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.5186924Z ##[endgroup]
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.7985085Z Multiple search paths detected. Calculating the least common ancestor of all paths
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.7993380Z The least common ancestor is D:\a\archive_r\archive_r\build. This will be the root directory of the artifact
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.7994059Z No files were found with the provided path: build/bindings/python/dist/**/*
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.7994549Z build/bindings/ruby/**/*.gem
+PF3.0 Windows MSVC Build & Test	Upload PF3 artifacts	2025-12-11T13:58:24.7994803Z build/logs/**/*.log. No artifacts will be uploaded.
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	﻿2025-12-11T13:58:24.8236841Z Post job cleanup.
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.0574919Z [command]"C:\Program Files\Git\bin\git.exe" version
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.0841679Z git version 2.52.0.windows.1
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.0920712Z Temporarily overriding HOME='D:\a\_temp\0beac091-ce31-48e0-bce4-e3bed4d26056' before making global git config changes
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.0921898Z Adding repository directory to the temporary git global config as a safe directory
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.0933263Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\archive_r\archive_r
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.1260729Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.1569919Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.6894853Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.7089763Z http.https://github.com/.extraheader
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.7130778Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all http.https://github.com/.extraheader
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:25.7366279Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:26.2678271Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+PF3.0 Windows MSVC Build & Test	Post Run actions/checkout@v4	2025-12-11T13:58:26.2936508Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+PF3.0 Windows MSVC Build & Test	Complete job	﻿2025-12-11T13:58:26.8292408Z Cleaning up orphan processes
