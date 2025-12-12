@@ -9,7 +9,7 @@ $env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
 
 $repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
 $timeoutPy = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
-$runTestsCmd = "cd `"$repoPathMsys`" && ls -la run_tests.sh && export RUN_TESTS_TIMEOUT_ACTIVE=1 && ./run_tests.sh"
+$runTestsCmd = "cd `"$repoPathMsys`" && echo 'DEBUG: Wrapper starting' && chmod +x run_tests.sh && ./run_tests.sh > run_tests.log 2>&1; RES=$?; echo 'DEBUG: Wrapper finished with '$RES; echo '--- run_tests.log content ---'; cat run_tests.log; echo '--- end log ---'; exit $RES"
 $rubyBindingCmd = "cd `"$repoPathMsys`" && ./bindings/ruby/run_binding_tests.sh"
 $pythonBindingCmd = "cd `"$repoPathMsys`" && ./bindings/python/run_binding_tests.sh"
 

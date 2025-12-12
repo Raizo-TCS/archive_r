@@ -30,6 +30,8 @@ def _terminate_process(proc: subprocess.Popen[bytes], grace: float = 5.0) -> Non
 
 
 def run_with_timeout(timeout_seconds: float, command: List[str]) -> int:
+    print(f"[run_with_timeout] Python: {sys.executable}", flush=True)
+    print(f"[run_with_timeout] CWD: {os.getcwd()}", flush=True)
     print(f"[run_with_timeout] Starting: {command}", flush=True)
     try:
         proc = subprocess.Popen(command)
