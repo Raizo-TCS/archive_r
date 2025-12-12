@@ -7,10 +7,19 @@ if (-not (Test-Path $bashPath)) { throw "MSYS2 bash not found at $bashPath" }
 $env:ARCHIVE_R_REPO_WIN = $repoRoot
 $env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
 
-$repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
-$timeoutPy = (& $bashPath -lc 'cygpath -m "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
+# Ensure paths use forward slashes to avoid backslash escaping issues in bash
+$repoRootFwd = $repoRoot -replace '\\', '/'
+$timeoutWinFwd = $env:ARCHIVE_R_TIMEOUT_WIN -replace '\\', '/'
+
+Write-Host "DEBUG: Repo Root (Fwd): $repoRootFwd"
+
+# Use forward slashes when passing to cygpath to prevent bash from interpreting backslashes as escapes
+$repoPathMsys = (& $bashPath -lc "cygpath -u '$repoRootFwd'").Trim()
+$timeoutPy = (& $bashPath -lc "cygpath -m '$timeoutWinFwd'").Trim()
 # bashPath is already in Windows format with forward slashes, safe for Python
 $bashPathForPy = $bashPath
+
+Write-Host "DEBUG: Repo Path MSYS: $repoPathMsys"
 
 # Create a temporary bash script to run tests
 # This avoids complex quoting issues with passing a long command string to bash -c
@@ -88,8 +97,16 @@ $testScriptPath = Join-Path $repoRoot "run_mingw_tests_generated.sh"
 # Convert to UTF-8 without BOM (PowerShell 5.1 default is UTF-16 or UTF-8 BOM)
 [IO.File]::WriteAllText($testScriptPath, $testScriptContent)
 
+# Fix: Ensure forward slashes for the path passed to bash/cygpath
+$testScriptPathFwd = $testScriptPath -replace '\\', '/'
+
+Write-Host "DEBUG: Generated script at: $testScriptPath"
+Write-Host "DEBUG: Forward slash path: $testScriptPathFwd"
+
 # Convert Windows path to MSYS path for execution
-$testScriptPathMsys = (& $bashPath -lc ('cygpath -u "{0}"' -f $testScriptPath)).Trim()
+$testScriptPathMsys = (& $bashPath -lc "cygpath -u '$testScriptPathFwd'").Trim()
+
+Write-Host "DEBUG: MSYS Path: $testScriptPathMsys"
 
 $env:MSYSTEM = "UCRT64"
 & $bashPath -lc "bash '$testScriptPathMsys'"
