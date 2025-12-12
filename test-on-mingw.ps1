@@ -33,6 +33,11 @@ cd "`$repo"
 pwd
 ls -la
 
+# Fix CRLF issues in scripts (common in Windows checkouts)
+sed -i 's/\r$//' run_tests.sh
+sed -i 's/\r$//' bindings/ruby/run_binding_tests.sh
+sed -i 's/\r$//' bindings/python/run_binding_tests.sh
+
 chmod +x run_tests.sh bindings/ruby/run_binding_tests.sh bindings/python/run_binding_tests.sh
 
 if [ ! -f "`$timeout_py" ]; then echo "[mingw] timeout helper not found: `$timeout_py" >&2; exit 1; fi
@@ -48,8 +53,10 @@ cat wrapper_test.log
 echo "[mingw] Running C++ tests (DIRECTLY)..."
 # Run tests directly without python wrapper first to debug output issues
 # We redirect to file to avoid pipe buffering issues, then cat it
-./run_tests.sh > run_tests_wrapper.log 2>&1 || true
+set +e
+./run_tests.sh > run_tests_wrapper.log 2>&1
 EXIT_CODE=\$?
+set -e
 
 echo "[mingw] run_tests.sh exit code: \$EXIT_CODE"
 echo "run_tests_wrapper.log size:"
