@@ -68,6 +68,32 @@ jobs:
           docker build -t $ImageName -f .github/docker/ci-windows-msvc.Dockerfile .
           docker push $ImageName
 
+  build-ci-windows-mingw:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase Registry Owner
+        shell: bash
+        run: |
+          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        shell: pwsh
+        run: |
+          $ImageName = "ghcr.io/${{ env.OWNER }}/archive_r/ci-windows-mingw:latest"
+          docker build -t $ImageName -f .github/docker/ci-windows-mingw.Dockerfile .
+          docker push $ImageName
+
   build-manylinux-aarch64-base:
     runs-on: ubuntu-24.04
     env:

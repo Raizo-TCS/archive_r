@@ -213,24 +213,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup MSYS2 (UCRT64)
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          path-type: minimal
-
-      - name: Install dependencies (MinGW)
+      - name: Prepare CI Container
         shell: pwsh
-        run: ./install-deps-mingw.ps1
+        run: |
+          $ImageName = "ghcr.io/${{ github.repository_owner }}/archive_r/ci-windows-mingw:latest"
+          $ImageName = $ImageName.ToLower()
+          try {
+            docker pull $ImageName
+            "CI_IMAGE=$ImageName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } catch {
+            Write-Host "Image not found, building locally..."
+            docker build -t ci-windows-mingw:local -f .github/docker/ci-windows-mingw.Dockerfile .
+            "CI_IMAGE=ci-windows-mingw:local" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
-      - name: Build (MinGW x86_64)
+      - name: Build & Test (MinGW Container)
         shell: pwsh
-        run: ./build-on-mingw.ps1 -PackageMode full
-
-      - name: Test (MinGW x86_64)
-        shell: pwsh
-        run: ./test-on-mingw.ps1
+        run: |
+          # Run build and test inside the container
+          # We map the workspace to C:\io
+          docker run --rm `
+            -v "${{ github.workspace }}:C:\io" `
+            -w "C:\io" `
+            $env:CI_IMAGE `
+            powershell -Command "$ErrorActionPreference = 'Stop'; .\build-on-mingw.ps1 -PackageMode full; .\test-on-mingw.ps1"
 
       - name: Upload PF4 artifacts
         if: ${{ always() && env.ACT != 'true' }}
