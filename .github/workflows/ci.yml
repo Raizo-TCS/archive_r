@@ -237,7 +237,7 @@ jobs:
             -v "${{ github.workspace }}:C:\io" `
             -w "C:\io" `
             $env:CI_IMAGE `
-            powershell -Command "$ErrorActionPreference = 'Stop'; .\build-on-mingw.ps1 -PackageMode full; .\test-on-mingw.ps1"
+            powershell -Command "`$ErrorActionPreference = 'Stop'; .\build-on-mingw.ps1 -PackageMode full; .\test-on-mingw.ps1"
 
       - name: Upload PF4 artifacts
         if: ${{ always() && env.ACT != 'true' }}

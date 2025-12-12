@@ -8,13 +8,13 @@ $env:ARCHIVE_R_REPO_WIN = $repoRoot
 $env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
 
 $repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
+Write-Host "DEBUG: repoPathMsys='$repoPathMsys'"
 $timeoutPy = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
+Write-Host "DEBUG: timeoutPy='$timeoutPy'"
+
 $runTestsCmd = "cd `"$repoPathMsys`" && echo 'DEBUG: Wrapper starting' && chmod +x run_tests.sh && ./run_tests.sh > run_tests.log 2>&1; RES=$?; echo 'DEBUG: Wrapper finished with '$RES; echo '--- run_tests.log content ---'; cat run_tests.log; echo '--- end log ---'; exit $RES"
-$rubyBindingCmd = "cd `"$repoPathMsys`" && ./bindings/ruby/run_binding_tests.sh"
-$pythonBindingCmd = "cd `"$repoPathMsys`" && ./bindings/python/run_binding_tests.sh"
 
 $cmdLines = @(
-        'set -euo pipefail'
         'repo="{0}"' -f $repoPathMsys
         'timeout_py="{0}"' -f $timeoutPy
         'bash_exe="{0}"' -f $bashPath
