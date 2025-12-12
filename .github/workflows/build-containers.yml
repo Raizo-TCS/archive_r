@@ -1,15 +1,8 @@
 name: Build Containers
 
 on:
-  push:
-    paths:
-      - '.github/docker/**'
-      - '.github/workflows/build-containers.yml'
-  pull_request:
-    paths:
-      - '.github/docker/**'
-      - '.github/workflows/build-containers.yml'
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
