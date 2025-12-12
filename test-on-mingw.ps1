@@ -40,18 +40,31 @@ if [ ! -f "`$timeout_py" ]; then echo "[mingw] timeout helper not found: `$timeo
 python3 --version || echo "python3 not found"
 
 echo "[mingw] Testing run_with_timeout wrapper..."
-python3 -u "`$timeout_py" 10 "`$bash_exe" -lc "echo [mingw] wrapper test success"
+python3 -u "`$timeout_py" 10 "`$bash_exe" -lc "echo [mingw] wrapper test success" > wrapper_test.log 2>&1 || true
+echo "Wrapper test log size:"
+ls -l wrapper_test.log
+cat wrapper_test.log
 
-echo "[mingw] Running C++ tests..."
-# Run tests and capture output to log file, then display it
-# We use a subshell for the command to ensure redirection works as expected
-python3 -u "`$timeout_py" 120 "`$bash_exe" -lc "cd \"`$repo\" && ./run_tests.sh" > run_tests_wrapper.log 2>&1 || true
+echo "[mingw] Running C++ tests (DIRECTLY)..."
+# Run tests directly without python wrapper first to debug output issues
+# We redirect to file to avoid pipe buffering issues, then cat it
+./run_tests.sh > run_tests_wrapper.log 2>&1 || true
+EXIT_CODE=\$?
+
+echo "[mingw] run_tests.sh exit code: \$EXIT_CODE"
+echo "run_tests_wrapper.log size:"
+ls -l run_tests_wrapper.log
 
 echo "--- C++ Test Output ---"
 cat run_tests_wrapper.log
 echo "-----------------------"
 
-# Check if the log contains success or failure indicators if exit code was swallowed
+if [ \$EXIT_CODE -ne 0 ]; then
+    echo "[mingw] C++ tests failed with exit code \$EXIT_CODE"
+    exit \$EXIT_CODE
+fi
+
+# Check for failure in log even if exit code was 0 (shouldn't happen with set -e but good safety)
 if grep -q "Test FAILED" run_tests_wrapper.log; then
     echo "[mingw] C++ tests failed (detected via log)"
     exit 1
