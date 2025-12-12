@@ -16,4 +16,8 @@ switch ($PackageMode) {
   default  { $cmd += ' --package-python --package-ruby' }
 }
 
+$env:MSYSTEM = "UCRT64"
 & $bashPath -lc $cmd
+if ($LastExitCode -ne 0) {
+    throw "Build failed with exit code $LastExitCode"
+}

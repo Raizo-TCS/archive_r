@@ -32,4 +32,8 @@ $cmdLines = @(
 
 $cmd = $cmdLines -join ' && '
 
+$env:MSYSTEM = "UCRT64"
 & $bashPath -lc $cmd
+if ($LastExitCode -ne 0) {
+    throw "Tests failed with exit code $LastExitCode"
+}
