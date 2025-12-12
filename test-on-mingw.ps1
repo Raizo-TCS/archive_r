@@ -97,19 +97,14 @@ $testScriptPath = Join-Path $repoRoot "run_mingw_tests_generated.sh"
 # Convert to UTF-8 without BOM (PowerShell 5.1 default is UTF-16 or UTF-8 BOM)
 [IO.File]::WriteAllText($testScriptPath, $testScriptContent)
 
-# Fix: Ensure forward slashes for the path passed to bash/cygpath
-$testScriptPathFwd = $testScriptPath -replace '\\', '/'
-
 Write-Host "DEBUG: Generated script at: $testScriptPath"
-Write-Host "DEBUG: Forward slash path: $testScriptPathFwd"
 
-# Convert Windows path to MSYS path for execution
-$testScriptPathMsys = (& $bashPath -lc "cygpath -u '$testScriptPathFwd'").Trim()
-
-Write-Host "DEBUG: MSYS Path: $testScriptPathMsys"
-
+# Execute using bash by changing directory first
+# This avoids issues with passing full paths containing backslashes or weird cygpath behavior
+# We use the forward-slash version of repo root which MSYS bash should understand
 $env:MSYSTEM = "UCRT64"
-& $bashPath -lc "bash '$testScriptPathMsys'"
+& $bashPath -lc "cd '$repoRootFwd' && ./run_mingw_tests_generated.sh"
+
 if ($LastExitCode -ne 0) {
     throw "Tests failed with exit code $LastExitCode"
 }
