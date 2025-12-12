@@ -2,12 +2,10 @@ name: Build Containers
 
 on:
   push:
-    branches: [main]
     paths:
       - '.github/docker/**'
       - '.github/workflows/build-containers.yml'
   pull_request:
-    branches: [main]
     paths:
       - '.github/docker/**'
       - '.github/workflows/build-containers.yml'
