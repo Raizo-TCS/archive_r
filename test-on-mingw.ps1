@@ -45,6 +45,15 @@ if [ `$RET -ne 0 ]; then
     exit `$RET
 fi
 
+# Run Ruby Binding Tests
+echo "[mingw] Running Ruby binding tests..."
+python "$timeoutPy" 120 bash -c "./bindings/ruby/run_binding_tests.sh"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Ruby binding tests failed with `$RET"
+    exit `$RET
+fi
+
 # Build Python Binding
 echo "[mingw] Building Python binding..."
 python "$timeoutPy" 120 bash -c "./build.sh --package-python"
