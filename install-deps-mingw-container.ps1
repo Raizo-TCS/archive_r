@@ -22,3 +22,9 @@ if (-not (Test-Path $bashPath)) {
 
 # Delegate the rest to the canonical dependency script
 powershell -ExecutionPolicy Bypass -File .\install-deps-mingw.ps1
+
+# Verify key tools exist to avoid publishing a broken image.
+& $bashPath -lc "command -v cmake >/dev/null 2>&1 && cmake --version"
+if ($LastExitCode -ne 0) {
+  throw "CMake was not found after dependency installation."
+}
