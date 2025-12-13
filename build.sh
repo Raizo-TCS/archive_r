@@ -704,10 +704,14 @@ package_python_binding() {
 
     # Ensure build toolchain is available in manylinux images
     local pkg_deps=("pip" "setuptools" "wheel" "build")
+    log_info "ARCHIVE_R_SKIP_TWINE_CHECK is set to: '${ARCHIVE_R_SKIP_TWINE_CHECK:-}'"
     if [ "${ARCHIVE_R_SKIP_TWINE_CHECK:-0}" -ne 1 ]; then
         pkg_deps+=("twine")
+    else
+        log_info "Skipping twine installation"
     fi
-
+    
+    log_info "Installing Python build dependencies: ${pkg_deps[*]}"
     if ! pip_install_with_retry 3 --upgrade "${pkg_deps[@]}"; then
         log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
