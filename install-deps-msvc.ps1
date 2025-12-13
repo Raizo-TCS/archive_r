@@ -17,6 +17,50 @@ function Invoke-Native {
   }
 }
 
+function Write-LogTail {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [int]$Lines = 200
+  )
+  if (-not (Test-Path $Path)) {
+    return
+  }
+  Write-Host "----- BEGIN LOG: $Path (tail $Lines) -----"
+  try {
+    Get-Content -Path $Path -Tail $Lines -ErrorAction Stop
+  } catch {
+    Write-Warning "Failed to read log: $Path ($($_.Exception.Message))"
+  }
+  Write-Host "----- END LOG: $Path -----"
+}
+
+function Dump-InstallerLogs {
+  Write-Host '=== Diagnostic logs (Chocolatey / VS Installer) ==='
+  Write-LogTail -Path 'C:\ProgramData\chocolatey\logs\chocolatey.log' -Lines 200
+
+  $candidateDirs = @(
+    'C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey',
+    'C:\Users\ContainerAdministrator\AppData\Local\Temp',
+    'C:\Windows\Temp'
+  )
+
+  foreach ($dir in $candidateDirs) {
+    if (-not (Test-Path $dir)) { continue }
+
+    # Visual Studio installer logs often appear as dd_installer_*.log
+    Get-ChildItem -Path $dir -Filter 'dd_installer_*.log' -File -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -First 3 |
+      ForEach-Object { Write-LogTail -Path $_.FullName -Lines 200 }
+
+    # Chocolatey package install scripts may emit .log files under temp
+    Get-ChildItem -Path $dir -Filter '*.log' -File -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -First 2 |
+      ForEach-Object { Write-LogTail -Path $_.FullName -Lines 120 }
+  }
+}
+
 function Ensure-Chocolatey {
   if (Get-Command choco -ErrorAction SilentlyContinue) {
     return
@@ -50,11 +94,16 @@ if ($InContainer) {
   # MSVC toolchain
   # NOTE: Installing visualstudio2022buildtools directly is known to fail intermittently in Windows containers.
   # The vctools workload package pulls in Build Tools as a dependency; install the workload only.
-  Invoke-Native choco @(
-    'install', '-y', 'visualstudio2022-workload-vctools',
-    '--execution-timeout', '7200',
-    '--package-parameters', '--includeRecommended --passive --norestart'
-  )
+  try {
+    Invoke-Native choco @(
+      'install', '-y', 'visualstudio2022-workload-vctools',
+      '--execution-timeout', '7200',
+      '--package-parameters', '"--includeRecommended --passive --norestart"'
+    )
+  } catch {
+    Dump-InstallerLogs
+    throw
+  }
 
   Assert-MsvcToolchainPresent
 
