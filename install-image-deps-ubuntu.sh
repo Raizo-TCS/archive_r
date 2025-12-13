@@ -19,14 +19,10 @@ if [[ "${pf}" == "arm64-cross" ]]; then
 
   cat > /etc/apt/sources.list.d/arm64.list <<'EOF'
 # arm64 sources for cross build
-Deb: deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
-Deb: deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
-Deb: deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble main restricted universe multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-updates main restricted universe multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports noble-security main restricted universe multiverse
 EOF
-
-  # NOTE: apt uses "deb" lines; keep file compatible even if comments are present.
-  # Replace leading "Deb:" with "deb" to avoid confusion.
-  sed -i 's/^Deb: /deb /' /etc/apt/sources.list.d/arm64.list
 fi
 
 apt-get update
