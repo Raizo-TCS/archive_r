@@ -38,6 +38,20 @@ function Dump-InstallerLogs {
   Write-Host '=== Diagnostic logs (Chocolatey / VS Installer) ==='
   Write-LogTail -Path 'C:\ProgramData\chocolatey\logs\chocolatey.log' -Lines 200
 
+  # Package-local logs (often contains VS installer command lines and exit codes)
+  $pkgLogCandidates = @(
+    'C:\ProgramData\chocolatey\lib\visualstudio2022-workload-vctools\tools\chocolateyInstall.log',
+    'C:\ProgramData\chocolatey\lib\visualstudio2022-workload-vctools\tools\*.log',
+    'C:\ProgramData\chocolatey\lib\visualstudio2022buildtools\tools\chocolateyInstall.log',
+    'C:\ProgramData\chocolatey\lib\visualstudio2022buildtools\tools\*.log'
+  )
+  foreach ($pat in $pkgLogCandidates) {
+    Get-ChildItem -Path $pat -File -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -First 5 |
+      ForEach-Object { Write-LogTail -Path $_.FullName -Lines 200 }
+  }
+
   $candidateDirs = @(
     'C:\Users\ContainerAdministrator\AppData\Local\Temp\chocolatey',
     'C:\Users\ContainerAdministrator\AppData\Local\Temp',
@@ -47,10 +61,10 @@ function Dump-InstallerLogs {
   foreach ($dir in $candidateDirs) {
     if (-not (Test-Path $dir)) { continue }
 
-    # Visual Studio installer logs often appear as dd_installer_*.log
-    Get-ChildItem -Path $dir -Filter 'dd_installer_*.log' -File -ErrorAction SilentlyContinue |
+    # Visual Studio installer logs often appear as dd_*.log
+    Get-ChildItem -Path $dir -Filter 'dd_*.log' -File -ErrorAction SilentlyContinue |
       Sort-Object LastWriteTime -Descending |
-      Select-Object -First 3 |
+      Select-Object -First 8 |
       ForEach-Object { Write-LogTail -Path $_.FullName -Lines 200 }
 
     # Chocolatey package install scripts may emit .log files under temp
@@ -58,6 +72,25 @@ function Dump-InstallerLogs {
       Sort-Object LastWriteTime -Descending |
       Select-Object -First 2 |
       ForEach-Object { Write-LogTail -Path $_.FullName -Lines 120 }
+
+    # Some VS installer components write .txt logs
+    Get-ChildItem -Path $dir -Filter '*.txt' -File -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -First 2 |
+      ForEach-Object { Write-LogTail -Path $_.FullName -Lines 120 }
+  }
+
+  # VS Installer main log locations (best-effort)
+  $vsInstallerDirs = @(
+    'C:\ProgramData\Microsoft\VisualStudio\Packages\_bootstrapper',
+    'C:\ProgramData\Microsoft\VisualStudio\Installer'
+  )
+  foreach ($d in $vsInstallerDirs) {
+    if (-not (Test-Path $d)) { continue }
+    Get-ChildItem -Path $d -Filter '*.log' -File -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -First 6 |
+      ForEach-Object { Write-LogTail -Path $_.FullName -Lines 200 }
   }
 }
 
