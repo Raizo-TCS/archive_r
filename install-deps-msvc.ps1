@@ -146,7 +146,7 @@ if ($InContainer) {
       Write-Warning "visualstudio2022-workload-vctools returned exit code $msvcInstallExit but MSVC toolchain is present; continuing."
     } catch {
       $argText = ($msvcInstallArgs -join ' ')
-      throw "Command failed with exit code $msvcInstallExit: choco $argText"
+      throw "Command failed with exit code ${msvcInstallExit}: choco $argText"
     }
   }
 
