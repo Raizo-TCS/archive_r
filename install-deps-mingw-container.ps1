@@ -21,4 +21,4 @@ if (-not (Test-Path $bashPath)) {
 }
 
 # Delegate the rest to the canonical dependency script
-pwsh -File .\install-deps-mingw.ps1
+powershell -ExecutionPolicy Bypass -File .\install-deps-mingw.ps1

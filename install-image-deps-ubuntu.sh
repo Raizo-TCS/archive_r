@@ -70,7 +70,7 @@ else
     git
 fi
 
-python3 -m pip install --break-system-packages --upgrade \
-  pip setuptools wheel pybind11 build twine
+python3 -m pip install --break-system-packages \
+  pybind11 build twine
 
 rm -rf /var/lib/apt/lists/*

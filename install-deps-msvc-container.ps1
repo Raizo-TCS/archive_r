@@ -27,7 +27,14 @@ if (-not $env:VCPKG_INSTALLATION_ROOT) {
 
 $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
 if (-not (Test-Path $vcpkgRoot)) {
-  git clone https://github.com/microsoft/vcpkg.git $vcpkgRoot
+  $gitExe = Join-Path $env:ProgramFiles 'Git\cmd\git.exe'
+  if (-not (Test-Path $gitExe)) {
+    $gitExe = Join-Path $env:ProgramFiles 'Git\bin\git.exe'
+  }
+  if (-not (Test-Path $gitExe)) {
+    throw "git.exe was not found after installation: $gitExe"
+  }
+  & $gitExe clone https://github.com/microsoft/vcpkg.git $vcpkgRoot
 }
 
 & "$vcpkgRoot\bootstrap-vcpkg.bat"
@@ -39,7 +46,7 @@ if (-not $env:GITHUB_ENV) {
 }
 
 # Delegate vcpkg libarchive install + env export to canonical script
-pwsh -File .\install-deps-msvc.ps1
+powershell -ExecutionPolicy Bypass -File .\install-deps-msvc.ps1
 
 # Persist the important variables into the image environment (Machine scope)
 # install-deps-msvc.ps1 computes the canonical prefix path.
