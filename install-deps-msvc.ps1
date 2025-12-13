@@ -127,16 +127,27 @@ if ($InContainer) {
   # MSVC toolchain
   # NOTE: Installing visualstudio2022buildtools directly is known to fail intermittently in Windows containers.
   # The vctools workload package pulls in Build Tools as a dependency; install the workload only.
-  try {
-    Invoke-Native choco @(
-      'install', '-y', 'visualstudio2022-workload-vctools',
-      '--execution-timeout', '7200',
-      '--ignore-package-exit-codes',
-      '--package-parameters', '"--includeRecommended --passive --norestart"'
-    )
-  } catch {
+  $msvcInstallArgs = @(
+    'install', '-y', 'visualstudio2022-workload-vctools',
+    '--execution-timeout', '7200',
+    '--ignore-package-exit-codes',
+    '--package-parameters', '"--includeRecommended --passive --norestart"'
+  )
+
+  & choco @msvcInstallArgs
+  $msvcInstallExit = $LastExitCode
+  if ($msvcInstallExit -ne 0) {
+    # Some Windows container runs report a non-zero Chocolatey exit code even when the
+    # Visual Studio setup/bootstrapper completes successfully. Prefer validating the
+    # actual toolchain presence over trusting the package exit code alone.
     Dump-InstallerLogs
-    throw
+    try {
+      Assert-MsvcToolchainPresent
+      Write-Warning "visualstudio2022-workload-vctools returned exit code $msvcInstallExit but MSVC toolchain is present; continuing."
+    } catch {
+      $argText = ($msvcInstallArgs -join ' ')
+      throw "Command failed with exit code $msvcInstallExit: choco $argText"
+    }
   }
 
   Assert-MsvcToolchainPresent
