@@ -131,6 +131,7 @@ if ($InContainer) {
     Invoke-Native choco @(
       'install', '-y', 'visualstudio2022-workload-vctools',
       '--execution-timeout', '7200',
+      '--ignore-package-exit-codes',
       '--package-parameters', '"--includeRecommended --passive --norestart"'
     )
   } catch {
