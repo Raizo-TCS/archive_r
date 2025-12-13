@@ -703,7 +703,12 @@ package_python_binding() {
     fi
 
     # Ensure build toolchain is available in manylinux images
-    if ! pip_install_with_retry 3 --upgrade pip setuptools wheel build twine; then
+    local pkg_deps=("pip" "setuptools" "wheel" "build")
+    if [ "${ARCHIVE_R_SKIP_TWINE_CHECK:-0}" -ne 1 ]; then
+        pkg_deps+=("twine")
+    fi
+
+    if ! pip_install_with_retry 3 --upgrade "${pkg_deps[@]}"; then
         log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
     fi
