@@ -25,7 +25,7 @@ $depsScript = Join-Path $PSScriptRoot 'install-deps-mingw.ps1'
 powershell -ExecutionPolicy Bypass -File $depsScript
 
 # Verify key tools exist to avoid publishing a broken image.
-& $bashPath -lc "command -v cmake >/dev/null 2>&1 && cmake --version"
+& $bashPath -lc "export MSYSTEM=UCRT64; export CHERE_INVOKING=1; export PATH=/ucrt64/bin:$PATH; command -v cmake >/dev/null 2>&1 && cmake --version"
 if ($LastExitCode -ne 0) {
   throw "CMake was not found after dependency installation."
 }

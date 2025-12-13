@@ -18,9 +18,20 @@ function Invoke-MsysBash {
   }
 }
 
+function Invoke-Ucrt64Bash {
+  param(
+    [Parameter(Mandatory = $true)][string]$Command
+  )
+  $prefix = 'export MSYSTEM=UCRT64; export CHERE_INVOKING=1; export PATH=/ucrt64/bin:$PATH; '
+  & $bashPath -lc ($prefix + $Command)
+  if ($LastExitCode -ne 0) {
+    throw "MSYS2 bash command failed with exit code ${LastExitCode}: $Command"
+  }
+}
+
 Invoke-MsysBash "pacman -Syu --noconfirm"
 Invoke-MsysBash "pacman -S --noconfirm git base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-libarchive mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-pip mingw-w64-ucrt-x86_64-python-setuptools mingw-w64-ucrt-x86_64-python-wheel mingw-w64-ucrt-x86_64-ruby mingw-w64-ucrt-x86_64-rust"
 
 # Reinstall pip stack to ensure bundled vendored modules (distlib, etc.) are present.
-Invoke-MsysBash "python3 -m ensurepip --upgrade"
-Invoke-MsysBash "python3 -m pip install --upgrade --force-reinstall pip setuptools wheel build pybind11 pytest"
+Invoke-Ucrt64Bash "python -m ensurepip --upgrade"
+Invoke-Ucrt64Bash "python -m pip install --upgrade --force-reinstall pip setuptools wheel build pybind11 pytest"
