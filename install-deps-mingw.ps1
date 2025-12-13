@@ -14,7 +14,7 @@ function Invoke-MsysBash {
   )
   & $bashPath -lc $Command
   if ($LastExitCode -ne 0) {
-    throw "MSYS2 bash command failed with exit code $LastExitCode: $Command"
+    throw "MSYS2 bash command failed with exit code ${LastExitCode}: $Command"
   }
 }
 
