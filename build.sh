@@ -712,6 +712,12 @@ package_python_binding() {
     fi
     
     log_info "Installing Python build dependencies: ${pkg_deps[*]}"
+    # Use --no-deps for build tools to avoid pulling in unwanted dependencies like twine's rust deps
+    # if they are not strictly needed for the build process itself.
+    # However, 'build' might need its dependencies.
+    # The issue is that 'pip install --upgrade pip setuptools wheel build' might trigger upgrades that pull in heavy deps.
+    # We will try to install them, but if ARCHIVE_R_SKIP_TWINE_CHECK is set, we definitely don't want twine.
+    
     if ! pip_install_with_retry 3 --upgrade "${pkg_deps[@]}"; then
         log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
