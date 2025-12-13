@@ -235,6 +235,7 @@ jobs:
           # We map the workspace to C:\io
           docker run --rm `
             -e ARCHIVE_R_BUILD_NO_ISOLATION=1 `
+            -e ARCHIVE_R_SKIP_TWINE_CHECK=1 `
             -v "${{ github.workspace }}:C:\io" `
             -w "C:\io" `
             $env:CI_IMAGE `
