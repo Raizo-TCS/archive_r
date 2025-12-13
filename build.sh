@@ -771,7 +771,11 @@ if [ "$BUILD_RUBY" = true ]; then
 fi
 
 if [ "$BUILD_PYTHON" = true ]; then
-    build_python_binding || log_warning "Python binding build had issues"
+    if [ "$PACKAGE_PYTHON" = true ]; then
+        log_info "Skipping in-place Python build because packaging is requested (will test against package)"
+    else
+        build_python_binding || log_warning "Python binding build had issues"
+    fi
 fi
 
 if [ "$PACKAGE_PYTHON" = true ]; then
