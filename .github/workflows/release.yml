@@ -74,11 +74,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install release tooling
+      - name: Install Ruby tooling (for RubyGems)
+        if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
         run: |
           sudo apt-get update
           sudo apt-get install -y ruby-full
-          python3 -m pip install twine --break-system-packages
 
       - name: Resolve Run ID
         id: resolve_run
