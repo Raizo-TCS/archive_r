@@ -13,6 +13,8 @@ elif [[ "$PACKAGE_MODE" == "python" ]]; then
   ./build.sh --rebuild-all --python-only --package-python
 elif [[ "$PACKAGE_MODE" == "ruby" ]]; then
   ./build.sh --rebuild-all --with-ruby --package-ruby
+elif [[ "$PACKAGE_MODE" == "bindings" ]]; then
+  ./build.sh --rebuild-all --with-python --with-ruby
 else
   ./build.sh --rebuild-all --package-python --package-ruby
 fi

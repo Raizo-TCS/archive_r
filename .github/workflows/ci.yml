@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -47,7 +47,7 @@ jobs:
           retention-days: 7
 
   pf1-linux-arm64:
-    name: PF1.1 Linux arm64 Build & Test (QEMU)
+    name: PF1.1 Linux arm64 Build & Test (Hybrid)
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -56,23 +56,52 @@ jobs:
       - name: Set up QEMU (aarch64)
         uses: docker/setup-qemu-action@v3
 
-      - name: Build & Test on arm64
+      - name: Prepare Cross-Build Image
+        run: |
+          docker build -t ci-linux-arm64-cross:local -f .github/docker/ci-linux-arm64-cross.Dockerfile .
+
+      - name: Prepare Test Image (QEMU)
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/archive_r/ci-linux-arm64:latest"
+          IMAGE_NAME="${IMAGE_NAME,,}"
+          if docker pull --platform linux/arm64 "$IMAGE_NAME"; then
+            echo "CI_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
+          else
+            echo "Image not found, building locally..."
+            docker build -t ci-linux-arm64:local -f .github/docker/ci-linux-arm64.Dockerfile --platform linux/arm64 .
+            echo "CI_IMAGE=ci-linux-arm64:local" >> $GITHUB_ENV
+          fi
+
+      - name: Build Core (Cross-Compile)
         run: |
           set -euo pipefail
           HOST_UID=$(id -u)
           HOST_GID=$(id -g)
+          # Run build.sh --rebuild to build Core and Tests (but not bindings)
+          # We run as root for simplicity and chown artifacts back to host user
+          # Ensure chown runs even if build fails to avoid permission issues
+          docker run --rm \
+            -v "${{ github.workspace }}:/io" \
+            -w /io \
+            ci-linux-arm64-cross:local \
+            bash -c "git config --global --add safe.directory /io && (./build.sh --rebuild || (chown -R ${HOST_UID}:${HOST_GID} build && exit 1)) && chown -R ${HOST_UID}:${HOST_GID} build"
+
+      - name: Build Bindings & Test (QEMU)
+        run: |
+          set -euo pipefail
+          HOST_UID=$(id -u)
+          HOST_GID=$(id -g)
+          # Run build.sh --bindings-only to build Python/Ruby bindings linking against the cross-compiled core
+          # Then run tests
           docker run --rm --platform linux/arm64 \
             -e HOST_UID="$HOST_UID" -e HOST_GID="$HOST_GID" \
             -v "${{ github.workspace }}:/io" \
             -w /io \
-            ubuntu:24.04 \
+            "$CI_IMAGE" \
             bash -c "set -euo pipefail; \
               if ! getent group \"${HOST_GID}\" >/dev/null; then groupadd -g \"${HOST_GID}\" hostgroup; fi; \
-              if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" hostuser; fi; \
-              apt-get update; \
-              apt-get install -y sudo python3-venv python3-virtualenv; \
-              ./install-deps-ubuntu.sh; \
-                su - hostuser -c 'cd /io && RUN_BINDINGS_TIMEOUT=300 PACKAGE_MODE=full ./build-on-ubuntu.sh && RUN_BINDINGS_TIMEOUT=300 ./test-on-ubuntu.sh'"
+              if ! getent passwd \"${HOST_UID}\" >/dev/null; then useradd -m -u \"${HOST_UID}\" -g \"${HOST_GID}\" -s /bin/bash hostuser; fi; \
+              su - hostuser -c 'cd /io && ./build.sh --bindings-only --with-python --with-ruby && ./run_tests.sh'"
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
@@ -97,9 +126,9 @@ jobs:
           - runner: macos-15-intel
             arch: x86_64
             label: PF2.0 macOS 15 x86_64
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
-            label: PF2.1 macOS 14 arm64
+            label: PF2.1 macOS 15 arm64
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
       HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -135,33 +164,36 @@ jobs:
   pf3-msvc:
     name: PF3.0 Windows MSVC Build & Test
     runs-on: windows-2022
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-
-      - name: Install dependencies (MSVC)
+      - name: Prepare CI Container
         shell: pwsh
-        run: ./install-deps-msvc.ps1
+        run: |
+          $ImageName = "ghcr.io/${{ github.repository_owner }}/archive_r/ci-windows-msvc:latest"
+          $ImageName = $ImageName.ToLower()
+          try {
+            docker pull $ImageName
+            "CI_IMAGE=$ImageName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } catch {
+            Write-Host "Image not found, building locally..."
+            docker build -t ci-windows-msvc:local -f .github/docker/ci-windows-msvc.Dockerfile .
+            "CI_IMAGE=ci-windows-msvc:local" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
-      - name: Build (MSVC x64)
+      - name: Build & Test (MSVC Container)
         shell: pwsh
-        run: ./build-on-msvc.ps1 -PackageMode full
-
-      - name: Test (MSVC x64)
-        shell: pwsh
-        run: ./test-on-msvc.ps1
+        run: |
+          # Run build and test inside the container
+          # We map the workspace to C:\io
+          docker run --rm `
+            -v "${{ github.workspace }}:C:\io" `
+            -w "C:\io" `
+            $env:CI_IMAGE `
+            powershell -Command "`$ErrorActionPreference = 'Stop'; .\build-on-msvc.ps1 -PackageMode python; .\test-on-msvc.ps1 -PackageMode python"
 
       - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}
@@ -182,24 +214,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup MSYS2 (UCRT64)
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          update: true
-          path-type: minimal
-
-      - name: Install dependencies (MinGW)
+      - name: Prepare CI Container
         shell: pwsh
-        run: ./install-deps-mingw.ps1
+        run: |
+          $ImageName = "ghcr.io/${{ github.repository_owner }}/archive_r/ci-windows-mingw:latest"
+          $ImageName = $ImageName.ToLower()
+          try {
+            docker pull $ImageName
+            "CI_IMAGE=$ImageName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } catch {
+            Write-Host "Image not found, building locally..."
+            docker build -t ci-windows-mingw:local -f .github/docker/ci-windows-mingw.Dockerfile .
+            "CI_IMAGE=ci-windows-mingw:local" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
-      - name: Build (MinGW x86_64)
+      - name: Build & Test (MinGW Container)
         shell: pwsh
-        run: ./build-on-mingw.ps1 -PackageMode full
-
-      - name: Test (MinGW x86_64)
-        shell: pwsh
-        run: ./test-on-mingw.ps1
+        run: |
+          # Run build and test inside the container
+          # We map the workspace to C:\io
+          docker run --rm `
+            -e ARCHIVE_R_BUILD_NO_ISOLATION=1 `
+            -e ARCHIVE_R_SKIP_TWINE_CHECK=1 `
+            -v "${{ github.workspace }}:C:\io" `
+            -w "C:\io" `
+            $env:CI_IMAGE `
+            powershell -Command "`$ErrorActionPreference = 'Stop'; .\build-on-mingw.ps1 -PackageMode full; .\test-on-mingw.ps1"
 
       - name: Upload PF4 artifacts
         if: ${{ always() && env.ACT != 'true' }}

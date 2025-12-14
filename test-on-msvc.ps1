@@ -1,3 +1,6 @@
+Param(
+  [string]$PackageMode = "full"
+)
 $ErrorActionPreference = 'Stop'
 
 function Get-GitBashPath {
@@ -84,8 +87,13 @@ try {
 	) -join '; '
 
 	Invoke-WithLog "run_tests.sh" ($bashPrefix + @("$envDump; ./run_tests.sh")) $testLog
-	Invoke-WithLog "ruby binding tests" ($bashPrefix + @("$envDump; ./bindings/ruby/run_binding_tests.sh")) $rubyLog
-	Invoke-WithLog "python binding tests" ($bashPrefix + @("$envDump; ./bindings/python/run_binding_tests.sh")) $pythonLog
+
+	if ($PackageMode -eq 'full' -or $PackageMode -eq 'ruby') {
+		Invoke-WithLog "ruby binding tests" ($bashPrefix + @("$envDump; ./bindings/ruby/run_binding_tests.sh")) $rubyLog
+	}
+	if ($PackageMode -eq 'full' -or $PackageMode -eq 'python') {
+		Invoke-WithLog "python binding tests" ($bashPrefix + @("$envDump; ./bindings/python/run_binding_tests.sh")) $pythonLog
+	}
 } finally {
 	Pop-Location
 }

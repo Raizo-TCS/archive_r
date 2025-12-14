@@ -1,7 +1,7 @@
+#!/bin/bash
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2025 archive_r Team
 
-#!/bin/bash
 # archive_r Build Script
 # Usage: ./build.sh [OPTIONS]
 
@@ -703,7 +703,22 @@ package_python_binding() {
     fi
 
     # Ensure build toolchain is available in manylinux images
-    if ! pip_install_with_retry 3 --upgrade pip setuptools wheel build twine; then
+    local pkg_deps=("pip" "setuptools" "wheel" "build")
+    log_info "ARCHIVE_R_SKIP_TWINE_CHECK is set to: '${ARCHIVE_R_SKIP_TWINE_CHECK:-}'"
+    if [ "${ARCHIVE_R_SKIP_TWINE_CHECK:-0}" -ne 1 ]; then
+        pkg_deps+=("twine")
+    else
+        log_info "Skipping twine installation"
+    fi
+    
+    log_info "Installing Python build dependencies: ${pkg_deps[*]}"
+    # Use --no-deps for build tools to avoid pulling in unwanted dependencies like twine's rust deps
+    # if they are not strictly needed for the build process itself.
+    # However, 'build' might need its dependencies.
+    # The issue is that 'pip install --upgrade pip setuptools wheel build' might trigger upgrades that pull in heavy deps.
+    # We will try to install them, but if ARCHIVE_R_SKIP_TWINE_CHECK is set, we definitely don't want twine.
+    
+    if ! pip_install_with_retry 3 --upgrade "${pkg_deps[@]}"; then
         log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
     fi
@@ -719,9 +734,11 @@ package_python_binding() {
     
     local build_args=("--sdist" "--wheel" "--outdir" "$dist_dir")
     if [ "${ARCHIVE_R_BUILD_NO_ISOLATION:-0}" -eq 1 ]; then
+        log_info "Disabling build isolation (ARCHIVE_R_BUILD_NO_ISOLATION=1)"
         build_args+=("--no-isolation")
     fi
     
+    log_info "Running python -m build with args: ${build_args[*]}"
     "$PYTHON_EXEC" -m build "${build_args[@]}"
     popd >/dev/null
 
@@ -734,8 +751,12 @@ package_python_binding() {
         return 1
     fi
 
-    log_info "Running twine check on built artifacts..."
-    "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
+    if [ "${ARCHIVE_R_SKIP_TWINE_CHECK:-0}" -eq 1 ]; then
+        log_info "Skipping twine check (ARCHIVE_R_SKIP_TWINE_CHECK=1)"
+    else
+        log_info "Running twine check on built artifacts..."
+        "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
+    fi
 
     verify_python_package_installation "$dist_dir" || return 1
 
@@ -756,7 +777,11 @@ if [ "$BUILD_RUBY" = true ]; then
 fi
 
 if [ "$BUILD_PYTHON" = true ]; then
-    build_python_binding || log_warning "Python binding build had issues"
+    if [ "$PACKAGE_PYTHON" = true ]; then
+        log_info "Skipping in-place Python build because packaging is requested (will test against package)"
+    else
+        build_python_binding || log_warning "Python binding build had issues"
+    fi
 fi
 
 if [ "$PACKAGE_PYTHON" = true ]; then
