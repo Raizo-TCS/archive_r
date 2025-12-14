@@ -309,6 +309,7 @@ def find_prebuilt_shared_library() -> Optional[Path]:
         archive_r_build / 'libarchive_r_core.so',
         archive_r_build / 'libarchive_r_core.dylib',
         archive_r_build / 'archive_r_core.dll',
+        archive_r_build / 'libarchive_r_core.dll',
         archive_r_build / 'archive_r_core.lib',
         archive_r_build / 'Release' / 'archive_r_core.dll',
         archive_r_build / 'Release' / 'archive_r_core.lib',

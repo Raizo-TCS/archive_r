@@ -8,28 +8,94 @@ $env:ARCHIVE_R_REPO_WIN = $repoRoot
 $env:ARCHIVE_R_TIMEOUT_WIN = Join-Path $repoRoot "run_with_timeout.py"
 
 $repoPathMsys = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
+Write-Host "DEBUG: repoPathMsys='$repoPathMsys'"
 $timeoutPy = (& $bashPath -lc 'cygpath -u "$ARCHIVE_R_TIMEOUT_WIN"').Trim()
-$runTestsCmd = "cd `"$repoPathMsys`" && ./run_tests.sh"
-$rubyBindingCmd = "cd `"$repoPathMsys`" && ./bindings/ruby/run_binding_tests.sh"
-$pythonBindingCmd = "cd `"$repoPathMsys`" && ./bindings/python/run_binding_tests.sh"
+Write-Host "DEBUG: timeoutPy='$timeoutPy'"
 
-$cmdLines = @(
-	'set -euo pipefail'
-	'repo="{0}"' -f $repoPathMsys
-	'timeout_py="{0}"' -f $timeoutPy
-	'bash_exe="{0}"' -f $bashPath
-	'echo "[mingw] repo path: $repo"'
-	'echo "[mingw] bash path: $bash_exe"'
-	'if [ ! -d "$repo" ]; then echo "[mingw] repo path not found" >&2; exit 1; fi'
-	'if [ ! -x "$bash_exe" ]; then echo "[mingw] bash not found/executable: $bash_exe" >&2; exit 1; fi'
-	'cd "$repo"'
-	'pwd'
-	'if [ ! -f "$timeout_py" ]; then echo "[mingw] timeout helper not found: $timeout_py" >&2; exit 1; fi'
-	('python3 "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $runTestsCmd)
-	('python3 "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $rubyBindingCmd)
-	('python3 "{0}" 120 "{1}" -lc "{2}"' -f $timeoutPy, $bashPath, $pythonBindingCmd)
-)
+# Create the bash script content
+# Note: We escape $ for bash variables that shouldn't be expanded by PowerShell
+$scriptContent = @"
+#!/bin/bash
+export MSYSTEM=UCRT64
+export PATH=/ucrt64/bin:`$PATH
+set -x
 
-$cmd = $cmdLines -join ' && '
+echo "[mingw] Starting test script"
+echo "[mingw] Repo: $repoPathMsys"
+echo "[mingw] Timeout Helper: $timeoutPy"
 
-& $bashPath -lc $cmd
+cd "$repoPathMsys" || exit 1
+
+# Run Core Tests
+echo "[mingw] Running core tests..."
+# We run run_tests.sh directly. It should output to stdout/stderr which we capture.
+python "$timeoutPy" 120 bash -c "chmod +x run_tests.sh && ./run_tests.sh"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Core tests failed with `$RET"
+    exit `$RET
+fi
+
+# Build Ruby Binding
+echo "[mingw] Building Ruby binding..."
+python "$timeoutPy" 120 bash -c "./build.sh --package-ruby"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Ruby binding build failed with `$RET"
+    exit `$RET
+fi
+
+# Run Ruby Binding Tests
+echo "[mingw] Running Ruby binding tests..."
+python "$timeoutPy" 120 bash -c "./bindings/ruby/run_binding_tests.sh"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Ruby binding tests failed with `$RET"
+    exit `$RET
+fi
+
+# Build Python Binding
+echo "[mingw] Building Python binding..."
+python "$timeoutPy" 120 bash -c "./build.sh --package-python"
+RET=`$?
+if [ `$RET -ne 0 ]; then
+    echo "[mingw] Python binding build failed with `$RET"
+    exit `$RET
+fi
+
+echo "[mingw] All tasks completed successfully"
+"@
+
+$scriptPath = Join-Path $repoRoot "test_script.sh"
+[IO.File]::WriteAllText($scriptPath, $scriptContent)
+
+$scriptPathMsys = (& $bashPath -lc "cygpath -u '$scriptPath'").Trim()
+Write-Host "DEBUG: Created bash script at $scriptPathMsys"
+
+Write-Host "DEBUG: Running bash script..."
+
+# Temporarily disable Stop on Error because bash writing to stderr (e.g. set -x) triggers NativeCommandError in PowerShell
+$oldEAP = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+
+# Execute the script, redirecting ALL output to mingw_exec.log
+# We use a wrapper bash command to handle the redirection
+# Ensure we are in the repo directory and use absolute path for log to avoid location issues
+$logPathMsys = "$repoPathMsys/mingw_exec.log"
+& $bashPath -lc "cd '$repoPathMsys' && bash '$scriptPathMsys' > '$logPathMsys' 2>&1"
+$exitCode = $LASTEXITCODE
+
+$ErrorActionPreference = $oldEAP
+
+Write-Host "--- mingw_exec.log content ---"
+if (Test-Path "mingw_exec.log") {
+    Get-Content "mingw_exec.log"
+} else {
+    Write-Host "ERROR: mingw_exec.log not found"
+}
+Write-Host "--- end mingw_exec.log ---"
+
+if ($exitCode -ne 0) {
+    Write-Host "Bash exited with code $exitCode"
+    exit $exitCode
+}
