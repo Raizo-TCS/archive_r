@@ -1,8 +1,7 @@
 FROM ubuntu:24.04
 
-COPY install-image-deps-ubuntu.sh /tmp/install-image-deps-ubuntu.sh
 COPY install-deps-ubuntu.sh /tmp/install-deps-ubuntu.sh
-RUN bash /tmp/install-image-deps-ubuntu.sh --pf arm64-cross && rm -f /tmp/install-image-deps-ubuntu.sh /tmp/install-deps-ubuntu.sh
+RUN bash /tmp/install-deps-ubuntu.sh --cross --arch arm64 --clean-apt-lists && rm -f /tmp/install-deps-ubuntu.sh
 
 # Set up cross-compilation environment variables
 ENV CC=aarch64-linux-gnu-gcc
