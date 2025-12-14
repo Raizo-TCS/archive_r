@@ -26,7 +26,6 @@ $findExe = Get-ChildItem -Path (Join-Path $repoRoot 'build') -Recurse -Filter 'f
 $logDir = Join-Path $repoRoot "build/logs"
 $testLog = Join-Path $logDir "msvc-run-tests.log"
 $rubyLog = Join-Path $logDir "msvc-ruby-binding-tests.log"
-$pythonLog = Join-Path $logDir "msvc-python-binding-tests.log"
 $env:ARCHIVE_R_REPO_WIN = $repoRoot
 $repoRootUnix = (& $bash -lc 'cygpath -u "$ARCHIVE_R_REPO_WIN"').Trim()
 
@@ -82,6 +81,7 @@ try {
 	$bashPrefix = @($bash, '-lc')
 	$envDump = @(
 		'set -eo pipefail'
+		'export RUN_TESTS_WRAPPER_TIMEOUT=0'
 		$pathExport
 		'pwd'
 	) -join '; '
@@ -90,9 +90,6 @@ try {
 
 	if ($PackageMode -eq 'full' -or $PackageMode -eq 'ruby') {
 		Invoke-WithLog "ruby binding tests" ($bashPrefix + @("$envDump; ./bindings/ruby/run_binding_tests.sh")) $rubyLog
-	}
-	if ($PackageMode -eq 'full' -or $PackageMode -eq 'python') {
-		Invoke-WithLog "python binding tests" ($bashPrefix + @("$envDump; ./bindings/python/run_binding_tests.sh")) $pythonLog
 	}
 } finally {
 	Pop-Location

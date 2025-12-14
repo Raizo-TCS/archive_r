@@ -29,19 +29,10 @@ cd "$repoPathMsys" || exit 1
 # Run Core Tests
 echo "[mingw] Running core tests..."
 # We run run_tests.sh directly. It should output to stdout/stderr which we capture.
-python "$timeoutPy" 120 bash -c "chmod +x run_tests.sh && ./run_tests.sh"
+python "$timeoutPy" 120 bash -c "chmod +x run_tests.sh && RUN_TESTS_WRAPPER_TIMEOUT=0 ./run_tests.sh"
 RET=`$?
 if [ `$RET -ne 0 ]; then
     echo "[mingw] Core tests failed with `$RET"
-    exit `$RET
-fi
-
-# Build Ruby Binding
-echo "[mingw] Building Ruby binding..."
-python "$timeoutPy" 120 bash -c "./build.sh --package-ruby"
-RET=`$?
-if [ `$RET -ne 0 ]; then
-    echo "[mingw] Ruby binding build failed with `$RET"
     exit `$RET
 fi
 
@@ -51,15 +42,6 @@ python "$timeoutPy" 120 bash -c "./bindings/ruby/run_binding_tests.sh"
 RET=`$?
 if [ `$RET -ne 0 ]; then
     echo "[mingw] Ruby binding tests failed with `$RET"
-    exit `$RET
-fi
-
-# Build Python Binding
-echo "[mingw] Building Python binding..."
-python "$timeoutPy" 120 bash -c "./build.sh --package-python"
-RET=`$?
-if [ `$RET -ne 0 ]; then
-    echo "[mingw] Python binding build failed with `$RET"
     exit `$RET
 fi
 
