@@ -14,6 +14,7 @@ ${APT_PREFIX} DEBIAN_FRONTEND=noninteractive apt-get install -y \
   pkg-config \
   python3-dev \
   python3-pip \
+  python3-venv \
   ruby-dev \
   libarchive-dev \
   libbz2-dev \
@@ -24,5 +25,3 @@ ${APT_PREFIX} DEBIAN_FRONTEND=noninteractive apt-get install -y \
   bzip2 \
   xz-utils
 
-PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --upgrade --ignore-installed \
-  pip setuptools wheel pybind11 build twine --break-system-packages

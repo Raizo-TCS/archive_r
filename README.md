@@ -499,7 +499,7 @@ archive_r/
 
 ## CI/CD and Release Workflows
 
-- `ci.yml` runs on Ubuntu 24.04 for every push/PR to `main`, executes `./build.sh --rebuild-all`, then runs `./run_tests.sh` and the binding test scripts (`bindings/ruby/run_binding_tests.sh`, `bindings/python/run_binding_tests.sh`), and publishes the resulting logs plus Python/Ruby artifacts as workflow artifacts.
+- `ci.yml` runs on Ubuntu 24.04 for every push/PR to `main`, executes `./build.sh --rebuild-all`, then runs `./run_tests.sh` and the Ruby binding tests (`bindings/ruby/run_binding_tests.sh`). Python is verified via the wheel-install check performed during `./build.sh --package-python`.
 - `build-wheels.yml` produces manylinux_2_28 wheels for CPython 3.9–3.12 inside Docker, relying on `./build.sh --rebuild-all --python-only` before repairing wheels with `auditwheel`.
 - `release.yml` ties everything together: it re-runs the full build, downloads the wheel/SDist artifacts, creates a GitHub Release, and publishes Python packages to PyPI (RubyGems publishing remains optional and requires a token when enabled).
 
