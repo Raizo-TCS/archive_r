@@ -131,7 +131,7 @@ if ($InContainer) {
     'install', '-y', 'visualstudio2022-workload-vctools',
     '--execution-timeout', '7200',
     '--ignore-package-exit-codes',
-    '--package-parameters', '"--includeRecommended --passive --norestart"'
+    '--package-parameters', '"--includeRecommended --quiet --norestart"'
   )
 
   & choco @msvcInstallArgs
