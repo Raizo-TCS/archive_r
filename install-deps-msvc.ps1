@@ -201,6 +201,14 @@ if ($InContainer) {
   # Persist important variables into the image environment (Machine scope)
   [Environment]::SetEnvironmentVariable('LIBARCHIVE_ROOT', $prefix, [EnvironmentVariableTarget]::Machine)
   [Environment]::SetEnvironmentVariable('CMAKE_PREFIX_PATH', $prefix, [EnvironmentVariableTarget]::Machine)
-  $newPath = "$prefix\bin;$env:PATH"
+  # IMPORTANT: Do not overwrite Machine PATH with the current process PATH.
+  # Chocolatey installers typically update Machine PATH, but the current process
+  # may not see those updates yet. If we persist $env:PATH here, we can
+  # accidentally drop entries (e.g., Chocolatey bin, CMake) from the image.
+  $machinePath = [Environment]::GetEnvironmentVariable('PATH', [EnvironmentVariableTarget]::Machine)
+  if (-not $machinePath) {
+    $machinePath = $env:PATH
+  }
+  $newPath = "$prefix\bin;$machinePath"
   [Environment]::SetEnvironmentVariable('PATH', $newPath, [EnvironmentVariableTarget]::Machine)
 }
