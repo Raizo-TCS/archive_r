@@ -1,13 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-APT_PREFIX="sudo"
-if ! command -v sudo >/dev/null 2>&1; then
-  APT_PREFIX=""
-fi
+export DEBIAN_FRONTEND=noninteractive
 
-${APT_PREFIX} apt-get update
-${APT_PREFIX} DEBIAN_FRONTEND=noninteractive apt-get install -y \
+apt-get update
+apt-get install -y \
   build-essential \
   cmake \
   ninja-build \

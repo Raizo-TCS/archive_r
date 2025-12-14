@@ -34,9 +34,9 @@ if [[ "${pf}" == "arm64-cross" ]]; then
     cmake \
     ninja-build \
     pkg-config \
-    git \
     python3 \
     python3-pip \
+    python3-venv \
     libarchive-dev:arm64 \
     libbz2-dev:arm64 \
     liblzma-dev:arm64 \
@@ -45,9 +45,7 @@ if [[ "${pf}" == "arm64-cross" ]]; then
     libxml2-dev:arm64
 else
   apt-get install -y \
-    sudo \
     python3-venv \
-    python3-virtualenv \
     build-essential \
     cmake \
     ninja-build \
@@ -62,11 +60,7 @@ else
     libssl-dev \
     libxml2-dev \
     bzip2 \
-    xz-utils \
-    git
+    xz-utils
 fi
-
-python3 -m pip install --break-system-packages \
-  pybind11 build twine
 
 rm -rf /var/lib/apt/lists/*
