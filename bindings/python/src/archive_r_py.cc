@@ -812,6 +812,15 @@ PYBIND11_MODULE(archive_r, m) {
           py::arg("paths"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(),
           py::arg("descend_archives") = py::none(),
           "Create a traverser for the given archive paths with optional passphrases, format filters, metadata key selection, and default descent control")
+      .def(py::init([](py::list path_hierarchy, std::optional<std::vector<std::string>> passphrases, std::optional<std::vector<std::string>> formats,
+                       std::optional<std::vector<std::string>> metadata_keys, std::optional<bool> descend_archives) {
+             py::list paths;
+             paths.append(path_hierarchy);
+             return std::unique_ptr<PyTraverser>(new PyTraverser(paths, std::move(passphrases), std::move(formats), std::move(metadata_keys), descend_archives));
+           }),
+           py::arg("path_hierarchy"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(),
+           py::arg("descend_archives") = py::none(),
+           "Create a traverser for a single PathHierarchy (pass as a list describing the hierarchy).")
       .def("__iter__", &PyTraverser::iter, py::return_value_policy::reference_internal)
       .def("__next__", &PyTraverser::next)
       .def("__enter__", &PyTraverser::enter, py::return_value_policy::reference_internal)

@@ -51,6 +51,12 @@ Traverser::Traverser(std::vector<PathHierarchy> paths, TraverserOptions options)
 
 }
 
+Traverser::Traverser(PathHierarchy path, TraverserOptions options)
+    : Traverser(std::vector<PathHierarchy>{std::move(path)}, std::move(options)) {}
+
+Traverser::Traverser(const std::string &path, TraverserOptions options)
+    : Traverser(std::vector<PathHierarchy>{make_single_path(path)}, std::move(options)) {}
+
 Traverser::~Traverser() = default;
 
 // ============================================================================

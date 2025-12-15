@@ -146,6 +146,11 @@ class TestTraverser(unittest.TestCase):
         """Test that Traverser can be created"""
         traverser = self.create_traverser([self.simple_archive])
         self.assertIsInstance(traverser, archive_r.Traverser)
+
+    def test_traverser_creation_with_path_hierarchy_keyword(self):
+        """Test that Traverser can be created from a single PathHierarchy via keyword"""
+        traverser = archive_r.Traverser(path_hierarchy=[self.simple_archive], **self._normalized_options())
+        self.assertIsInstance(traverser, archive_r.Traverser)
     
     def test_iterator_protocol(self):
         """Test that Traverser implements iterator protocol"""

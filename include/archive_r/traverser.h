@@ -56,6 +56,16 @@ public:
    */
   explicit Traverser(std::vector<PathHierarchy> paths, TraverserOptions options = {});
 
+  /**
+   * @brief Construct traverser for a single hierarchy
+   */
+  explicit Traverser(PathHierarchy path, TraverserOptions options = {});
+
+  /**
+   * @brief Construct traverser for a single archive or directory path
+   */
+  explicit Traverser(const std::string &path, TraverserOptions options = {});
+
   ~Traverser();
 
   // Non-copyable

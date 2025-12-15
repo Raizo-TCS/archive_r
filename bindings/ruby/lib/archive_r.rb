@@ -87,6 +87,10 @@ module Archive_r
       def open(paths, opts = nil, &block)
         __archive_r_c_open(paths, Archive_r.normalize_options(opts), &block)
       end
+
+      def open_hierarchy(hierarchy, opts = nil, &block)
+        open([hierarchy], opts, &block)
+      end
     end
 
     alias_method :__archive_r_c_initialize, :initialize

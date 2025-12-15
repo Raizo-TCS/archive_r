@@ -71,6 +71,13 @@ class TestTraverser < Minitest::Test
     assert_instance_of Archive_r::Traverser, traverser
   end
 
+  def test_traverser_open_hierarchy_helper
+    hierarchy = [@simple_archive]
+    count = 0
+    Archive_r::Traverser.open_hierarchy(hierarchy) { |traverser| traverser.each { count += 1 } }
+    assert_operator count, :>, 0
+  end
+
   def test_stream_factory_with_io_object
     expected = collect_paths(@simple_archive)
     payload = File.binread(@simple_archive)
