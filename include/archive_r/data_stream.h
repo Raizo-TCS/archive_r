@@ -3,17 +3,12 @@
 
 #pragma once
 
+#include "archive_r/platform_compat.h"
 #include "archive_r/path_hierarchy.h"
 
 #include <functional>
 #include <memory>
-#include <sys/types.h>
 #include <cstdint>
-
-#ifdef _WIN32
-#include <basetsd.h>
-using ssize_t = SSIZE_T;
-#endif
 
 // Avoid conflict with potential 'read' macro on Windows
 #ifdef read

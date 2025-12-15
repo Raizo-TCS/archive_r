@@ -7,17 +7,12 @@
 #include <filesystem>
 #include <memory>
 #include <string>
-#include <sys/types.h>
 #include <vector>
-
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
 
 #include "archive_r/entry_fault.h"
 #include "archive_r/entry_metadata.h"
 #include "archive_r/path_hierarchy.h"
+#include "archive_r/platform_compat.h"
 
 namespace archive_r {
 
