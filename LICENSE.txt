@@ -75,7 +75,7 @@ The following components are redistributed only because libarchive (bundled with
    - License: GNU LGPLv3+ or GNU GPLv2+ (https://gmplib.org/)
 
 10. OpenSSL 3
-    - Purpose: libarchive dependency providing cryptographic support (Windows); bundled with archive_r binaries.
+   - Purpose: libarchive dependency providing cryptographic support (Windows); bundled with archive_r Windows wheels.
     - License: Apache License 2.0 with OpenSSL exception (https://www.openssl.org/source/license.html)
 
 11. lz4
