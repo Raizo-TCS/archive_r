@@ -10,11 +10,6 @@
 #include <memory>
 #include <cstdint>
 
-// Avoid conflict with potential 'read' macro on Windows
-#ifdef read
-#undef read
-#endif
-
 namespace archive_r {
 
 /**
