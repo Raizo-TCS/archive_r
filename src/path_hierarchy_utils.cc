@@ -203,27 +203,6 @@ bool flatten_entry_to_string(const PathEntry &entry, std::string &output) {
     return true;
   }
 
-  if (entry.is_nested()) {
-    std::string result;
-    bool first = true;
-    for (const auto &child : entry.nested_nodes()) {
-      std::string component;
-      if (!flatten_entry_to_string(child, component)) {
-        return false;
-      }
-      if (component.empty()) {
-        return false;
-      }
-      if (!first) {
-        result.push_back('/');
-      }
-      result += component;
-      first = false;
-    }
-    output = result;
-    return !result.empty();
-  }
-
   return false;
 }
 
@@ -275,17 +254,7 @@ std::string path_entry_display(const PathEntry &entry) {
     value.push_back(']');
     return value;
   }
-  std::string value = "{";
-  bool first = true;
-  for (const auto &child : entry.nested_nodes()) {
-    if (!first) {
-      value.push_back('/');
-    }
-    value += path_entry_display(child);
-    first = false;
-  }
-  value.push_back('}');
-  return value;
+  return {};
 }
 
 std::string hierarchy_display(const PathHierarchy &hierarchy) {

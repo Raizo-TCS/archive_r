@@ -22,13 +22,13 @@ std::vector<std::string> collect_paths(const std::vector<PathHierarchy> &roots) 
   return collected;
 }
 
-PathHierarchy make_nested_root(const std::string &path) {
-  PathEntry::NodeList nodes;
-  nodes.emplace_back(PathEntry::single(path));
-
-  PathHierarchy nested;
-  nested.emplace_back(PathEntry::nested(std::move(nodes)));
-  return nested;
+std::vector<std::string> collect_paths(const std::string &root) {
+  Traverser traverser(root);
+  std::vector<std::string> collected;
+  for (Entry &entry : traverser) {
+    collected.push_back(hierarchy_display(entry.path_hierarchy()));
+  }
+  return collected;
 }
 
 } // namespace
@@ -49,14 +49,14 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-    const auto nested_paths = collect_paths({ make_nested_root(archive_string) });
+    const auto direct_paths = collect_paths(archive_string);
 
-    if (baseline != nested_paths) {
-      std::cerr << "Nested root traversal mismatch: expected " << baseline.size() << " entries, got " << nested_paths.size() << std::endl;
+    if (baseline != direct_paths) {
+      std::cerr << "Direct root traversal mismatch: expected " << baseline.size() << " entries, got " << direct_paths.size() << std::endl;
       return 1;
     }
 
-    std::cout << "Nested root traversal matched baseline (entries=" << nested_paths.size() << ")" << std::endl;
+    std::cout << "Direct root traversal matched baseline (entries=" << direct_paths.size() << ")" << std::endl;
     return 0;
   } catch (const std::exception &ex) {
     std::cerr << "Error: " << ex.what() << std::endl;

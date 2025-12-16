@@ -18,7 +18,6 @@ namespace archive_r {
  * A component can be one of three shapes:
  * - single string value (most common)
  * - multi-volume part list (split archives that share a common base name)
- * - nested list of child entries (used for synthetic grouping)
  */
 class PathEntry {
 public:
@@ -27,8 +26,6 @@ public:
     enum class Ordering { Natural, Given } ordering = Ordering::Natural;
   };
 
-  using NodeList = std::vector<PathEntry>;
-
   PathEntry() = default;
 
   explicit PathEntry(std::string value)
@@ -36,9 +33,6 @@ public:
 
   explicit PathEntry(Parts parts)
       : _value(std::move(parts)) {}
-
-  explicit PathEntry(NodeList nodes)
-      : _value(std::move(nodes)) {}
 
   static PathEntry single(std::string entry) { return PathEntry(std::move(entry)); }
 
@@ -50,24 +44,14 @@ public:
     return PathEntry(std::move(parts));
   }
 
-  static PathEntry nested(NodeList hierarchies) {
-    if (hierarchies.empty()) {
-      throw std::invalid_argument("nested hierarchies cannot be empty");
-    }
-    return PathEntry(std::move(hierarchies));
-  }
-
   bool is_single() const { return std::holds_alternative<std::string>(_value); }
   bool is_multi_volume() const { return std::holds_alternative<Parts>(_value); }
-  bool is_nested() const { return std::holds_alternative<NodeList>(_value); }
   const std::string &single_value() const { return std::get<std::string>(_value); }
   const Parts &multi_volume_parts() const { return std::get<Parts>(_value); }
   Parts &multi_volume_parts_mut() { return std::get<Parts>(_value); }
-  const NodeList &nested_nodes() const { return std::get<NodeList>(_value); }
-  NodeList &nested_nodes_mut() { return std::get<NodeList>(_value); }
 
 private:
-  std::variant<std::string, Parts, NodeList> _value;
+  std::variant<std::string, Parts> _value;
 };
 
 using PathHierarchy = std::vector<PathEntry>;
@@ -76,11 +60,10 @@ using PathHierarchy = std::vector<PathEntry>;
  * Compare two entries using the ordering enforced throughout archive_r.
  *
  * Ordering rules:
- * 1. Entry categories are ordered single < multi-volume < nested node-list.
+ * 1. Entry categories are ordered single < multi-volume.
  * 2. Single entries compare by string value.
  * 3. Multi-volume entries first compare their ordering flag (Natural < Given),
  *    then compare corresponding part names lexicographically, finally by list length.
- * 4. Nested node-lists compare child entries pairwise using the same rules.
  */
 int compare_entries(const PathEntry &lhs, const PathEntry &rhs);
 

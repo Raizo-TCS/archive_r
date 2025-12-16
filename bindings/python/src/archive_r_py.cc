@@ -53,11 +53,7 @@ py::object path_entry_to_python(const PathEntry &entry) {
     }
     return std::move(parts);
   }
-  py::list nested;
-  for (const auto &child : entry.nested_nodes()) {
-    nested.append(path_entry_to_python(child));
-  }
-  return std::move(nested);
+  return py::none();
 }
 
 py::list path_hierarchy_to_python(const PathHierarchy &hierarchy) {
@@ -77,7 +73,7 @@ PathEntry python_path_entry_from_object(const py::handle &obj) {
   try {
     sequence = py::list(py::reinterpret_borrow<py::object>(obj));
   } catch (const py::cast_error &) {
-    throw std::invalid_argument("PathEntry must be string or nested sequence");
+    throw std::invalid_argument("PathEntry must be string or sequence of strings");
   }
 
   if (sequence.size() == 0) {
@@ -101,12 +97,7 @@ PathEntry python_path_entry_from_object(const py::handle &obj) {
     return PathEntry::multi_volume(std::move(parts));
   }
 
-  PathEntry::NodeList nodes;
-  nodes.reserve(static_cast<size_t>(sequence.size()));
-  for (py::handle item : sequence) {
-    nodes.emplace_back(python_path_entry_from_object(item));
-  }
-  return PathEntry::nested(std::move(nodes));
+  throw std::invalid_argument("PathEntry sequence must contain only strings");
 }
 
 PathHierarchy python_path_hierarchy_from_object(const py::handle &obj) {
@@ -812,6 +803,15 @@ PYBIND11_MODULE(archive_r, m) {
           py::arg("paths"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(),
           py::arg("descend_archives") = py::none(),
           "Create a traverser for the given archive paths with optional passphrases, format filters, metadata key selection, and default descent control")
+      .def(py::init([](py::list path_hierarchy, std::optional<std::vector<std::string>> passphrases, std::optional<std::vector<std::string>> formats,
+                       std::optional<std::vector<std::string>> metadata_keys, std::optional<bool> descend_archives) {
+             py::list paths;
+             paths.append(path_hierarchy);
+             return std::unique_ptr<PyTraverser>(new PyTraverser(paths, std::move(passphrases), std::move(formats), std::move(metadata_keys), descend_archives));
+           }),
+           py::arg("path_hierarchy"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(),
+           py::arg("descend_archives") = py::none(),
+           "Create a traverser for a single PathHierarchy (pass as a list describing the hierarchy).")
       .def("__iter__", &PyTraverser::iter, py::return_value_policy::reference_internal)
       .def("__next__", &PyTraverser::next)
       .def("__enter__", &PyTraverser::enter, py::return_value_policy::reference_internal)

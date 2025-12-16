@@ -7,17 +7,12 @@
 #include <filesystem>
 #include <memory>
 #include <string>
-#include <sys/types.h>
 #include <vector>
-
-#ifdef _MSC_VER
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
-#endif
 
 #include "archive_r/entry_fault.h"
 #include "archive_r/entry_metadata.h"
 #include "archive_r/path_hierarchy.h"
+#include "archive_r/platform_compat.h"
 
 namespace archive_r {
 
@@ -36,8 +31,21 @@ struct MultiVolumeGroupOptions {
  * - Content access (read operations)
  * - Multi-volume archive grouping support
  *
- * Entry objects are typically obtained from ArchiveTraverser::Iterator and
- * remain valid until the iterator advances.
+ * \par Lifetime and Copying
+ * - An Entry& obtained while iterating a Traverser is typically valid until the
+ *   iterator advances.
+ * - Entry is copyable. Copies retain metadata (name/path/metadata/etc), but do not
+ *   retain traverser-managed traversal control state. Calling set_descent() or
+ *   set_multi_volume_group() on such copies will report a fault and has no effect.
+ *   Prefer calling these control methods on the Entry& inside the iteration loop,
+ *   before advancing.
+ *
+ * \par Reading
+ * - read() returns >0 for bytes read, 0 for EOF, -1 for error.
+ * - On error, read() dispatches an EntryFault via the registered fault callback
+ *   (if any).
+ * - After any successful read() (including EOF), descent is disabled until
+ *   explicitly re-enabled via set_descent(true).
  */
 class Entry {
 public:
@@ -89,8 +97,8 @@ public:
   /**
    * @brief Read data from the entry
    *
-  * Each call uses an internal ArchiveStackOrchestrator so reads remain valid even
-  * if the owning iterator advances or other traversal work continues in parallel.
+    * Each call uses an internal ArchiveStackOrchestrator so reads remain valid even
+    * if the owning iterator advances.
    *
    * @param buffer Buffer to read data into
    * @param length Maximum number of bytes to read
@@ -101,6 +109,9 @@ public:
   /**
    * @brief Enable or disable automatic descent into this entry
    * @param enabled true to descend (default), false to keep traversal at current level
+    *
+    * This control is only available for entries that are managed by a Traverser.
+    * Calling this on an Entry that is not traverser-managed reports a fault.
    */
   void set_descent(bool enabled);
 
@@ -128,6 +139,9 @@ public:
    *     }
    * }
    * @endcode
+  *
+  * This control is only available for entries that are managed by a Traverser.
+  * Calling this on an Entry that is not traverser-managed reports a fault.
    */
   void set_multi_volume_group(const std::string &base_name, const MultiVolumeGroupOptions &options = {});
 

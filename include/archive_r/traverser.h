@@ -30,8 +30,30 @@ struct TraverserOptions {
  * and filesystem directories.
  *
  * Uses std::filesystem for directory traversal and ArchiveStackOrchestrator for archives.
-
  * @see Entry, ArchiveStackOrchestrator
+ *
+ * \par Inputs
+ * - The input list must not be empty, and each PathHierarchy must not be empty.
+ *   Violations throw std::invalid_argument.
+ * - For the common single-root case, prefer make_single_path("...") or
+ *   Traverser(const std::string&, ...).
+ *
+ * \par How Roots Are Interpreted
+ * - If the root hierarchy is exactly one single path and it refers to a directory,
+ *   Traverser enumerates it using std::filesystem::recursive_directory_iterator.
+ * - Otherwise, Traverser attempts archive traversal using libarchive.
+ *
+ * \par Error Model (Exceptions vs Faults)
+ * - Invalid arguments are reported via exceptions (std::invalid_argument).
+ * - Recoverable data / I/O errors during archive traversal are reported via the
+ *   global fault callback (EntryFault) and traversal continues.
+ * - Directory traversal uses std::filesystem iterators; filesystem exceptions
+ *   (e.g. std::filesystem::filesystem_error) may be thrown and are not converted
+ *   to faults.
+ *
+ * \par Iterator Semantics
+ * - Traverser::Iterator is an input iterator (single-pass).
+ * - Dereferencing the end iterator throws std::logic_error.
  *
  * Usage:
  *   Traverser traverser({make_single_path("archive.tar.gz")});  // or directory path
@@ -53,8 +75,20 @@ public:
    * Provide one or more paths to traverse. Single-path traversal can be
    * achieved by passing a container with one element:
    *   Traverser traverser({make_single_path("archive.tar.gz")});
+  *
+  * @throws std::invalid_argument if paths is empty or contains an empty hierarchy
    */
   explicit Traverser(std::vector<PathHierarchy> paths, TraverserOptions options = {});
+
+  /**
+   * @brief Construct traverser for a single hierarchy
+   */
+  explicit Traverser(PathHierarchy path, TraverserOptions options = {});
+
+  /**
+   * @brief Construct traverser for a single archive or directory path
+   */
+  explicit Traverser(const std::string &path, TraverserOptions options = {});
 
   ~Traverser();
 

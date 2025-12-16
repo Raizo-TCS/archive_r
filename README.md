@@ -6,7 +6,8 @@
 
 ## Overview
 
-archive_r is a recursive archive reading library using libarchive. It provides direct streaming access to nested archives without extracting them to temporary files.
+archive_r is a libarchive-based library for processing many archive formats.
+It streams entry data directly from the source to recursively read nested archives without extracting to temporary files or loading large in-memory buffers.
 
 ### Key Features
 
@@ -135,7 +136,7 @@ int main() {
 > ℹ️ **Entry Path Representation (C++)**
 > - `entry.path()` returns a path string including the top-level archive name (e.g., `outer/archive.zip/dir/subdir/file.txt`).
 > - `entry.name()` returns the last element of `path_hierarchy()` (e.g., `"dir/subdir/file.txt"`).
-> - `entry.path_hierarchy()` returns each step as an array (e.g., `{"outer/archive.zip", "dir/subdir/file.txt"}`). Useful for representing the full path with custom separators.
+> - `entry.path_hierarchy()` returns a `PathHierarchy` (a sequence of `PathEntry` steps). In the common case, each step is a single string (conceptually like `{"outer/archive.zip", "dir/subdir/file.txt"}`), but it can also represent multi-volume grouping.
 
 For Python and Ruby usage guides (installation, API references, practical samples), see the dedicated binding documents:
 - Python: [`bindings/python/README.md`](bindings/python/README.md)
@@ -147,32 +148,47 @@ For Python and Ruby usage guides (installation, API references, practical sample
 
 ### Overview
 
-`PathHierarchy` is the core abstraction representing a path through nested or multi-volume archives. Instead of using simple string paths, archive_r models each traversal step as a sequence of **path entries**, where each entry can be:
+`PathHierarchy` is the core abstraction representing a path through nested or multi-volume archives.
+
+For convenience, archive_r also provides `Traverser(const std::string& path, ...)` for the common single-root case. `PathHierarchy` remains the underlying representation returned by `Entry::path_hierarchy()` and is useful when you need to explicitly express multi-volume roots.
+
+archive_r models each traversal step as a sequence of **path entries**, where each entry can be:
 
 1. **Single-volume entry**: A regular file or directory (e.g., `"archive.tar"`, `"dir/file.txt"`)
 2. **Multi-volume entry**: A split archive group (e.g., `{"vol.part1", "vol.part2", "vol.part3"}`)
-3. **Nested entry**: A hierarchy within a hierarchy (representing recursive archive structures)
 
 This design enables archive_r to represent complex archive structures uniformly, supporting operations like path comparison, ordering, and display.
 
 ### PathEntry Structure
 
-A `PathEntry` is a variant type that can hold three forms:
+A `PathEntry` is a value type that can hold two forms:
 
 ```cpp
 // include/archive_r/path_hierarchy.h
-using PathEntry = std::variant<
-    std::string,        // Single-volume path component
-    Parts,              // Multi-volume parts list
-    NodeList            // Nested hierarchy (recursive structure)
->;
+class PathEntry {
+public:
+    struct Parts {
+        std::vector<std::string> values;
+        enum class Ordering { Natural, Given } ordering = Ordering::Natural;
+    };
+
+    static PathEntry single(std::string entry);
+    static PathEntry multi_volume(std::vector<std::string> entries,
+                                  Parts::Ordering ordering = Parts::Ordering::Natural);
+
+    bool is_single() const;
+    bool is_multi_volume() const;
+
+    const std::string& single_value() const;
+    const Parts& multi_volume_parts() const;
+};
 ```
 
 - **Single** (`std::string`): Represents a single path component (e.g., `"archive.zip"`, `"dir/file.txt"`)
 - **Multi-volume** (`Parts`): Holds a list of volume paths plus an ordering flag:
   - `Natural` ordering: Sorted by natural numeric ordering (e.g., `["vol.part1", "vol.part10", "vol.part2"]` → `["vol.part1", "vol.part2", "vol.part10"]`)
   - `Given` ordering: Preserves the order specified by the user
-- **Nested** (`NodeList`): Contains a child `PathHierarchy`, enabling recursive representation of archives within archives
+
 
 ### PathHierarchy Type
 
@@ -189,11 +205,10 @@ A `PathHierarchy` is a sequence of `PathEntry` elements representing the full pa
 
 PathHierarchy defines strict ordering rules to enable consistent path comparison:
 
-1. **Type-based ordering**: `Single < Multi-volume < Nested`
+1. **Type-based ordering**: `Single < Multi-volume`
 2. **Within-type ordering**:
    - **Single**: Lexicographic string comparison
    - **Multi-volume**: First by ordering mode (`Natural < Given`), then lexicographic comparison of part lists
-   - **Nested**: Recursive comparison of child hierarchies
 3. **Hierarchy comparison**: Compare entries level-by-level until a difference is found
 
 This ordering ensures that archive paths can be sorted, deduplicated, and indexed consistently across all archive types.
@@ -208,10 +223,10 @@ PathHierarchy single_path = make_single_path("archive.tar.gz");
 // Result: {PathEntry("archive.tar.gz")}
 
 // Create a multi-volume hierarchy from a list of parts
-PathHierarchy multi_volume = make_multi_volume_path(
-    {"archive.part1", "archive.part2", "archive.part3"},
-    PartOrdering::Natural  // or PartOrdering::Given
-);
+PathHierarchy multi_volume;
+append_multi_volume(multi_volume,
+                    {"archive.part1", "archive.part2", "archive.part3"},
+                    PathEntry::Parts::Ordering::Natural);  // or Ordering::Given
 // Result: {PathEntry(Parts{{"archive.part1", "archive.part2", "archive.part3"}, Natural})}
 ```
 
@@ -228,9 +243,9 @@ Traverser tr2({
 });
 
 // Multi-volume archive
-Traverser tr3({
-    make_multi_volume_path({"vol.part1", "vol.part2"}, PartOrdering::Natural)
-});
+PathHierarchy mv_root;
+append_multi_volume(mv_root, {"vol.part1", "vol.part2"}, PathEntry::Parts::Ordering::Natural);
+Traverser tr3({mv_root});
 ```
 
 ### Usage in Entry API
@@ -246,13 +261,14 @@ For custom display formats or deep path analysis, use `path_hierarchy()` directl
 ```cpp
 PathHierarchy hier = entry.path_hierarchy();
 for (const PathEntry& step : hier) {
-    if (std::holds_alternative<std::string>(step)) {
-        std::cout << "Single: " << std::get<std::string>(step) << "\n";
-    } else if (std::holds_alternative<Parts>(step)) {
-        const Parts& parts = std::get<Parts>(step);
-        std::cout << "Multi-volume (" << parts.parts.size() << " parts)\n";
-    } else {
-        std::cout << "Nested hierarchy\n";
+    if (step.is_single()) {
+        std::cout << "Single: " << step.single_value() << "\n";
+        continue;
+    }
+    if (step.is_multi_volume()) {
+        const auto& parts = step.multi_volume_parts();
+        std::cout << "Multi-volume (" << parts.values.size() << " parts)\n";
+        continue;
     }
 }
 ```
@@ -392,6 +408,20 @@ Internal components (`ArchiveStackOrchestrator`, `Entry`, etc.) inherit the same
 ## Error Handling
 
 archive_r reports recoverable data errors (corrupted archives, I/O failures) via callbacks. Faults do not stop traversal; you can decide how to react in your callback implementation.
+
+### Exceptions vs Faults
+
+| Situation | Reporting mechanism | Notes |
+|---|---|---|
+| Invalid `Traverser` arguments (e.g., empty `paths` / empty `PathHierarchy`) | Exception (`std::invalid_argument`) | Thrown during construction |
+| Directory traversal errors | Exception (`std::filesystem::filesystem_error`) | Not converted to faults (current behavior) |
+| Recoverable archive/data errors during traversal | Fault callback (`EntryFault`) | Traversal continues |
+| Entry content read failure | `Entry::read()` returns `-1` and dispatches an `EntryFault` | See `Entry` header docs for details |
+
+### Notes on `Entry`
+
+- Call `set_descent()` / `set_multi_volume_group()` on the `Entry&` inside the traversal loop (before advancing). Copies do not retain traverser-managed control state.
+- After a successful `read()` (including EOF), `descent` is disabled until you explicitly re-enable it with `set_descent(true)`.
 
 ### Fault Callbacks for Data Errors
 
