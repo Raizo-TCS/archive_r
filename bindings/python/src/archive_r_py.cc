@@ -53,11 +53,7 @@ py::object path_entry_to_python(const PathEntry &entry) {
     }
     return std::move(parts);
   }
-  py::list nested;
-  for (const auto &child : entry.nested_nodes()) {
-    nested.append(path_entry_to_python(child));
-  }
-  return std::move(nested);
+  return py::none();
 }
 
 py::list path_hierarchy_to_python(const PathHierarchy &hierarchy) {
@@ -77,7 +73,7 @@ PathEntry python_path_entry_from_object(const py::handle &obj) {
   try {
     sequence = py::list(py::reinterpret_borrow<py::object>(obj));
   } catch (const py::cast_error &) {
-    throw std::invalid_argument("PathEntry must be string or nested sequence");
+    throw std::invalid_argument("PathEntry must be string or sequence of strings");
   }
 
   if (sequence.size() == 0) {
@@ -101,12 +97,7 @@ PathEntry python_path_entry_from_object(const py::handle &obj) {
     return PathEntry::multi_volume(std::move(parts));
   }
 
-  PathEntry::NodeList nodes;
-  nodes.reserve(static_cast<size_t>(sequence.size()));
-  for (py::handle item : sequence) {
-    nodes.emplace_back(python_path_entry_from_object(item));
-  }
-  return PathEntry::nested(std::move(nodes));
+  throw std::invalid_argument("PathEntry sequence must contain only strings");
 }
 
 PathHierarchy python_path_hierarchy_from_object(const py::handle &obj) {

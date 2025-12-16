@@ -136,7 +136,7 @@ int main() {
 > ℹ️ **Entry Path Representation (C++)**
 > - `entry.path()` returns a path string including the top-level archive name (e.g., `outer/archive.zip/dir/subdir/file.txt`).
 > - `entry.name()` returns the last element of `path_hierarchy()` (e.g., `"dir/subdir/file.txt"`).
-> - `entry.path_hierarchy()` returns a `PathHierarchy` (a sequence of `PathEntry` steps). In the common case, each step is a single string (conceptually like `{"outer/archive.zip", "dir/subdir/file.txt"}`), but it can also represent multi-volume and nested grouping.
+> - `entry.path_hierarchy()` returns a `PathHierarchy` (a sequence of `PathEntry` steps). In the common case, each step is a single string (conceptually like `{"outer/archive.zip", "dir/subdir/file.txt"}`), but it can also represent multi-volume grouping.
 
 For Python and Ruby usage guides (installation, API references, practical samples), see the dedicated binding documents:
 - Python: [`bindings/python/README.md`](bindings/python/README.md)
@@ -150,19 +150,18 @@ For Python and Ruby usage guides (installation, API references, practical sample
 
 `PathHierarchy` is the core abstraction representing a path through nested or multi-volume archives.
 
-For convenience, archive_r also provides `Traverser(const std::string& path, ...)` for the common single-root case. `PathHierarchy` remains the underlying representation returned by `Entry::path_hierarchy()` and is useful when you need to explicitly express multi-volume roots or synthetic grouping.
+For convenience, archive_r also provides `Traverser(const std::string& path, ...)` for the common single-root case. `PathHierarchy` remains the underlying representation returned by `Entry::path_hierarchy()` and is useful when you need to explicitly express multi-volume roots.
 
 archive_r models each traversal step as a sequence of **path entries**, where each entry can be:
 
 1. **Single-volume entry**: A regular file or directory (e.g., `"archive.tar"`, `"dir/file.txt"`)
 2. **Multi-volume entry**: A split archive group (e.g., `{"vol.part1", "vol.part2", "vol.part3"}`)
-3. **Nested entry**: A hierarchy within a hierarchy (representing recursive archive structures)
 
 This design enables archive_r to represent complex archive structures uniformly, supporting operations like path comparison, ordering, and display.
 
 ### PathEntry Structure
 
-A `PathEntry` is a value type that can hold three forms:
+A `PathEntry` is a value type that can hold two forms:
 
 ```cpp
 // include/archive_r/path_hierarchy.h
@@ -173,20 +172,15 @@ public:
         enum class Ordering { Natural, Given } ordering = Ordering::Natural;
     };
 
-    using NodeList = std::vector<PathEntry>;
-
     static PathEntry single(std::string entry);
     static PathEntry multi_volume(std::vector<std::string> entries,
                                   Parts::Ordering ordering = Parts::Ordering::Natural);
-    static PathEntry nested(NodeList nodes);
 
     bool is_single() const;
     bool is_multi_volume() const;
-    bool is_nested() const;
 
     const std::string& single_value() const;
     const Parts& multi_volume_parts() const;
-    const NodeList& nested_nodes() const;
 };
 ```
 
@@ -194,7 +188,7 @@ public:
 - **Multi-volume** (`Parts`): Holds a list of volume paths plus an ordering flag:
   - `Natural` ordering: Sorted by natural numeric ordering (e.g., `["vol.part1", "vol.part10", "vol.part2"]` → `["vol.part1", "vol.part2", "vol.part10"]`)
   - `Given` ordering: Preserves the order specified by the user
-- **Nested** (`NodeList`): Nested node-list used for synthetic grouping
+
 
 ### PathHierarchy Type
 
@@ -211,11 +205,10 @@ A `PathHierarchy` is a sequence of `PathEntry` elements representing the full pa
 
 PathHierarchy defines strict ordering rules to enable consistent path comparison:
 
-1. **Type-based ordering**: `Single < Multi-volume < Nested`
+1. **Type-based ordering**: `Single < Multi-volume`
 2. **Within-type ordering**:
    - **Single**: Lexicographic string comparison
    - **Multi-volume**: First by ordering mode (`Natural < Given`), then lexicographic comparison of part lists
-   - **Nested**: Recursive comparison of child hierarchies
 3. **Hierarchy comparison**: Compare entries level-by-level until a difference is found
 
 This ordering ensures that archive paths can be sorted, deduplicated, and indexed consistently across all archive types.
@@ -230,10 +223,10 @@ PathHierarchy single_path = make_single_path("archive.tar.gz");
 // Result: {PathEntry("archive.tar.gz")}
 
 // Create a multi-volume hierarchy from a list of parts
-PathHierarchy multi_volume = make_multi_volume_path(
-    {"archive.part1", "archive.part2", "archive.part3"},
-    PartOrdering::Natural  // or PartOrdering::Given
-);
+PathHierarchy multi_volume;
+append_multi_volume(multi_volume,
+                    {"archive.part1", "archive.part2", "archive.part3"},
+                    PathEntry::Parts::Ordering::Natural);  // or Ordering::Given
 // Result: {PathEntry(Parts{{"archive.part1", "archive.part2", "archive.part3"}, Natural})}
 ```
 
@@ -250,9 +243,9 @@ Traverser tr2({
 });
 
 // Multi-volume archive
-Traverser tr3({
-    make_multi_volume_path({"vol.part1", "vol.part2"}, PartOrdering::Natural)
-});
+PathHierarchy mv_root;
+append_multi_volume(mv_root, {"vol.part1", "vol.part2"}, PathEntry::Parts::Ordering::Natural);
+Traverser tr3({mv_root});
 ```
 
 ### Usage in Entry API
@@ -277,7 +270,6 @@ for (const PathEntry& step : hier) {
         std::cout << "Multi-volume (" << parts.values.size() << " parts)\n";
         continue;
     }
-    std::cout << "Nested node-list\n";
 }
 ```
 

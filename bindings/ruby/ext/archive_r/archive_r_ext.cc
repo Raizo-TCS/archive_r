@@ -72,11 +72,7 @@ static VALUE path_entry_to_rb(const PathEntry &entry) {
     }
     return array;
   }
-  VALUE array = rb_ary_new_capa(entry.nested_nodes().size());
-  for (const auto &child : entry.nested_nodes()) {
-    rb_ary_push(array, path_entry_to_rb(child));
-  }
-  return array;
+  return Qnil;
 }
 
 static VALUE path_hierarchy_to_rb(const PathHierarchy &hierarchy) {
@@ -509,12 +505,7 @@ static PathEntry rb_value_to_path_entry(VALUE value) {
     return PathEntry::multi_volume(std::move(parts));
   }
 
-  PathEntry::NodeList nodes;
-  nodes.reserve(static_cast<size_t>(length));
-  for (long i = 0; i < length; ++i) {
-    nodes.emplace_back(rb_value_to_path_entry(rb_ary_entry(array, i)));
-  }
-  return PathEntry::nested(std::move(nodes));
+  rb_raise(rb_eTypeError, "PathEntry array must contain only Strings");
 }
 
 // Helper: Convert Ruby path argument into vector of PathHierarchy

@@ -14,13 +14,8 @@ int entry_type_rank(const PathEntry &entry) {
   if (entry.is_single()) {
     return 0;
   }
-  if (entry.is_multi_volume()) {
-    return 1;
-  }
-  return 2;
+  return 1;
 }
-
-int compare_node_lists_impl(const PathEntry::NodeList &lhs, const PathEntry::NodeList &rhs);
 
 int compare_entries_impl(const PathEntry &lhs, const PathEntry &rhs) {
   const int lhs_rank = entry_type_rank(lhs);
@@ -69,22 +64,6 @@ int compare_entries_impl(const PathEntry &lhs, const PathEntry &rhs) {
     return 0;
   }
 
-  return compare_node_lists_impl(lhs.nested_nodes(), rhs.nested_nodes());
-}
-
-int compare_node_lists_impl(const PathEntry::NodeList &lhs, const PathEntry::NodeList &rhs) {
-  const std::size_t lsize = lhs.size();
-  const std::size_t rsize = rhs.size();
-  const std::size_t compare_count = lsize < rsize ? lsize : rsize;
-  for (std::size_t i = 0; i < compare_count; ++i) {
-    const int cmp = compare_entries_impl(lhs[i], rhs[i]);
-    if (cmp != 0) {
-      return cmp;
-    }
-  }
-  if (lsize != rsize) {
-    return lsize < rsize ? -1 : 1;
-  }
   return 0;
 }
 
