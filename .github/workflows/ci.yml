@@ -12,7 +12,7 @@ permissions:
   packages: read
 
 jobs:
-  pf1-linux-x86:
+  pf1-linux-x86_64:
     name: PF1.0 Linux x86_64 Build & Test
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -41,6 +41,43 @@ jobs:
           path: |
             archive_r-core-*.tar.gz
             build/bindings/python/dist/**/*
+            build/bindings/ruby/**/*.gem
+            build/logs/**/*.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  ruby-2-7-linux-x86_64:
+    name: Ruby 2.7 Linux x86_64 Binding Build & Test
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby 2.7
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '2.7'
+
+      - name: Install dependencies (Ubuntu x86_64)
+        run: sudo ./install-deps-ubuntu.sh
+
+      - name: Build (Ruby binding only)
+        run: PACKAGE_MODE=ruby ./build-on-ubuntu.sh
+
+      - name: Test (Core + Ruby binding)
+        run: ./test-on-ubuntu.sh
+
+      - name: Verify Ruby binding tests executed
+        run: |
+          test -s build/logs/ruby_test.log
+          test -s build/logs/ruby_gem_install.log
+
+      - name: Upload Ruby 2.7 artifacts
+        if: ${{ always() && env.ACT != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-r-ruby27-${{ github.sha }}
+          path: |
             build/bindings/ruby/**/*.gem
             build/logs/**/*.log
           if-no-files-found: ignore

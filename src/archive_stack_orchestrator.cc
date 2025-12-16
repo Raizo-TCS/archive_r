@@ -20,8 +20,8 @@ namespace archive_r {
 
 ArchiveStackOrchestrator::ArchiveStackOrchestrator(const ArchiveOption &options)
     : _archive_options(options)
-    , _metadata_keys(options.metadata_keys.begin(), options.metadata_keys.end()) {
-    _head.configure(_archive_options);
+{
+  _head.configure(_archive_options);
 }
 
 ArchiveStackOrchestrator::~ArchiveStackOrchestrator() = default;

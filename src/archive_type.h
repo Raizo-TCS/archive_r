@@ -28,7 +28,7 @@ using open_delegate = std::function<int(struct archive *ar)>;
 struct ArchiveOption {
   std::vector<std::string> passphrases;   ///< Passphrases for encrypted archives
   std::vector<std::string> formats;       ///< Specific format names to enable (empty = all)
-  std::vector<std::string> metadata_keys; ///< Metadata keys to capture (empty = none)
+  std::unordered_set<std::string> metadata_keys; ///< Metadata keys to capture (empty = none)
 };
 
 archive_ptr new_read_archive_common(const std::vector<std::string> &passphrases, const std::vector<std::string> &format_names, open_delegate archive_open);
