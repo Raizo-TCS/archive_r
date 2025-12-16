@@ -179,7 +179,6 @@ jobs:
         if: ${{ env.ACT != 'true' && inputs.publish_pypi }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: release/python
           skip-existing: true
+          attestations: true
