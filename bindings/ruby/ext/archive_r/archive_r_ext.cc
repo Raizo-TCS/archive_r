@@ -12,6 +12,9 @@
 #include <cstring>
 #include <memory>
 #include <ruby.h>
+#ifdef memcpy
+#undef memcpy
+#endif
 #include <stdexcept>
 #include <string>
 #include <utility>
