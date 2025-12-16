@@ -36,7 +36,7 @@ public:
   StreamArchive *current_archive();
   ssize_t read_head(void *buff, size_t len);
 
-  const std::unordered_set<std::string> &metadata_keys() const { return _metadata_keys; }
+  const std::unordered_set<std::string> &metadata_keys() const { return _archive_options.metadata_keys; }
   const ArchiveOption &options() const { return _archive_options; }
 
   void mark_entry_as_multi_volume(const PathHierarchy &entry_path, const std::string &base_name, PathEntry::Parts::Ordering ordering = PathEntry::Parts::Ordering::Natural);
@@ -44,7 +44,6 @@ public:
 
 private:
   ArchiveOption _archive_options;
-  std::unordered_set<std::string> _metadata_keys;
   ArchiveStackCursor _head;
   MultiVolumeManager _multi_volume_manager;
 

@@ -38,7 +38,7 @@ ArchiveOption to_archive_option(const TraverserOptions &options) {
   ArchiveOption converted;
   converted.passphrases = options.passphrases;
   converted.formats = options.formats;
-  converted.metadata_keys = options.metadata_keys;
+  converted.metadata_keys.insert(options.metadata_keys.begin(), options.metadata_keys.end());
   return converted;
 }
 
