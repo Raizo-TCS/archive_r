@@ -6,7 +6,8 @@
 
 ## Overview
 
-archive_r is a recursive archive reading library using libarchive. It provides direct streaming access to nested archives without extracting them to temporary files.
+archive_r is a libarchive-based library for processing many archive formats.
+It streams entry data directly from the source to recursively read nested archives without extracting to temporary files or loading large in-memory buffers.
 
 ### Key Features
 
@@ -415,6 +416,20 @@ Internal components (`ArchiveStackOrchestrator`, `Entry`, etc.) inherit the same
 ## Error Handling
 
 archive_r reports recoverable data errors (corrupted archives, I/O failures) via callbacks. Faults do not stop traversal; you can decide how to react in your callback implementation.
+
+### Exceptions vs Faults
+
+| Situation | Reporting mechanism | Notes |
+|---|---|---|
+| Invalid `Traverser` arguments (e.g., empty `paths` / empty `PathHierarchy`) | Exception (`std::invalid_argument`) | Thrown during construction |
+| Directory traversal errors | Exception (`std::filesystem::filesystem_error`) | Not converted to faults (current behavior) |
+| Recoverable archive/data errors during traversal | Fault callback (`EntryFault`) | Traversal continues |
+| Entry content read failure | `Entry::read()` returns `-1` and dispatches an `EntryFault` | See `Entry` header docs for details |
+
+### Notes on `Entry`
+
+- Call `set_descent()` / `set_multi_volume_group()` on the `Entry&` inside the traversal loop (before advancing). Copies do not retain traverser-managed control state.
+- After a successful `read()` (including EOF), `descent` is disabled until you explicitly re-enable it with `set_descent(true)`.
 
 ### Fault Callbacks for Data Errors
 

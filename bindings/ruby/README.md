@@ -1,5 +1,8 @@
 # archive_r Ruby Binding
 
+Ruby bindings for archive_r, a libarchive-based library for processing many archive formats.
+It streams entry data directly from the source to recursively read nested archives without extracting to temporary files or loading large in-memory buffers.
+
 Ruby bindings expose the archive_r traverser API with a natural, block-friendly interface. This document consolidates the Ruby-specific instructions that previously lived in the repository root README.
 
 ## Requirements

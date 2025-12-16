@@ -4,7 +4,9 @@
 
 ## Overview
 
-Python bindings for archive_r, providing recursive archive reading capabilities using libarchive. The bindings expose a Pythonic iterator API with context manager support for traversing nested archives without extracting them to temporary files.
+Python bindings for archive_r, a libarchive-based library for processing many archive formats.
+It streams entry data directly from the source to recursively read nested archives without extracting to temporary files or loading large in-memory buffers.
+The bindings expose a Pythonic iterator API with context manager support.
 
 ---
 

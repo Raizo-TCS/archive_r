@@ -20,8 +20,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["raizo.tcs"]
   spec.email         = ["raizo.tcs@users.noreply.github.com"]
   
-  spec.summary       = "Ruby bindings for archive_r that traverse nested archives without temp extraction"
-  spec.description   = "Ruby bindings for archive_r that recursively walk nested and multipart archives directly from the source stream without creating temporary files"
+  spec.summary       = "Ruby bindings for archive_r: libarchive-based streaming traversal for recursive nested archives (no temp files, no large in-memory buffers)"
+  spec.description   = "Ruby bindings for archive_r, a libarchive-based library for processing many archive formats. It streams entry data directly from the source to recursively read nested archives without extracting to temporary files or loading large in-memory buffers."
   spec.homepage      = "https://github.com/raizo-tcs/archive_r"
   spec.license       = "MIT"
   
