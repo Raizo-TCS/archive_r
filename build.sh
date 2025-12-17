@@ -101,6 +101,7 @@ Options:
                     Disable Python packaging when previously enabled
     --bindings-only Build only bindings (skip core library)
     --python-only   Skip Ruby binding entirely (implies --with-python)
+    --coverage      Enable GCC/GCov compatible coverage build flags for core library (Linux only)
     --help          Show this help message
 
 Examples:
@@ -197,6 +198,7 @@ BINDINGS_ONLY=false
 PACKAGE_RUBY=true
 PACKAGE_PYTHON=false
 PYTHON_ONLY_MODE=false
+ENABLE_COVERAGE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -262,6 +264,10 @@ while [[ $# -gt 0 ]]; do
         --python-only)
             PYTHON_ONLY_MODE=true
             BUILD_PYTHON=true
+            shift
+            ;;
+        --coverage)
+            ENABLE_COVERAGE=true
             shift
             ;;
         --help)
@@ -340,7 +346,41 @@ if [ "$BINDINGS_ONLY" = false ]; then
     log_info "Configuring with CMake..."
     cd "$BUILD_DIR"
     # CMP0074: find_package() uses <PackageName>_ROOT variables
-    CMAKE_ARGS=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_DEFAULT_CMP0074=NEW)
+    CMAKE_BUILD_TYPE="Release"
+    CMAKE_BUILD_CONFIG="Release"
+    CMAKE_EXTRA_CXX_FLAGS=""
+    CMAKE_EXTRA_EXE_LINKER_FLAGS=""
+    CMAKE_EXTRA_SHARED_LINKER_FLAGS=""
+
+    if [ "$ENABLE_COVERAGE" = true ]; then
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+            log_error "--coverage is currently supported only on Linux (GCC/gcov-compatible builds)."
+            exit 1
+        elif [[ "$(uname -s)" == *"MINGW"* ]] || [[ "$(uname -s)" == *"MSYS"* ]]; then
+            log_error "--coverage is not supported on MinGW/MSYS builds."
+            exit 1
+        fi
+
+        CMAKE_BUILD_TYPE="Debug"
+        CMAKE_BUILD_CONFIG="Debug"
+        CMAKE_EXTRA_CXX_FLAGS="--coverage -O0 -g"
+        CMAKE_EXTRA_EXE_LINKER_FLAGS="--coverage"
+        CMAKE_EXTRA_SHARED_LINKER_FLAGS="--coverage"
+
+        log_info "Coverage mode enabled (CMake build type: ${CMAKE_BUILD_TYPE})"
+    fi
+
+    CMAKE_ARGS=(-DCMAKE_BUILD_TYPE="$CMAKE_BUILD_TYPE" -DCMAKE_POLICY_DEFAULT_CMP0074=NEW)
+
+    if [ -n "$CMAKE_EXTRA_CXX_FLAGS" ]; then
+        CMAKE_ARGS+=(-DCMAKE_CXX_FLAGS="$CMAKE_EXTRA_CXX_FLAGS")
+    fi
+    if [ -n "$CMAKE_EXTRA_EXE_LINKER_FLAGS" ]; then
+        CMAKE_ARGS+=(-DCMAKE_EXE_LINKER_FLAGS="$CMAKE_EXTRA_EXE_LINKER_FLAGS")
+    fi
+    if [ -n "$CMAKE_EXTRA_SHARED_LINKER_FLAGS" ]; then
+        CMAKE_ARGS+=(-DCMAKE_SHARED_LINKER_FLAGS="$CMAKE_EXTRA_SHARED_LINKER_FLAGS")
+    fi
 
     # Detect Windows/MinGW environment and set generator if needed
     if [ -n "$CMAKE_GENERATOR" ]; then
@@ -366,7 +406,7 @@ if [ "$BINDINGS_ONLY" = false ]; then
     elif command -v sysctl >/dev/null 2>&1; then
         CPU_COUNT=$(sysctl -n hw.ncpu 2>/dev/null || echo 1)
     fi
-    cmake --build . --config Release --parallel "$CPU_COUNT"
+    cmake --build . --config "$CMAKE_BUILD_CONFIG" --parallel "$CPU_COUNT"
 
     # Check for build artifacts (Unix-style or Windows-style)
     # Windows MSVC builds often place artifacts in Release/ or Debug/ subdirectories

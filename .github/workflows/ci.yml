@@ -12,8 +12,44 @@ permissions:
   packages: read
 
 jobs:
+  detect-container-changes:
+    name: Detect container-related changes
+    runs-on: ubuntu-24.04
+    outputs:
+      containers_needed: ${{ steps.filter.outputs.containers }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            containers:
+              - '.github/docker/**'
+              - '.github/workflows/build-containers.yml'
+              - 'install-deps-ubuntu.sh'
+              - 'install-deps-msvc.ps1'
+              - 'bindings/python/tools/build-deps-manylinux.sh'
+
+  build-containers-if-needed:
+    name: Build Containers (if needed)
+    needs: detect-container-changes
+    if: ${{ needs.detect-container-changes.outputs.containers_needed == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-containers.yml
+
   pf1-linux-x86_64:
     name: PF1.0 Linux x86_64 Build & Test
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
@@ -48,6 +84,11 @@ jobs:
 
   ruby-2-7-linux-x86_64:
     name: Ruby 2.7 Linux x86_64 Binding Build & Test
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
@@ -85,6 +126,11 @@ jobs:
 
   pf1-linux-arm64:
     name: PF1.1 Linux arm64 Build & Test (Hybrid)
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
@@ -162,6 +208,11 @@ jobs:
 
   pf2-macos:
     name: ${{ matrix.label }} macOS Build & Test
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     strategy:
@@ -208,6 +259,11 @@ jobs:
 
   pf3-msvc:
     name: PF3.0 Windows MSVC Build & Test
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
     timeout-minutes: 120
     env:
@@ -248,6 +304,11 @@ jobs:
 
   pf4-mingw:
     name: PF4.0 Windows MinGW Build & Test
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
     timeout-minutes: 90
     steps:

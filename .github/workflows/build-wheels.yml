@@ -13,7 +13,43 @@ permissions:
   packages: write
 
 jobs:
+  detect-container-changes:
+    name: Detect container-related changes
+    runs-on: ubuntu-24.04
+    outputs:
+      containers_needed: ${{ steps.filter.outputs.containers }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            containers:
+              - '.github/docker/**'
+              - '.github/workflows/build-containers.yml'
+              - 'install-deps-ubuntu.sh'
+              - 'install-deps-msvc.ps1'
+              - 'bindings/python/tools/build-deps-manylinux.sh'
+
+  build-containers-if-needed:
+    name: Build Containers (if needed)
+    needs: detect-container-changes
+    if: ${{ needs.detect-container-changes.outputs.containers_needed == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-containers.yml
+
   build-manylinux-wheels:
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -88,6 +124,11 @@ jobs:
           retention-days: 7
 
   build-macos-wheels:
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     env:
@@ -130,6 +171,11 @@ jobs:
           retention-days: 7
 
   build-windows-wheels:
+    needs: [detect-container-changes, build-containers-if-needed]
+    if: >-
+      ${{ always() &&
+          needs.detect-container-changes.result == 'success' &&
+          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
     strategy:
       fail-fast: false
