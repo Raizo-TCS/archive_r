@@ -31,6 +31,7 @@ jobs:
               - '.github/docker/ci-*.Dockerfile'
               - '.github/workflows/build-ci-containers.yml'
               - 'install-deps-ubuntu.sh'
+              - 'install-deps-mingw.ps1'
               - 'install-deps-msvc.ps1'
 
   build-ci-containers-if-needed:
@@ -145,7 +146,7 @@ jobs:
           IMAGE_NAME="${IMAGE_NAME,,}"
           if ! docker pull "$IMAGE_NAME"; then
             echo "Required image not found: $IMAGE_NAME"
-            echo "Run the 'Build Containers' workflow to publish CI images to GHCR."
+            echo "Run the 'Build CI Containers' workflow to publish CI images to GHCR."
             exit 1
           fi
           echo "CROSS_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
@@ -157,7 +158,7 @@ jobs:
           IMAGE_NAME="${IMAGE_NAME,,}"
           if ! docker pull --platform linux/arm64 "$IMAGE_NAME"; then
             echo "Required image not found: $IMAGE_NAME"
-            echo "Run the 'Build Containers' workflow to publish CI images to GHCR."
+            echo "Run the 'Build CI Containers' workflow to publish CI images to GHCR."
             exit 1
           fi
           echo "CI_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
@@ -345,3 +346,4 @@ jobs:
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
+
