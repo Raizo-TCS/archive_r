@@ -1,0 +1,38 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 03:00 JST every Monday = 18:00 UTC Sunday
+    - cron: '0 18 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (CodeQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: cpp,python
+          queries: security-and-quality
+
+      - name: Install dependencies (Ubuntu)
+        run: sudo ./install-deps-ubuntu.sh
+
+      - name: Build (core)
+        run: ./build.sh --rebuild
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
