@@ -23,9 +23,7 @@ on:
         type: boolean
 
 permissions:
-  contents: write
-  packages: write
-  id-token: write
+  contents: read
   actions: read
 
 jobs:
@@ -36,7 +34,7 @@ jobs:
       commit_sha: ${{ steps.version_check.outputs.commit_sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
@@ -66,13 +64,17 @@ jobs:
   release-and-publish:
     runs-on: ubuntu-24.04
     needs: validate-tag
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
     environment:
       name: production
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Install Ruby tooling (for RubyGems)
         if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
@@ -157,7 +159,7 @@ jobs:
 
       - name: Create GitHub Release
         if: ${{ env.ACT != 'true' }}
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
         with:
           tag_name: ${{ inputs.tag }}
           name: archive_r ${{ inputs.tag }}
@@ -177,7 +179,7 @@ jobs:
 
       - name: Publish to PyPI
         if: ${{ env.ACT != 'true' && inputs.publish_pypi }}
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
         with:
           packages-dir: release/python
           skip-existing: true
