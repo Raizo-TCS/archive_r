@@ -12,7 +12,7 @@ jobs:
   build-ci-linux-arm64:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -45,7 +45,7 @@ jobs:
   build-ci-linux-arm64-cross:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -75,7 +75,7 @@ jobs:
   build-ci-windows-msvc:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Lowercase Registry Owner
         shell: bash
@@ -101,7 +101,7 @@ jobs:
   build-ci-windows-mingw:
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Lowercase Registry Owner
         shell: bash
@@ -129,7 +129,7 @@ jobs:
     env:
       LIBARCHIVE_VERSION: 3.7.5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

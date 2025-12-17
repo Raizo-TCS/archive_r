@@ -19,7 +19,7 @@ jobs:
     outputs:
       containers_needed: ${{ steps.filter.outputs.containers }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -59,7 +59,7 @@ jobs:
     env:
       LIBARCHIVE_VERSION: 3.7.5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up QEMU
         if: matrix.platform == 'aarch64'
@@ -146,7 +146,7 @@ jobs:
           - runner: macos-15
             arch: universal2
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -183,7 +183,7 @@ jobs:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         arch: [x86_64]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5

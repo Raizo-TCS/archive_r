@@ -36,7 +36,7 @@ jobs:
       commit_sha: ${{ steps.version_check.outputs.commit_sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -72,7 +72,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Ruby tooling (for RubyGems)
         if: ${{ env.ACT != 'true' && inputs.publish_rubygems }}
