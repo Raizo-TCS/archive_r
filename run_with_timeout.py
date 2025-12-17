@@ -17,16 +17,16 @@ def _terminate_process(proc: subprocess.Popen[bytes], grace: float = 5.0) -> Non
             proc.terminate()
         else:
             proc.send_signal(signal.SIGTERM)
-    except Exception:
-        pass
+    except Exception as exc:
+        print(f"[run_with_timeout] Failed to send terminate signal: {exc}", file=sys.stderr, flush=True)
 
     try:
         proc.wait(timeout=grace)
     except subprocess.TimeoutExpired:
         try:
             proc.kill()
-        except Exception:
-            pass
+        except Exception as exc:
+            print(f"[run_with_timeout] Failed to kill process: {exc}", file=sys.stderr, flush=True)
 
 
 def run_with_timeout(timeout_seconds: float, command: List[str]) -> int:

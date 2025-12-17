@@ -4,11 +4,9 @@ Archive test data generator
 Creates comprehensive test archives with proper multipart files
 """
 
-import os
 import sys
 import shutil
 import tarfile
-import gzip
 import tempfile
 from pathlib import Path
 from typing import List, Optional

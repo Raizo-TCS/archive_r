@@ -13,47 +13,47 @@ permissions:
 
 jobs:
   detect-container-changes:
-    name: Detect container-related changes
+    name: Detect CI container-related changes
     runs-on: ubuntu-24.04
     outputs:
       containers_needed: ${{ steps.filter.outputs.containers }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
       - name: Check paths
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
         with:
           filters: |
             containers:
-              - '.github/docker/**'
-              - '.github/workflows/build-containers.yml'
+              - '.github/docker/ci-*.Dockerfile'
+              - '.github/workflows/build-ci-containers.yml'
               - 'install-deps-ubuntu.sh'
+              - 'install-deps-mingw.ps1'
               - 'install-deps-msvc.ps1'
-              - 'bindings/python/tools/build-deps-manylinux.sh'
 
-  build-containers-if-needed:
-    name: Build Containers (if needed)
+  build-ci-containers-if-needed:
+    name: Build CI Containers (if needed)
     needs: detect-container-changes
     if: ${{ needs.detect-container-changes.outputs.containers_needed == 'true' }}
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/build-containers.yml
+    uses: ./.github/workflows/build-ci-containers.yml
 
   pf1-linux-x86_64:
     name: PF1.0 Linux x86_64 Build & Test
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Install dependencies (Ubuntu x86_64)
         run: sudo ./install-deps-ubuntu.sh
@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload PF1.0 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: archive-r-pf1-x86_64-${{ github.sha }}
           path: |
@@ -84,18 +84,18 @@ jobs:
 
   ruby-2-7-linux-x86_64:
     name: Ruby 2.7 Linux x86_64 Binding Build & Test
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Set up Ruby 2.7
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@ac793fdd38cc468a4dd57246fa9d0e868aba9085
         with:
           ruby-version: '2.7'
 
@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload Ruby 2.7 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: archive-r-ruby27-${{ github.sha }}
           path: |
@@ -126,18 +126,18 @@ jobs:
 
   pf1-linux-arm64:
     name: PF1.1 Linux arm64 Build & Test (Hybrid)
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Set up QEMU (aarch64)
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
 
       - name: Pull Cross-Build Image (Required)
         run: |
@@ -146,7 +146,7 @@ jobs:
           IMAGE_NAME="${IMAGE_NAME,,}"
           if ! docker pull "$IMAGE_NAME"; then
             echo "Required image not found: $IMAGE_NAME"
-            echo "Run the 'Build Containers' workflow to publish CI images to GHCR."
+            echo "Run the 'Build CI Containers' workflow to publish CI images to GHCR."
             exit 1
           fi
           echo "CROSS_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
@@ -158,7 +158,7 @@ jobs:
           IMAGE_NAME="${IMAGE_NAME,,}"
           if ! docker pull --platform linux/arm64 "$IMAGE_NAME"; then
             echo "Required image not found: $IMAGE_NAME"
-            echo "Run the 'Build Containers' workflow to publish CI images to GHCR."
+            echo "Run the 'Build CI Containers' workflow to publish CI images to GHCR."
             exit 1
           fi
           echo "CI_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
@@ -196,7 +196,7 @@ jobs:
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: archive-r-pf1-arm64-${{ github.sha }}
           path: |
@@ -208,11 +208,11 @@ jobs:
 
   pf2-macos:
     name: ${{ matrix.label }} macOS Build & Test
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     strategy:
@@ -232,7 +232,7 @@ jobs:
       HOMEBREW_NO_ANALYTICS: "1"
       HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Install dependencies (macOS)
         run: ./install-deps-macos.sh
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload ${{ matrix.label }} artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: archive-r-${{ matrix.arch }}-${{ github.sha }}
           path: |
@@ -259,17 +259,17 @@ jobs:
 
   pf3-msvc:
     name: PF3.0 Windows MSVC Build & Test
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
     timeout-minutes: 120
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Prepare CI Container
         shell: pwsh
@@ -292,7 +292,7 @@ jobs:
 
       - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: archive-r-pf3-${{ github.sha }}
           path: |
@@ -304,15 +304,15 @@ jobs:
 
   pf4-mingw:
     name: PF4.0 Windows MinGW Build & Test
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Prepare CI Container
         shell: pwsh
@@ -337,7 +337,7 @@ jobs:
 
       - name: Upload PF4 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: archive-r-pf4-${{ github.sha }}
           path: |
@@ -346,3 +346,4 @@ jobs:
             build/logs/**/*.log
           if-no-files-found: ignore
           retention-days: 7
+

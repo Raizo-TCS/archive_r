@@ -52,8 +52,8 @@ function Invoke-Ucrt64Bash {
   }
 }
 
-Invoke-MsysBash "pacman -Syu --noconfirm"
-Invoke-MsysBash "pacman -S --noconfirm git base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-libarchive mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-pip mingw-w64-ucrt-x86_64-python-setuptools mingw-w64-ucrt-x86_64-python-wheel mingw-w64-ucrt-x86_64-ruby mingw-w64-ucrt-x86_64-rust"
+Invoke-MsysBash "pacman -Syu --noconfirm --disable-download-timeout"
+Invoke-MsysBash "pacman -S --noconfirm --disable-download-timeout git base-devel mingw-w64-ucrt-x86_64-toolchain mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-libarchive mingw-w64-ucrt-x86_64-python mingw-w64-ucrt-x86_64-python-pip mingw-w64-ucrt-x86_64-python-setuptools mingw-w64-ucrt-x86_64-python-wheel mingw-w64-ucrt-x86_64-ruby mingw-w64-ucrt-x86_64-rust"
 
 # Install/refresh Python tooling packages.
 # MSYS2 Python is externally-managed (PEP 668); allow pip to modify it in CI/container images.

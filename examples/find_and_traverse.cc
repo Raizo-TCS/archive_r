@@ -122,7 +122,6 @@ int main(int argc, char *argv[]) {
     // Simple traverse mode
     simple_traverse(path);
     std::cout << "\n";
-    //    count_by_depth(path);
   }
 
   return 0;

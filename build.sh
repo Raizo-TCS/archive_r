@@ -140,6 +140,7 @@ sync_ruby_vendor_sources() {
     local vendor_root="$ROOT_DIR/bindings/ruby/ext/archive_r/vendor/archive_r"
     local include_src="$ROOT_DIR/include"
     local src_src="$ROOT_DIR/src"
+    local license_source=""
 
     if [ ! -d "$include_src" ] || [ ! -d "$src_src" ]; then
         log_error "Cannot embed archive_r core sources for Ruby gem (missing include/src directories)"
@@ -151,11 +152,17 @@ sync_ruby_vendor_sources() {
     copy_directory_contents "$include_src" "$vendor_root/include" || return 1
     copy_directory_contents "$src_src" "$vendor_root/src" || return 1
 
-    if [ -f "$ROOT_DIR/LICENSE.txt" ]; then
+    if [ -f "$ROOT_DIR/LICENSE" ]; then
+        license_source="$ROOT_DIR/LICENSE"
+    elif [ -f "$ROOT_DIR/LICENSE.txt" ]; then
+        license_source="$ROOT_DIR/LICENSE.txt"
+    fi
+
+    if [ -n "$license_source" ]; then
         mkdir -p "$vendor_root"
-        cp "$ROOT_DIR/LICENSE.txt" "$vendor_root/LICENSE.txt"
-        # Copy LICENSE.txt to bindings/ruby/LICENSE for gemspec inclusion
-        cp "$ROOT_DIR/LICENSE.txt" "$ROOT_DIR/bindings/ruby/LICENSE"
+        cp "$license_source" "$vendor_root/LICENSE"
+        # Copy LICENSE to bindings/ruby/LICENSE for gemspec inclusion
+        cp "$license_source" "$ROOT_DIR/bindings/ruby/LICENSE"
     fi
 
     return 0

@@ -12,18 +12,20 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   analyze:
     name: Analyze (CodeQL)
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@45c373516f557556c15d420e3f5e0aa3d64366bc
         with:
           languages: cpp,python
           queries: security-and-quality
@@ -35,4 +37,4 @@ jobs:
         run: ./build.sh --rebuild
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@45c373516f557556c15d420e3f5e0aa3d64366bc

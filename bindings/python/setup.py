@@ -21,12 +21,12 @@ vendor_include = vendor_root / 'include'
 vendor_src = vendor_root / 'src'
 libs_dir = binding_root / '.libs'
 local_readme = binding_root / 'README.md'
-local_license = binding_root / 'LICENSE.txt'
+local_license = binding_root / 'LICENSE'
 
-# Ensure LICENSE.txt is present in the binding directory. Skip overwrite when a copy already exists
+# Ensure LICENSE is present in the binding directory. Skip overwrite when a copy already exists
 # to avoid permission issues from prior root-owned builds.
-if (archive_r_root / 'LICENSE.txt').exists() and not local_license.exists():
-    shutil.copy(archive_r_root / 'LICENSE.txt', local_license)
+if (archive_r_root / 'LICENSE').exists() and not local_license.exists():
+    shutil.copy(archive_r_root / 'LICENSE', local_license)
 
 local_version = binding_root / 'VERSION'
 system_name = platform.system().lower()
@@ -66,9 +66,8 @@ def stage_shared_libs(paths: Iterable[Path]) -> None:
     libs_dir.mkdir(parents=True, exist_ok=True)
     try:
         libs_dir.chmod(0o755)
-    except PermissionError:
-        # Continue and let the subsequent copy attempt overwrite
-        pass
+    except PermissionError as exc:
+        print(f"Warning: failed to chmod {libs_dir}: {exc}", file=sys.stderr)
     for candidate in paths:
         if not candidate.exists() or not candidate.is_file():
             continue
@@ -78,13 +77,13 @@ def stage_shared_libs(paths: Iterable[Path]) -> None:
         if target.exists():
             try:
                 target.chmod(0o644)
-            except PermissionError:
-                pass
+            except PermissionError as exc:
+                print(f"Warning: failed to chmod {target}: {exc}", file=sys.stderr)
             try:
                 target.unlink()
-            except PermissionError:
-                # Even if unlink is denied, continue and attempt copy2 overwrite
-                pass
+            except PermissionError as exc:
+                # Even if unlink is denied, continue and attempt copy2 overwrite.
+                print(f"Warning: failed to unlink {target}: {exc}", file=sys.stderr)
         shutil.copy2(candidate, target)
         staged_shared_libs.append(target)
 
@@ -242,7 +241,7 @@ atexit.register(cleanup_generated)
 
 
 def prepare_distribution_assets() -> None:
-    copy_file(archive_r_root / 'LICENSE.txt', local_license)
+    copy_file(archive_r_root / 'LICENSE', local_license)
     copy_file(archive_r_root / 'VERSION', local_version)
     copy_tree(archive_r_root / 'include', vendor_include)
     copy_tree(archive_r_root / 'src', vendor_src)
