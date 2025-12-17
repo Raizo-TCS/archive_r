@@ -1,0 +1,52 @@
+name: Build Wheel Containers
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-manylinux-aarch64-base:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      LIBARCHIVE_VERSION: 3.7.5
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+
+      - name: Lowercase Registry Owner
+        id: owner
+        shell: bash
+        run: |
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+
+      - name: Login to GHCR
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push manylinux_2_28_aarch64 deps image
+        run: |
+          set -euo pipefail
+          IMAGE_NAME="ghcr.io/${{ steps.owner.outputs.owner }}/archive_r/manylinux_2_28_aarch64_deps"
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION}" \
+            -f .github/docker/manylinux-2-28-aarch64-deps.Dockerfile \
+            -t "${IMAGE_NAME}:latest" \
+            -t "${IMAGE_NAME}:${GITHUB_SHA}" \
+            --push .

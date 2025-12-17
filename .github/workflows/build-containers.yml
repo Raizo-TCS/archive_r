@@ -8,170 +8,17 @@ permissions:
   contents: read
 
 jobs:
-  build-ci-linux-arm64:
-    runs-on: ubuntu-24.04
+  build-ci-containers:
+    name: Build CI Containers
     permissions:
       contents: read
       packages: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+    uses: ./.github/workflows/build-ci-containers.yml
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
-
-      - name: Lowercase Registry Owner
-        run: |
-          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        env:
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25
-        with:
-          context: .
-          file: .github/docker/ci-linux-arm64.Dockerfile
-          platforms: linux/arm64
-          push: true
-          tags: ghcr.io/${{ env.OWNER }}/archive_r/ci-linux-arm64:latest
-
-  build-ci-linux-arm64-cross:
-    runs-on: ubuntu-24.04
+  build-wheel-containers:
+    name: Build Wheel Containers
     permissions:
       contents: read
       packages: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+    uses: ./.github/workflows/build-wheel-containers.yml
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
-
-      - name: Lowercase Registry Owner
-        run: |
-          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        env:
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25
-        with:
-          context: .
-          file: .github/docker/ci-linux-arm64-cross.Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ghcr.io/${{ env.OWNER }}/archive_r/ci-linux-arm64-cross:latest
-
-  build-ci-windows-msvc:
-    runs-on: windows-2022
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-
-      - name: Lowercase Registry Owner
-        shell: bash
-        run: |
-          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        env:
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        shell: pwsh
-        run: |
-          $ImageName = "ghcr.io/${{ env.OWNER }}/archive_r/ci-windows-msvc:latest"
-          docker build -t $ImageName -f .github/docker/ci-windows-msvc.Dockerfile .
-          docker push $ImageName
-
-  build-ci-windows-mingw:
-    runs-on: windows-2022
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-
-      - name: Lowercase Registry Owner
-        shell: bash
-        run: |
-          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        env:
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        shell: pwsh
-        run: |
-          $ImageName = "ghcr.io/${{ env.OWNER }}/archive_r/ci-windows-mingw:latest"
-          docker build -t $ImageName -f .github/docker/ci-windows-mingw.Dockerfile .
-          docker push $ImageName
-
-  build-manylinux-aarch64-base:
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
-    env:
-      LIBARCHIVE_VERSION: 3.7.5
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
-
-      - name: Lowercase Registry Owner
-        run: |
-          echo "OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
-        env:
-          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
-
-      - name: Login to GHCR
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push manylinux_2_28_aarch64 deps image
-        run: |
-          set -euo pipefail
-          IMAGE_NAME="ghcr.io/${OWNER}/archive_r/manylinux_2_28_aarch64_deps"
-          docker buildx build \
-            --platform linux/arm64 \
-            --build-arg LIBARCHIVE_VERSION="${LIBARCHIVE_VERSION}" \
-            -f .github/docker/manylinux-2-28-aarch64-deps.Dockerfile \
-            -t "${IMAGE_NAME}:latest" \
-            -t "${IMAGE_NAME}:${GITHUB_SHA}" \
-            --push .

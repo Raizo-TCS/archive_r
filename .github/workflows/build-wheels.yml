@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   detect-container-changes:
-    name: Detect container-related changes
+    name: Detect wheel container-related changes
     runs-on: ubuntu-24.04
     outputs:
       containers_needed: ${{ steps.filter.outputs.containers }}
@@ -29,27 +29,25 @@ jobs:
         with:
           filters: |
             containers:
-              - '.github/docker/**'
-              - '.github/workflows/build-containers.yml'
-              - 'install-deps-ubuntu.sh'
-              - 'install-deps-msvc.ps1'
+              - '.github/docker/manylinux-2-28-aarch64-deps.Dockerfile'
+              - '.github/workflows/build-wheel-containers.yml'
               - 'bindings/python/tools/build-deps-manylinux.sh'
 
-  build-containers-if-needed:
-    name: Build Containers (if needed)
+  build-wheel-containers-if-needed:
+    name: Build Wheel Containers (if needed)
     needs: detect-container-changes
     if: ${{ needs.detect-container-changes.outputs.containers_needed == 'true' }}
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/build-containers.yml
+    uses: ./.github/workflows/build-wheel-containers.yml
 
   build-manylinux-wheels:
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-wheel-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-wheel-containers-if-needed.result == 'success' || needs.build-wheel-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -124,11 +122,11 @@ jobs:
           retention-days: 7
 
   build-macos-wheels:
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-wheel-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-wheel-containers-if-needed.result == 'success' || needs.build-wheel-containers-if-needed.result == 'skipped') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     env:
@@ -171,11 +169,11 @@ jobs:
           retention-days: 7
 
   build-windows-wheels:
-    needs: [detect-container-changes, build-containers-if-needed]
+    needs: [detect-container-changes, build-wheel-containers-if-needed]
     if: >-
       ${{ always() &&
           needs.detect-container-changes.result == 'success' &&
-          (needs.build-containers-if-needed.result == 'success' || needs.build-containers-if-needed.result == 'skipped') }}
+          (needs.build-wheel-containers-if-needed.result == 'success' || needs.build-wheel-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
     strategy:
       fail-fast: false
