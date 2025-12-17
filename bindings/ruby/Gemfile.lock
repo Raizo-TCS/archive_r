@@ -1,12 +1,12 @@
 PATH
   remote: .
   specs:
-    archive_r (0.1.7)
+    archive_r_ruby (0.1.7)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    minitest (5.16.3)
+    minitest (5.26.1)
     rake (13.0.6)
     rake-compiler (1.2.9)
       rake
@@ -15,8 +15,8 @@ PLATFORMS
   x86_64-linux-gnu
 
 DEPENDENCIES
-  archive_r!
-  minitest (~> 5.0)
+  archive_r_ruby!
+  minitest (~> 5.26)
   rake (~> 13.0)
   rake-compiler (~> 1.2)
 
