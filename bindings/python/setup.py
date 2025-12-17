@@ -21,12 +21,12 @@ vendor_include = vendor_root / 'include'
 vendor_src = vendor_root / 'src'
 libs_dir = binding_root / '.libs'
 local_readme = binding_root / 'README.md'
-local_license = binding_root / 'LICENSE.txt'
+local_license = binding_root / 'LICENSE'
 
-# Ensure LICENSE.txt is present in the binding directory. Skip overwrite when a copy already exists
+# Ensure LICENSE is present in the binding directory. Skip overwrite when a copy already exists
 # to avoid permission issues from prior root-owned builds.
-if (archive_r_root / 'LICENSE.txt').exists() and not local_license.exists():
-    shutil.copy(archive_r_root / 'LICENSE.txt', local_license)
+if (archive_r_root / 'LICENSE').exists() and not local_license.exists():
+    shutil.copy(archive_r_root / 'LICENSE', local_license)
 
 local_version = binding_root / 'VERSION'
 system_name = platform.system().lower()
@@ -241,7 +241,7 @@ atexit.register(cleanup_generated)
 
 
 def prepare_distribution_assets() -> None:
-    copy_file(archive_r_root / 'LICENSE.txt', local_license)
+    copy_file(archive_r_root / 'LICENSE', local_license)
     copy_file(archive_r_root / 'VERSION', local_version)
     copy_tree(archive_r_root / 'include', vendor_include)
     copy_tree(archive_r_root / 'src', vendor_src)

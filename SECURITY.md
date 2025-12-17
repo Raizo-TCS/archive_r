@@ -32,15 +32,6 @@ Please include as much of the following as possible:
 - Affected versions and environments
 - Any suggested fix or mitigation (optional)
 
-### Timeline expectations
-
-We aim to:
-
-- Acknowledge receipt within 72 hours
-- Provide an initial assessment within 7 days
-
-If a coordinated disclosure is appropriate, we will propose a timeline and keep you updated until a fix is released.
-
 ### References
 
 - GitHub Security Advisories documentation: https://docs.github.com/en/code-security/security-advisories
