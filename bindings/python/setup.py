@@ -66,9 +66,8 @@ def stage_shared_libs(paths: Iterable[Path]) -> None:
     libs_dir.mkdir(parents=True, exist_ok=True)
     try:
         libs_dir.chmod(0o755)
-    except PermissionError:
-        # Continue and let the subsequent copy attempt overwrite
-        pass
+    except PermissionError as exc:
+        print(f"Warning: failed to chmod {libs_dir}: {exc}", file=sys.stderr)
     for candidate in paths:
         if not candidate.exists() or not candidate.is_file():
             continue
@@ -78,13 +77,13 @@ def stage_shared_libs(paths: Iterable[Path]) -> None:
         if target.exists():
             try:
                 target.chmod(0o644)
-            except PermissionError:
-                pass
+            except PermissionError as exc:
+                print(f"Warning: failed to chmod {target}: {exc}", file=sys.stderr)
             try:
                 target.unlink()
-            except PermissionError:
-                # Even if unlink is denied, continue and attempt copy2 overwrite
-                pass
+            except PermissionError as exc:
+                # Even if unlink is denied, continue and attempt copy2 overwrite.
+                print(f"Warning: failed to unlink {target}: {exc}", file=sys.stderr)
         shutil.copy2(candidate, target)
         staged_shared_libs.append(target)
 

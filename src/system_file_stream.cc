@@ -168,6 +168,8 @@ void SystemFileStream::report_read_failure(int err) {
   throw make_entry_fault_error(detailed, _logical_path, err);
 }
 
+// Collect filesystem metadata for the root path in the hierarchy.
+// Returns an empty info struct when metadata is unavailable or disallowed.
 FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy, const std::unordered_set<std::string> &allowed_keys) {
   FilesystemMetadataInfo info;
 

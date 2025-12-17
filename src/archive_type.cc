@@ -268,6 +268,7 @@ ssize_t Archive::read_current(void *buff, size_t len) {
   return bytes_read;
 }
 
+// Returns the current entry size in bytes, or 0 when no entry is selected.
 uint64_t Archive::current_entry_size() const {
   if (!current_entry) {
     return 0;
@@ -275,6 +276,7 @@ uint64_t Archive::current_entry_size() const {
   return archive_entry_size(current_entry);
 }
 
+// Returns the current entry filetype bits, or 0 when no entry is selected.
 mode_t Archive::current_entry_filetype() const {
   if (!current_entry) {
     return 0;

@@ -504,13 +504,18 @@ class TestTraverser(unittest.TestCase):
         self.assertTrue(streams)
         self.assertTrue(any(stream.seek_calls >= 1 for stream in streams))
 
-    def test_stream_factory_rejects_plain_io(self):
-        def factory(hierarchy):
-            if hierarchy[0] == head:
-                stream = RecordingStream(hierarchy)
-                streams.append(stream)
-                return stream
-            self._collect_paths(self.simple_archive)
+    def test_stream_factory_rejects_non_file_like_results(self):
+        """Stream factory results must be file-like (provide read()) or None"""
+
+        def factory(_hierarchy):
+            return object()
+
+        try:
+            archive_r.register_stream_factory(factory)
+            with self.assertRaises(TypeError):
+                self._collect_paths(self.simple_archive)
+        finally:
+            archive_r.register_stream_factory(None)
 
     def test_multi_volume_grouping(self):
         """Verify multi-volume archives can be grouped and traversed"""

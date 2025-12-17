@@ -1,5 +1,4 @@
 import zipfile
-import os
 
 def create_test_archive(filename, num_files):
     print(f"Creating {filename} with {num_files} files...")
