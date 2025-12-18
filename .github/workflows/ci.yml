@@ -58,6 +58,7 @@ jobs:
       - name: Probe filesystem iteration order (test_data)
         run: |
           set -euo pipefail
+          mkdir -p build
           g++ --version || true
           g++ -std=c++17 -O2 -Wall -Wextra -pedantic -o build/fs_iter_order_probe tools/fs_iter_order_probe.cc
           ./build/fs_iter_order_probe test_data --head 40 --tail 40
@@ -104,6 +105,7 @@ jobs:
       - name: Probe filesystem iteration order (test_data)
         run: |
           set -euo pipefail
+          mkdir -p build
           g++ --version || true
           g++ -std=c++17 -O2 -Wall -Wextra -pedantic -o build/fs_iter_order_probe tools/fs_iter_order_probe.cc
           ./build/fs_iter_order_probe test_data --head 40 --tail 40
