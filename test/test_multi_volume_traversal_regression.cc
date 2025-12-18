@@ -14,6 +14,7 @@
 #include <map>
 #include <regex>
 #include <set>
+#include <unordered_map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -262,6 +263,10 @@ struct RegressionCheck {
   std::map<std::string, std::string> group_first_marked_hierarchy;
   std::map<std::string, std::string> group_first_resolved_hierarchy;
 
+  // Captures a small window of traversal context around the first time we mark a group.
+  // Useful for diagnosing directory iteration ordering differences in CI.
+  std::map<std::string, std::vector<std::string>> group_first_mark_context;
+
   bool success() const { return duplicate_counts.empty() && unresolved_groups.empty(); }
 };
 
@@ -310,12 +315,34 @@ RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
   std::set<std::string> groups_marked;
   std::set<std::string> groups_resolved;
 
+  std::vector<std::string> recent_entries;
+  recent_entries.reserve(32);
+  std::unordered_map<std::string, int> post_mark_capture_remaining;
+
   g_fault_sink = &faults;
   g_fault_debug_enabled = debug_enabled;
 
   for (auto &entry : traverser) {
     std::string hierarchy = entry.path();
     hierarchy_counts[hierarchy]++;
+
+    // Track a short rolling window of recent entries.
+    if (recent_entries.size() >= 10) {
+      recent_entries.erase(recent_entries.begin());
+    }
+    recent_entries.push_back(hierarchy);
+
+    // Capture a few entries after the first mark for each group.
+    if (!post_mark_capture_remaining.empty()) {
+      for (auto it = post_mark_capture_remaining.begin(); it != post_mark_capture_remaining.end();) {
+        result.group_first_mark_context[it->first].push_back("> " + hierarchy);
+        if (--(it->second) <= 0) {
+          it = post_mark_capture_remaining.erase(it);
+        } else {
+          ++it;
+        }
+      }
+    }
 
     const auto &hier = entry.path_hierarchy();
     if (!hier.empty()) {
@@ -328,6 +355,14 @@ RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
           result.group_mark_counts[base]++;
           if (result.group_first_marked_hierarchy.find(base) == result.group_first_marked_hierarchy.end()) {
             result.group_first_marked_hierarchy.emplace(base, archive_r::hierarchy_display(entry.path_hierarchy()));
+
+            // Record a small amount of surrounding traversal order context.
+            auto &ctx = result.group_first_mark_context[base];
+            ctx.clear();
+            for (const auto &p : recent_entries) {
+              ctx.push_back("< " + p);
+            }
+            post_mark_capture_remaining[base] = 10;
           }
           if (debug_enabled) {
             std::cerr << "[debug] mark multi-volume base='" << base << "' entry='" << hierarchy << "'" << std::endl;
@@ -471,6 +506,14 @@ void report_failure(const std::string &label, const RegressionCheck &check) {
           std::cerr << " (errno=" << first_related_fault->errno_value << ")";
         }
         std::cerr << std::endl;
+      }
+
+      auto it_ctx = check.group_first_mark_context.find(group);
+      if (it_ctx != check.group_first_mark_context.end() && !it_ctx->second.empty()) {
+        std::cerr << "    mark_context (<=10 before, <=10 after):" << std::endl;
+        for (const auto &line : it_ctx->second) {
+          std::cerr << "      " << line << std::endl;
+        }
       }
     }
   }
