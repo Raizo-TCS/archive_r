@@ -58,10 +58,9 @@ jobs:
       - name: Probe filesystem iteration order (test_data)
         run: |
           set -euo pipefail
-          mkdir -p build/logs
           g++ --version || true
           g++ -std=c++17 -O2 -Wall -Wextra -pedantic -o build/fs_iter_order_probe tools/fs_iter_order_probe.cc
-          ./build/fs_iter_order_probe test_data --head 80 --tail 80 > build/logs/fs_iter_order_probe_pf1_linux_x86_64.log
+          ./build/fs_iter_order_probe test_data --head 40 --tail 40
 
       - name: Install dependencies (Ubuntu x86_64)
         run: sudo ./install-deps-ubuntu.sh
@@ -105,10 +104,9 @@ jobs:
       - name: Probe filesystem iteration order (test_data)
         run: |
           set -euo pipefail
-          mkdir -p build/logs
           g++ --version || true
           g++ -std=c++17 -O2 -Wall -Wextra -pedantic -o build/fs_iter_order_probe tools/fs_iter_order_probe.cc
-          ./build/fs_iter_order_probe test_data --head 80 --tail 80 > build/logs/fs_iter_order_probe_ruby27_linux_x86_64.log
+          ./build/fs_iter_order_probe test_data --head 40 --tail 40
 
       - name: Set up Ruby 2.7
         uses: ruby/setup-ruby@ac793fdd38cc468a4dd57246fa9d0e868aba9085
