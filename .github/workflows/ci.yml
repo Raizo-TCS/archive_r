@@ -55,6 +55,14 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
+      - name: Probe filesystem iteration order (test_data)
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          g++ --version || true
+          g++ -std=c++17 -O2 -Wall -Wextra -pedantic -o build/fs_iter_order_probe tools/fs_iter_order_probe.cc
+          ./build/fs_iter_order_probe test_data --head 40 --tail 40
+
       - name: Install dependencies (Ubuntu x86_64)
         run: sudo ./install-deps-ubuntu.sh
 
@@ -93,6 +101,14 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Probe filesystem iteration order (test_data)
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          g++ --version || true
+          g++ -std=c++17 -O2 -Wall -Wextra -pedantic -o build/fs_iter_order_probe tools/fs_iter_order_probe.cc
+          ./build/fs_iter_order_probe test_data --head 40 --tail 40
 
       - name: Set up Ruby 2.7
         uses: ruby/setup-ruby@ac793fdd38cc468a4dd57246fa9d0e868aba9085
