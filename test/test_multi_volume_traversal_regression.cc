@@ -414,6 +414,23 @@ void report_failure(const std::string &label, const RegressionCheck &check) {
 
   if (!check.unresolved_groups.empty()) {
     std::cerr << "[" << label << "] unresolved multi-volume groups:" << std::endl;
+
+    const auto hierarchy_contains = [&](const archive_r::EntryFault &fault, const std::string &needle) {
+      if (needle.empty()) {
+        return false;
+      }
+      if (fault.message.find(needle) != std::string::npos) {
+        return true;
+      }
+      if (!fault.hierarchy.empty()) {
+        const std::string hier = archive_r::hierarchy_display(fault.hierarchy);
+        if (hier.find(needle) != std::string::npos) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     for (const auto &group : check.unresolved_groups) {
       const int marked = [&] {
         auto it = check.group_mark_counts.find(group);
@@ -433,6 +450,27 @@ void report_failure(const std::string &label, const RegressionCheck &check) {
       auto it_res = check.group_first_resolved_hierarchy.find(group);
       if (it_res != check.group_first_resolved_hierarchy.end()) {
         std::cerr << "    first_resolved_hierarchy: " << it_res->second << std::endl;
+      }
+
+      // When there are many unrelated faults (e.g. nested archive auto-detect),
+      // surface the first fault that likely relates to this unresolved group.
+      const archive_r::EntryFault *first_related_fault = nullptr;
+      for (const auto &fault : check.faults) {
+        if (hierarchy_contains(fault, group)) {
+          first_related_fault = &fault;
+          break;
+        }
+      }
+
+      if (first_related_fault) {
+        std::cerr << "    first_related_fault: " << first_related_fault->message;
+        if (!first_related_fault->hierarchy.empty()) {
+          std::cerr << " @ " << archive_r::hierarchy_display(first_related_fault->hierarchy);
+        }
+        if (first_related_fault->errno_value != 0) {
+          std::cerr << " (errno=" << first_related_fault->errno_value << ")";
+        }
+        std::cerr << std::endl;
       }
     }
   }
