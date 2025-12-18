@@ -17,6 +17,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <cstdlib>
 bool should_ignore_group_label(const std::string &label) {
   static constexpr std::string_view kIgnoredSuffix = "data.txt.*";
   if (label.size() < kIgnoredSuffix.size()) {
@@ -28,6 +30,9 @@ bool should_ignore_group_label(const std::string &label) {
 using namespace archive_r;
 
 namespace {
+
+thread_local std::vector<archive_r::EntryFault> *g_fault_sink = nullptr;
+thread_local bool g_fault_debug_enabled = false;
 
 std::string detect_multi_volume_base(const std::string &name) {
   static const std::regex part_pattern(R"((.+)\.part\d+$)", std::regex::icase);
@@ -251,6 +256,12 @@ struct RegressionCheck {
   std::map<std::string, int> duplicate_counts;
   std::set<std::string> unresolved_groups;
 
+  std::vector<EntryFault> faults;
+  std::map<std::string, int> group_mark_counts;
+  std::map<std::string, int> group_resolved_counts;
+  std::map<std::string, std::string> group_first_marked_hierarchy;
+  std::map<std::string, std::string> group_first_resolved_hierarchy;
+
   bool success() const { return duplicate_counts.empty() && unresolved_groups.empty(); }
 };
 
@@ -259,6 +270,31 @@ const std::vector<std::string> kFormatsExcludingMtree = { "7zip", "ar", "cab", "
 void run_regression_check(const std::string& label, const std::vector<std::string>& inputs); // Forward declaration if needed, but actually I need to define it.
 
 RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
+  const bool debug_enabled = [] {
+    const char *env = std::getenv("ARCHIVE_R_TEST_DEBUG");
+    return env && *env && std::string(env) != "0";
+  }();
+
+  static bool callback_registered = false;
+  if (!callback_registered) {
+    archive_r::register_fault_callback([](const archive_r::EntryFault &fault) {
+      if (g_fault_sink) {
+        g_fault_sink->push_back(fault);
+      }
+      if (g_fault_debug_enabled) {
+        std::cerr << "[fault] " << fault.message;
+        if (!fault.hierarchy.empty()) {
+          std::cerr << " @ " << archive_r::hierarchy_display(fault.hierarchy);
+        }
+        if (fault.errno_value != 0) {
+          std::cerr << " (errno=" << fault.errno_value << ")";
+        }
+        std::cerr << std::endl;
+      }
+    });
+    callback_registered = true;
+  }
+
   std::vector<std::string> expanded = expand_inputs(inputs);
   std::vector<PathHierarchy> paths;
   paths.reserve(expanded.size());
@@ -269,9 +305,13 @@ RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
   archive_r::Traverser traverser(paths);
 
   RegressionCheck result;
+  std::vector<archive_r::EntryFault> faults;
   std::map<std::string, int> hierarchy_counts;
   std::set<std::string> groups_marked;
   std::set<std::string> groups_resolved;
+
+  g_fault_sink = &faults;
+  g_fault_debug_enabled = debug_enabled;
 
   for (auto &entry : traverser) {
     std::string hierarchy = entry.path();
@@ -285,6 +325,13 @@ RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
         std::string base = detect_multi_volume_base(std::filesystem::path(name).filename().string());
         if (!base.empty()) {
           groups_marked.insert(base);
+          result.group_mark_counts[base]++;
+          if (result.group_first_marked_hierarchy.find(base) == result.group_first_marked_hierarchy.end()) {
+            result.group_first_marked_hierarchy.emplace(base, archive_r::hierarchy_display(entry.path_hierarchy()));
+          }
+          if (debug_enabled) {
+            std::cerr << "[debug] mark multi-volume base='" << base << "' entry='" << hierarchy << "'" << std::endl;
+          }
           entry.set_multi_volume_group(base);
         }
       }
@@ -296,12 +343,24 @@ RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
             std::string base = detect_multi_volume_base(std::filesystem::path(parts[0]).filename().string());
             if (!base.empty()) {
               groups_resolved.insert(base);
+              result.group_resolved_counts[base]++;
+              if (result.group_first_resolved_hierarchy.find(base) == result.group_first_resolved_hierarchy.end()) {
+                result.group_first_resolved_hierarchy.emplace(base, archive_r::hierarchy_display(entry.path_hierarchy()));
+              }
+              if (debug_enabled) {
+                std::cerr << "[debug] resolved multi-volume base='" << base << "' via entry='" << hierarchy << "'" << std::endl;
+              }
             }
           }
         }
       }
     }
   }
+
+  g_fault_sink = nullptr;
+  g_fault_debug_enabled = false;
+
+  result.faults = std::move(faults);
 
   for (const auto &[hierarchy, count] : hierarchy_counts) {
     if (count > 1) {
@@ -325,6 +384,27 @@ RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
 }
 
 void report_failure(const std::string &label, const RegressionCheck &check) {
+  if (!check.faults.empty()) {
+    std::cerr << "[" << label << "] faults observed: " << check.faults.size() << std::endl;
+
+    const size_t max_faults = 50;
+    const size_t limit = std::min(check.faults.size(), max_faults);
+    for (size_t i = 0; i < limit; i++) {
+      const auto &fault = check.faults[i];
+      std::cerr << "  [fault] " << fault.message;
+      if (!fault.hierarchy.empty()) {
+        std::cerr << " @ " << archive_r::hierarchy_display(fault.hierarchy);
+      }
+      if (fault.errno_value != 0) {
+        std::cerr << " (errno=" << fault.errno_value << ")";
+      }
+      std::cerr << std::endl;
+    }
+    if (check.faults.size() > max_faults) {
+      std::cerr << "  ... (" << (check.faults.size() - max_faults) << " more faults; truncated)" << std::endl;
+    }
+  }
+
   if (!check.duplicate_counts.empty()) {
     std::cerr << "[" << label << "] duplicate entries detected:" << std::endl;
     for (const auto &[path, count] : check.duplicate_counts) {
@@ -335,7 +415,25 @@ void report_failure(const std::string &label, const RegressionCheck &check) {
   if (!check.unresolved_groups.empty()) {
     std::cerr << "[" << label << "] unresolved multi-volume groups:" << std::endl;
     for (const auto &group : check.unresolved_groups) {
-      std::cerr << "  " << group << std::endl;
+      const int marked = [&] {
+        auto it = check.group_mark_counts.find(group);
+        return it == check.group_mark_counts.end() ? 0 : it->second;
+      }();
+      const int resolved = [&] {
+        auto it = check.group_resolved_counts.find(group);
+        return it == check.group_resolved_counts.end() ? 0 : it->second;
+      }();
+      std::cerr << "  " << group << " (marked=" << marked << ", resolved=" << resolved << ")" << std::endl;
+
+      auto it_mark = check.group_first_marked_hierarchy.find(group);
+      if (it_mark != check.group_first_marked_hierarchy.end()) {
+        std::cerr << "    first_marked_hierarchy: " << it_mark->second << std::endl;
+      }
+
+      auto it_res = check.group_first_resolved_hierarchy.find(group);
+      if (it_res != check.group_first_resolved_hierarchy.end()) {
+        std::cerr << "    first_resolved_hierarchy: " << it_res->second << std::endl;
+      }
     }
   }
 }
