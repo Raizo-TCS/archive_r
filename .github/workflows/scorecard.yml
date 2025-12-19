@@ -30,7 +30,7 @@ jobs:
         with:
           results_file: results.json
           results_format: json
-          publish_results: false
+          publish_results: true
 
       - name: Print Scorecard score
         run: |
