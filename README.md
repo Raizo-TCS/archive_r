@@ -5,6 +5,7 @@
 [![CodeQL](https://github.com/Raizo-TCS/archive_r/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/codeql.yml)
 [![Coverage](https://github.com/Raizo-TCS/archive_r/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/coverage.yml)
 [![Scorecard](https://github.com/Raizo-TCS/archive_r/actions/workflows/scorecard.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/scorecard.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Raizo-TCS/archive_r/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Raizo-TCS/archive_r)
 
 > ⚠️ **Development Status**: This library is currently under development. The API may change without notice.
 
