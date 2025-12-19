@@ -114,7 +114,7 @@ jobs:
             /bin/bash -c "cd /io && ${BUILD_CMD}"
 
       - name: Upload wheels for ${{ matrix.python-tag }} (${{ matrix.platform }})
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: wheels-${{ matrix.platform }}-${{ matrix.python-tag }}-${{ github.sha }}
           path: bindings/python/dist/${{ matrix.python-tag }}/*.whl
@@ -161,7 +161,7 @@ jobs:
         run: bash bindings/python/tools/build-wheel-macos.sh
 
       - name: Upload ${{ matrix.arch }} wheels
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: macos-wheels-${{ matrix.arch }}-py${{ matrix.python-version }}-${{ github.sha }}
           path: bindings/python/dist/macos-${{ matrix.arch }}-${{ matrix.python-version }}/*.whl
@@ -198,7 +198,7 @@ jobs:
         run: pwsh -File bindings/python/tools/build-wheel-msvc.ps1 -PythonVersion "${{ matrix.python-version }}" -Arch ${{ matrix.arch }}
 
       - name: Upload Windows wheels
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: windows-wheels-${{ matrix.arch }}-py${{ matrix.python-version }}-${{ github.sha }}
           path: bindings/python/dist/win_*/*.whl
