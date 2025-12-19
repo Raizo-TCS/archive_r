@@ -32,16 +32,6 @@ jobs:
           results_format: json
           publish_results: true
 
-      - name: Print Scorecard score
-        run: |
-          python3 - <<'PY'
-          import json
-          with open('results.json', 'r', encoding='utf-8') as f:
-              data = json.load(f)
-          score = data.get('score')
-          print(f"OpenSSF Scorecard score: {score}")
-          PY
-
       - name: Upload results artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
