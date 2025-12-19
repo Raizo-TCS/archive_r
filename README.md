@@ -1,6 +1,10 @@
 # archive_r
 
 [![CI](https://github.com/Raizo-TCS/archive_r/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/ci.yml)
+[![Build Wheels](https://github.com/Raizo-TCS/archive_r/actions/workflows/build-wheels.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/build-wheels.yml)
+[![CodeQL](https://github.com/Raizo-TCS/archive_r/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/codeql.yml)
+[![Coverage](https://github.com/Raizo-TCS/archive_r/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/coverage.yml)
+[![Scorecard](https://github.com/Raizo-TCS/archive_r/actions/workflows/scorecard.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/scorecard.yml)
 
 > ⚠️ **Development Status**: This library is currently under development. The API may change without notice.
 
