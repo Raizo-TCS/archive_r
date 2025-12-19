@@ -31,6 +31,7 @@ jobs:
           results_file: results.json
           results_format: json
           publish_results: true
+          repo_token: ${{ secrets.SCORECARD_TOKEN || github.token }}
 
       - name: Upload results artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
