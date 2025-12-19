@@ -1,0 +1,217 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 archive_r Team
+
+#include "archive_r/path_hierarchy.h"
+#include "archive_r/path_hierarchy_utils.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace archive_r;
+
+namespace {
+
+bool expect(bool condition, const char *message) {
+  if (!condition) {
+    std::cerr << message << std::endl;
+    return false;
+  }
+  return true;
+}
+
+bool test_component_at() {
+  PathEntry single = PathEntry::single("file.txt");
+  const std::string *v0 = path_entry_component_at(single, 0);
+  const std::string *v1 = path_entry_component_at(single, 1);
+  if (!expect(v0 && *v0 == "file.txt", "component_at(single,0) failed")) {
+    return false;
+  }
+  if (!expect(v1 == nullptr, "component_at(single,1) should be nullptr")) {
+    return false;
+  }
+
+  PathEntry mv = PathEntry::multi_volume({"a.part1", "a.part2"});
+  const std::string *m0 = path_entry_component_at(mv, 0);
+  const std::string *m1 = path_entry_component_at(mv, 1);
+  const std::string *m2 = path_entry_component_at(mv, 2);
+  if (!expect(m0 && *m0 == "a.part1", "component_at(mv,0) failed")) {
+    return false;
+  }
+  if (!expect(m1 && *m1 == "a.part2", "component_at(mv,1) failed")) {
+    return false;
+  }
+  if (!expect(m2 == nullptr, "component_at(mv,2) should be nullptr")) {
+    return false;
+  }
+
+  return true;
+}
+
+bool test_volume_helpers() {
+  if (!expect(pathhierarchy_volume_size({}) == 0, "volume_size(empty) should be 0")) {
+    return false;
+  }
+
+  PathHierarchy single_h = make_single_path("root.zip");
+  if (!expect(pathhierarchy_volume_size(single_h) == 1, "volume_size(single) should be 1")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name(single_h, 0) == "root.zip", "volume_entry_name(single,0) mismatch")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name(single_h, 1).empty(), "volume_entry_name(single,1) should be empty")) {
+    return false;
+  }
+
+  PathHierarchy mv_h;
+  mv_h.push_back(PathEntry::single("outer"));
+  mv_h.push_back(PathEntry::multi_volume({"x.part001", "x.part002", "x.part003"}));
+
+  if (!expect(pathhierarchy_is_multivolume(mv_h), "is_multivolume should be true")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_size(mv_h) == 3, "volume_size(mv) should be 3")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name(mv_h, 2) == "x.part003", "volume_entry_name(mv,2) mismatch")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name(mv_h, 3).empty(), "volume_entry_name(mv,3) should be empty")) {
+    return false;
+  }
+
+  PathHierarchy selected = pathhierarchy_select_single_part(mv_h, 1);
+  if (!expect(selected.size() == 2, "select_single_part should keep depth")) {
+    return false;
+  }
+  if (!expect(selected.back().is_single() && selected.back().single_value() == "x.part002", "select_single_part mismatch")) {
+    return false;
+  }
+
+  return true;
+}
+
+bool test_flatten_and_display() {
+  std::string out;
+  PathEntry single = PathEntry::single("hello");
+  if (!expect(flatten_entry_to_string(single, out) && out == "hello", "flatten(single) failed")) {
+    return false;
+  }
+  PathEntry mv = PathEntry::multi_volume({"a", "b"});
+  out.clear();
+  if (!expect(!flatten_entry_to_string(mv, out), "flatten(mv) should be false")) {
+    return false;
+  }
+  out.clear();
+  if (!expect(entry_name_from_component(mv, out) && out == "a", "entry_name_from_component(mv) should be first part")) {
+    return false;
+  }
+  if (!expect(path_entry_display(mv) == "[a|b]", "path_entry_display(mv) mismatch")) {
+    return false;
+  }
+
+  PathHierarchy h;
+  h.push_back(PathEntry::single("root"));
+  h.push_back(mv);
+  if (!expect(hierarchy_display(h) == "root/[a|b]", "hierarchy_display mismatch")) {
+    return false;
+  }
+
+  return true;
+}
+
+bool test_merge_multi_volume_sources() {
+  // Success: only last element differs, same prefix.
+  PathHierarchy h1;
+  h1.push_back(PathEntry::single("outer.tar.gz"));
+  h1.push_back(PathEntry::single("inner.part001"));
+
+  PathHierarchy h2;
+  h2.push_back(PathEntry::single("outer.tar.gz"));
+  h2.push_back(PathEntry::single("inner.part002"));
+
+  PathHierarchy merged = merge_multi_volume_sources({h1, h2});
+  if (!expect(merged.size() == 2, "merge result size mismatch")) {
+    return false;
+  }
+  if (!expect(merged.front().is_single() && merged.front().single_value() == "outer.tar.gz", "merge prefix mismatch")) {
+    return false;
+  }
+  if (!expect(merged.back().is_multi_volume(), "merge tail should be multi-volume")) {
+    return false;
+  }
+  if (!expect(merged.back().multi_volume_parts().values.size() == 2, "merge parts size mismatch")) {
+    return false;
+  }
+
+  // Failure cases: empty, mismatched sizes.
+  if (!expect(merge_multi_volume_sources({}).empty(), "merge(empty) should be empty")) {
+    return false;
+  }
+
+  PathHierarchy short_h = {PathEntry::single("outer.tar.gz")};
+  if (!expect(merge_multi_volume_sources({h1, short_h}).empty(), "merge(mismatched sizes) should be empty")) {
+    return false;
+  }
+
+  // Failure: differing suffix (third element differs).
+  PathHierarchy h3;
+  h3.push_back(PathEntry::single("outer.tar.gz"));
+  h3.push_back(PathEntry::single("inner.part001"));
+  h3.push_back(PathEntry::single("suffix-a"));
+
+  PathHierarchy h4;
+  h4.push_back(PathEntry::single("outer.tar.gz"));
+  h4.push_back(PathEntry::single("inner.part002"));
+  h4.push_back(PathEntry::single("suffix-b"));
+
+  if (!expect(merge_multi_volume_sources({h3, h4}).empty(), "merge(different suffix) should be empty")) {
+    return false;
+  }
+
+  return true;
+}
+
+bool test_sort_hierarchies() {
+  PathHierarchy a = make_single_path("a");
+  PathHierarchy b = make_single_path("b");
+  PathHierarchy mv;
+  mv.push_back(PathEntry::multi_volume({"x1", "x2"}));
+
+  std::vector<PathHierarchy> list = {b, mv, a};
+  sort_hierarchies(list);
+
+  if (!expect(list.size() == 3, "sort size mismatch")) {
+    return false;
+  }
+  if (!expect(hierarchies_equal(list[0], a), "sort[0] should be 'a'")) {
+    return false;
+  }
+  if (!expect(hierarchies_equal(list[1], b), "sort[1] should be 'b'")) {
+    return false;
+  }
+  if (!expect(hierarchies_equal(list[2], mv), "sort[2] should be multi-volume")) {
+    return false;
+  }
+
+  return true;
+}
+
+} // namespace
+
+int main() {
+  bool ok = true;
+  ok = ok && test_component_at();
+  ok = ok && test_volume_helpers();
+  ok = ok && test_flatten_and_display();
+  ok = ok && test_merge_multi_volume_sources();
+  ok = ok && test_sort_hierarchies();
+
+  if (!ok) {
+    return 1;
+  }
+
+  std::cout << "Path hierarchy utils tests passed" << std::endl;
+  return 0;
+}
