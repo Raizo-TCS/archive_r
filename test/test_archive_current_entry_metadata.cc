@@ -154,44 +154,234 @@ void seed_common_fields(struct archive_entry *e) {
   archive_entry_copy_mac_metadata(e, mac_meta, sizeof(mac_meta));
 }
 
-bool check_expected_keys(const EntryMetadataMap &m) {
-  const char *must_exist[] = {
-    "pathname",
-    "sourcepath",
-    "symlink",
-    "hardlink",
-    "uname",
-    "gname",
-    "uid",
-    "gid",
-    "size",
-    "dev",
-    "rdev",
-    "ino",
-    "ino64",
-    "nlink",
-    "atime",
-    "birthtime",
-    "ctime",
-    "mtime",
-    "fflags",
-    "fflags_text",
-    "is_data_encrypted",
-    "is_metadata_encrypted",
-    "symlink_type",
-    "acl_text",
-    "acl_types",
-    "xattr",
-    "sparse",
-    "mac_metadata",
-  };
+bool verify_metadata_consistency(struct archive_entry *e, const std::unordered_set<std::string> &allowed_keys, const EntryMetadataMap &m) {
+  auto wants = [&allowed_keys](const char *key) { return allowed_keys.find(key) != allowed_keys.end(); };
 
-  for (const char *k : must_exist) {
-    if (m.find(k) == m.end()) {
-      std::cerr << "missing metadata key: " << k << std::endl;
+  // 0) Ensure the implementation never returns keys outside the allow-list.
+  for (const auto &kv : m) {
+    if (allowed_keys.find(kv.first) == allowed_keys.end()) {
+      std::cerr << "returned key not in allow-list: " << kv.first << std::endl;
       return false;
     }
   }
+
+  // 1) Core expectations (platform-independent): if the underlying libarchive getter says the
+  //    value exists and the key is allowed, current_entry_metadata() must include it.
+
+  // pathname (utf8 preferred, else fallback)
+  if (wants("pathname")) {
+    const char *pathname_utf8 = archive_entry_pathname_utf8(e);
+    if (pathname_utf8 && *pathname_utf8) {
+      if (m.find("pathname") == m.end()) {
+        std::cerr << "missing metadata key: pathname" << std::endl;
+        return false;
+      }
+    } else {
+      const char *pathname = archive_entry_pathname(e);
+      if (pathname && *pathname) {
+        if (m.find("pathname") == m.end()) {
+          std::cerr << "missing metadata key: pathname" << std::endl;
+          return false;
+        }
+      }
+    }
+  }
+
+  if (wants("sourcepath")) {
+    const char *sourcepath = archive_entry_sourcepath(e);
+    if (sourcepath && *sourcepath) {
+      if (m.find("sourcepath") == m.end()) {
+        std::cerr << "missing metadata key: sourcepath" << std::endl;
+        return false;
+      }
+    }
+  }
+
+  if (wants("symlink")) {
+    const char *symlink_utf8 = archive_entry_symlink_utf8(e);
+    if (symlink_utf8 && *symlink_utf8) {
+      if (m.find("symlink") == m.end()) {
+        std::cerr << "missing metadata key: symlink" << std::endl;
+        return false;
+      }
+    }
+  }
+
+  if (wants("hardlink")) {
+    const char *hardlink_utf8 = archive_entry_hardlink_utf8(e);
+    const char *hardlink = archive_entry_hardlink(e);
+    if ((hardlink_utf8 && *hardlink_utf8) || (hardlink && *hardlink)) {
+      if (m.find("hardlink") == m.end()) {
+        std::cerr << "missing metadata key: hardlink" << std::endl;
+        return false;
+      }
+    }
+  }
+
+  if (wants("uname")) {
+    const char *uname_utf8 = archive_entry_uname_utf8(e);
+    const char *uname = archive_entry_uname(e);
+    if ((uname_utf8 && *uname_utf8) || (uname && *uname)) {
+      if (m.find("uname") == m.end()) {
+        std::cerr << "missing metadata key: uname" << std::endl;
+        return false;
+      }
+    }
+  }
+
+  if (wants("gname")) {
+    const char *gname_utf8 = archive_entry_gname_utf8(e);
+    const char *gname = archive_entry_gname(e);
+    if ((gname_utf8 && *gname_utf8) || (gname && *gname)) {
+      if (m.find("gname") == m.end()) {
+        std::cerr << "missing metadata key: gname" << std::endl;
+        return false;
+      }
+    }
+  }
+
+  if (wants("uid")) {
+    bool has_uid = archive_entry_uname(e) != nullptr;
+    if (!has_uid) {
+      has_uid = archive_entry_uid(e) != 0;
+    }
+    if (has_uid && m.find("uid") == m.end()) {
+      std::cerr << "missing metadata key: uid" << std::endl;
+      return false;
+    }
+  }
+
+  if (wants("gid")) {
+    bool has_gid = archive_entry_gname(e) != nullptr;
+    if (!has_gid) {
+      has_gid = archive_entry_gid(e) != 0;
+    }
+    if (has_gid && m.find("gid") == m.end()) {
+      std::cerr << "missing metadata key: gid" << std::endl;
+      return false;
+    }
+  }
+
+  if (wants("perm") && m.find("perm") == m.end()) {
+    std::cerr << "missing metadata key: perm" << std::endl;
+    return false;
+  }
+
+  if (wants("mode") && m.find("mode") == m.end()) {
+    std::cerr << "missing metadata key: mode" << std::endl;
+    return false;
+  }
+
+  if (wants("filetype") && m.find("filetype") == m.end()) {
+    std::cerr << "missing metadata key: filetype" << std::endl;
+    return false;
+  }
+
+  if (wants("size") && archive_entry_size_is_set(e) && m.find("size") == m.end()) {
+    std::cerr << "missing metadata key: size" << std::endl;
+    return false;
+  }
+
+  if (wants("dev") && archive_entry_dev_is_set(e) && m.find("dev") == m.end()) {
+    std::cerr << "missing metadata key: dev" << std::endl;
+    return false;
+  }
+
+  if (wants("rdev")) {
+    const dev_t rdev = archive_entry_rdev(e);
+    if (rdev != 0 && m.find("rdev") == m.end()) {
+      std::cerr << "missing metadata key: rdev" << std::endl;
+      return false;
+    }
+  }
+
+  if (archive_entry_ino_is_set(e)) {
+    if (wants("ino") && m.find("ino") == m.end()) {
+      std::cerr << "missing metadata key: ino" << std::endl;
+      return false;
+    }
+    if (wants("ino64") && m.find("ino64") == m.end()) {
+      std::cerr << "missing metadata key: ino64" << std::endl;
+      return false;
+    }
+  }
+
+  if (wants("nlink") && m.find("nlink") == m.end()) {
+    std::cerr << "missing metadata key: nlink" << std::endl;
+    return false;
+  }
+
+  if (wants("strmode")) {
+    const char *strmode = archive_entry_strmode(e);
+    if (strmode && *strmode && m.find("strmode") == m.end()) {
+      std::cerr << "missing metadata key: strmode" << std::endl;
+      return false;
+    }
+  }
+
+  if (wants("atime") && archive_entry_atime_is_set(e) && m.find("atime") == m.end()) {
+    std::cerr << "missing metadata key: atime" << std::endl;
+    return false;
+  }
+  if (wants("birthtime") && archive_entry_birthtime_is_set(e) && m.find("birthtime") == m.end()) {
+    std::cerr << "missing metadata key: birthtime" << std::endl;
+    return false;
+  }
+  if (wants("ctime") && archive_entry_ctime_is_set(e) && m.find("ctime") == m.end()) {
+    std::cerr << "missing metadata key: ctime" << std::endl;
+    return false;
+  }
+  if (wants("mtime") && archive_entry_mtime_is_set(e) && m.find("mtime") == m.end()) {
+    std::cerr << "missing metadata key: mtime" << std::endl;
+    return false;
+  }
+
+  unsigned long fflags_set = 0;
+  unsigned long fflags_clear = 0;
+  archive_entry_fflags(e, &fflags_set, &fflags_clear);
+  if (wants("fflags") && (fflags_set != 0 || fflags_clear != 0) && m.find("fflags") == m.end()) {
+    std::cerr << "missing metadata key: fflags" << std::endl;
+    return false;
+  }
+
+  if (wants("fflags_text")) {
+    const char *fflags_text = archive_entry_fflags_text(e);
+    if (fflags_text && *fflags_text && m.find("fflags_text") == m.end()) {
+      std::cerr << "missing metadata key: fflags_text" << std::endl;
+      return false;
+    }
+  }
+
+  if (wants("is_data_encrypted")) {
+    const int v = archive_entry_is_data_encrypted(e);
+    if (v >= 0 && m.find("is_data_encrypted") == m.end()) {
+      std::cerr << "missing metadata key: is_data_encrypted" << std::endl;
+      return false;
+    }
+  }
+  if (wants("is_metadata_encrypted")) {
+    const int v = archive_entry_is_metadata_encrypted(e);
+    if (v >= 0 && m.find("is_metadata_encrypted") == m.end()) {
+      std::cerr << "missing metadata key: is_metadata_encrypted" << std::endl;
+      return false;
+    }
+  }
+  if (wants("is_encrypted")) {
+    const int v = archive_entry_is_encrypted(e);
+    if (v >= 0 && m.find("is_encrypted") == m.end()) {
+      std::cerr << "missing metadata key: is_encrypted" << std::endl;
+      return false;
+    }
+  }
+
+  if (wants("symlink_type")) {
+    const int symlink_type = archive_entry_symlink_type(e);
+    if (symlink_type != 0 && m.find("symlink_type") == m.end()) {
+      std::cerr << "missing metadata key: symlink_type" << std::endl;
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -231,7 +421,7 @@ int main() {
 
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(keys);
-      if (!check_expected_keys(metadata)) {
+      if (!verify_metadata_consistency(e, keys, metadata)) {
         dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (utf8 case)")) {
           return 1;
@@ -259,7 +449,7 @@ int main() {
 
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(keys);
-      if (!check_expected_keys(metadata)) {
+      if (!verify_metadata_consistency(e, keys, metadata)) {
         dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (plain case)")) {
           return 1;
