@@ -628,6 +628,201 @@ if [ -n "$TEST_EXE" ]; then
     echo ""
 fi
 
+log_info "Running Traverser invalid-arg regression..."
+TEST_EXE=$(find_executable "test_traverser_invalid_args")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "traverser_invalid_args"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: traverser_invalid_args"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: traverser_invalid_args"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running path hierarchy utils regression..."
+TEST_EXE=$(find_executable "test_path_hierarchy_utils")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "path_hierarchy_utils"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: path_hierarchy_utils"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: path_hierarchy_utils"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running IDataStream default method verification..."
+TEST_EXE=$(find_executable "test_data_stream_defaults")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "data_stream_defaults"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: data_stream_defaults"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: data_stream_defaults"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running SystemFileStream IO regression..."
+TEST_EXE=$(find_executable "test_system_file_stream_io")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "system_file_stream_io"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: system_file_stream_io"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: system_file_stream_io"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running archive metadata key coverage regression..."
+TEST_EXE=$(find_executable "test_archive_metadata_keys")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "archive_metadata_keys"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE" "$TEST_DATA_DIR/no_uid.zip"; then
+        log_success "Test PASSED: archive_metadata_keys"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: archive_metadata_keys"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running archive type error path regression..."
+TEST_EXE=$(find_executable "test_archive_type_error_paths")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "archive_type_error_paths"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: archive_type_error_paths"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: archive_type_error_paths"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Archive current_entry_metadata regression..."
+TEST_EXE=$(find_executable "test_archive_current_entry_metadata")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "archive_current_entry_metadata"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: archive_current_entry_metadata"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: archive_current_entry_metadata"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Entry Impl copy/fault regression..."
+TEST_EXE=$(find_executable "test_entry_impl_copy_and_faults")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "entry_impl_copy_and_faults"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: entry_impl_copy_and_faults"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: entry_impl_copy_and_faults"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Traverser iterator semantics regression..."
+TEST_EXE=$(find_executable "test_traverser_iterator_semantics")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "traverser_iterator_semantics"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: traverser_iterator_semantics"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: traverser_iterator_semantics"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running SystemFileStream metadata regression..."
+TEST_EXE=$(find_executable "test_system_file_stream_metadata")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "system_file_stream_metadata"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: system_file_stream_metadata"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: system_file_stream_metadata"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Entry fault-path regression..."
+TEST_EXE=$(find_executable "test_entry_fault_paths")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "entry_fault_paths"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: entry_fault_paths"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: entry_fault_paths"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Entry name/copy regression..."
+TEST_EXE=$(find_executable "test_entry_name_and_copy")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "entry_name_and_copy"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: entry_name_and_copy"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: entry_name_and_copy"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running error utilities / orchestrator path regression..."
+TEST_EXE=$(find_executable "test_error_utilities_and_orchestrator_paths")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "error_utilities_and_orchestrator_paths"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: error_utilities_and_orchestrator_paths"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: error_utilities_and_orchestrator_paths"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
 # Phase 2 Tests (Directory support)
 log_info "Running Phase 2 tests (Directory support)..."
 TEST_EXE=$(find_executable "test_directory_container")

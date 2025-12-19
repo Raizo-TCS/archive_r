@@ -189,6 +189,12 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
     return info;
   }
 
+  ec.clear();
+  const bool exists = entry.exists(ec);
+  if (ec || !exists) {
+    return info;
+  }
+
   mode_t filetype = 0;
   uint64_t size = 0;
 

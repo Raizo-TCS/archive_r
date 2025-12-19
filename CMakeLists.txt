@@ -171,4 +171,43 @@ target_link_libraries(test_threaded_traverser archive_r_core ${LibArchive_LIBRAR
 add_executable(test_performance_compare test/test_performance_no_descend.cc)
 target_link_libraries(test_performance_compare archive_r_core ${LibArchive_LIBRARIES})
 
+add_executable(test_path_hierarchy_utils test/test_path_hierarchy_utils.cc)
+target_link_libraries(test_path_hierarchy_utils archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_data_stream_defaults test/test_data_stream_defaults.cc)
+target_link_libraries(test_data_stream_defaults archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_archive_metadata_keys test/test_archive_metadata_keys.cc)
+target_link_libraries(test_archive_metadata_keys archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_archive_type_error_paths test/test_archive_type_error_paths.cc)
+target_link_libraries(test_archive_type_error_paths archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_archive_current_entry_metadata test/test_archive_current_entry_metadata.cc)
+target_link_libraries(test_archive_current_entry_metadata archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_system_file_stream_io test/test_system_file_stream_io.cc)
+target_link_libraries(test_system_file_stream_io archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_traverser_invalid_args test/test_traverser_invalid_args.cc)
+target_link_libraries(test_traverser_invalid_args archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_entry_impl_copy_and_faults test/test_entry_impl_copy_and_faults.cc)
+target_link_libraries(test_entry_impl_copy_and_faults archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_traverser_iterator_semantics test/test_traverser_iterator_semantics.cc)
+target_link_libraries(test_traverser_iterator_semantics archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_system_file_stream_metadata test/test_system_file_stream_metadata.cc)
+target_link_libraries(test_system_file_stream_metadata archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_entry_fault_paths test/test_entry_fault_paths.cc)
+target_link_libraries(test_entry_fault_paths archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_entry_name_and_copy test/test_entry_name_and_copy.cc)
+target_link_libraries(test_entry_name_and_copy archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_error_utilities_and_orchestrator_paths test/test_error_utilities_and_orchestrator_paths.cc)
+target_link_libraries(test_error_utilities_and_orchestrator_paths archive_r_core ${LibArchive_LIBRARIES})
+
 

@@ -45,6 +45,7 @@ jobs:
             --root . \
             --object-directory build \
             --filter '^(src|include)/' \
+            --exclude '^src/simple_profiler\.h$' \
             --exclude-directories '.*build/CMakeFiles/.*/CompilerIdCXX.*' \
             --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
             --xml-pretty \
