@@ -19,7 +19,7 @@ jobs:
     outputs:
       containers_needed: ${{ steps.filter.outputs.containers }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           fetch-depth: 0
 
@@ -57,7 +57,7 @@ jobs:
     env:
       LIBARCHIVE_VERSION: 3.7.5
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Set up QEMU
         if: matrix.platform == 'aarch64'
@@ -144,7 +144,7 @@ jobs:
           - runner: macos-15
             arch: universal2
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
@@ -181,7 +181,7 @@ jobs:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         arch: [x86_64]
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
