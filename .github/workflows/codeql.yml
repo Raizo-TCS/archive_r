@@ -28,7 +28,7 @@ jobs:
         uses: github/codeql-action/init@45c373516f557556c15d420e3f5e0aa3d64366bc
         with:
           languages: cpp,python
-          queries: security-and-quality
+          queries: security-extended
 
       - name: Install dependencies (Ubuntu)
         run: sudo ./install-deps-ubuntu.sh

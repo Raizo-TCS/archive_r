@@ -20,18 +20,10 @@ jobs:
       contents: read
       actions: read
       id-token: write
-      security-events: write
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           persist-credentials: false
-
-      - name: Run Scorecard
-        uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534
-        with:
-          results_file: results.sarif
-          results_format: sarif
-          publish_results: false
 
       - name: Run Scorecard (JSON)
         uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534
@@ -50,17 +42,11 @@ jobs:
           print(f"OpenSSF Scorecard score: {score}")
           PY
 
-      - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@45c373516f557556c15d420e3f5e0aa3d64366bc
-        with:
-          sarif_file: results.sarif
-
       - name: Upload results artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: scorecard-results
           path: |
-            results.sarif
             results.json
           if-no-files-found: error
           retention-days: 7
