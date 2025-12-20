@@ -68,6 +68,7 @@ jobs:
       contents: write
       actions: read
       id-token: write
+      attestations: write
     environment:
       name: production
     env:
@@ -156,6 +157,15 @@ jobs:
             exit 1
           fi
           echo "Release assets:" && ls -R release/
+
+      - name: Generate provenance attestations (release assets)
+        if: ${{ env.ACT != 'true' }}
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8
+        with:
+          subject-path: |
+            release/archive_r-core-*.tar.gz
+            release/python/*
+            release/ruby/*
 
       - name: Create GitHub Release
         if: ${{ env.ACT != 'true' }}

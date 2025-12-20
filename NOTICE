@@ -1,0 +1,71 @@
+archive_r Notices
+
+This file contains third-party notices and licensing information for bundled or
+linked components. It does not replace the project license.
+
+----------------------------------------
+Third-Party Notices
+----------------------------------------
+
+This distribution bundles or links against the following third-party
+components. Their respective license terms apply in addition to the MIT
+License.
+
+1. libarchive
+	- Purpose: core archive reading and writing functionality for the C++
+	  library and language bindings.
+	- License: New BSD License (https://www.libarchive.org/)
+
+2. pybind11
+	- Purpose: header-only binding generator for the Python extension module.
+	- License: BSD-style License (https://github.com/pybind/pybind11)
+
+The following components are redistributed only because libarchive (bundled with archive_r) depends on them at runtime:
+
+3. zlib
+	- Purpose: libarchive dependency providing DEFLATE compression; bundled inside archive_r binaries and wheels because libarchive requires it.
+	- License: zlib License (https://zlib.net/zlib_license.html)
+
+4. bzip2
+	- Purpose: libarchive dependency providing bzip2 compression support; distributed with archive_r artifacts.
+	- License: BSD-style license (https://sourceware.org/bzip2/)
+
+5. liblzma (XZ Utils)
+	- Purpose: libarchive dependency providing LZMA/XZ compression; included with archive_r packages.
+	- License: Public Domain + GNU LGPLv2.1+ (https://tukaani.org/xz/)
+
+6. libxml2
+	- Purpose: libarchive dependency used for archive formats such as xar; distributed alongside archive_r.
+	- License: MIT-style License (http://xmlsoft.org/)
+
+7. zstd
+	- Purpose: libarchive dependency providing Zstandard compression; shipped within archive_r binaries.
+	- License: BSD License (https://github.com/facebook/zstd)
+
+8. Nettle
+	- Purpose: libarchive dependency providing cryptographic support (macOS/Linux); bundled with archive_r binaries.
+	- License: GNU LGPLv3+ or GNU GPLv2+ (https://www.lysator.liu.se/~nisse/nettle/)
+
+9. mini-gmp
+	- Purpose: Nettle dependency for arithmetic operations (macOS/Linux); bundled with archive_r binaries.
+	- License: GNU LGPLv3+ or GNU GPLv2+ (https://gmplib.org/)
+
+10. OpenSSL 3
+	- Purpose: libarchive dependency providing cryptographic support (Windows); bundled with archive_r Windows wheels.
+	- License: Apache License 2.0 with OpenSSL exception (https://www.openssl.org/source/license.html)
+
+11. lz4
+	- Purpose: libarchive dependency providing LZ4 compression; shipped with archive_r artifacts when required.
+	- License: BSD 2-Clause (https://github.com/lz4/lz4)
+
+12. libb2 (BLAKE2)
+	- Purpose: libarchive dependency providing BLAKE2 hashing; bundled when archive formats require it.
+	- License: CC0 1.0 Universal (https://github.com/BLAKE2/libb2)
+
+13. libattr
+	- Purpose: libarchive dependency providing extended attribute support on POSIX platforms; included in POSIX builds only.
+	- License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/attr)
+
+14. libacl
+	- Purpose: libarchive dependency providing POSIX ACL support; included in POSIX builds only.
+	- License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/acl)
