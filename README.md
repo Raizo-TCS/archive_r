@@ -546,5 +546,5 @@ Contributions to the project are welcome. Please submit bug reports and feature 
 
 ---
 
-**Note**: This document describes archive_r version 0.1.7.
+**Note**: This document describes archive_r version 0.1.8.
 
