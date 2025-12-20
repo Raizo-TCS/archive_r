@@ -15,6 +15,9 @@ jobs:
     name: Coverage (Linux x86_64, gcovr)
     runs-on: ubuntu-24.04
     timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
 
@@ -64,4 +67,5 @@ jobs:
         with:
           files: build/coverage.xml
           flags: core
+          use_oidc: true
           fail_ci_if_error: false
