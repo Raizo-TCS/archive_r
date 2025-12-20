@@ -19,7 +19,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 cd bindings/python
-python -m pip install --upgrade --break-system-packages pip setuptools wheel pybind11 build delocate
+python -m pip install --break-system-packages --require-hashes -r tools/requirements-wheel-macos.txt
 
 deployment_tag="${MACOSX_DEPLOYMENT_TARGET//./_}"
 if [[ "${ARCH}" == "universal2" ]]; then
@@ -43,5 +43,24 @@ mv "$repair_dir"/*.whl "$target_dir"/
 # Smoke test
 python -m venv .venv
 source .venv/bin/activate
-pip install --no-index "$target_dir"/*.whl
+wheel_path="$(ls "$target_dir"/*.whl | head -n 1)"
+wheel_abs_path="$(python - <<'PY'
+import os
+import sys
+print(os.path.abspath(sys.argv[1]))
+PY
+"$wheel_path")"
+wheel_sha256="$(python - <<'PY'
+import hashlib
+import sys
+h=hashlib.sha256()
+with open(sys.argv[1],'rb') as f:
+	for chunk in iter(lambda: f.read(1024*1024), b''):
+		h.update(chunk)
+print(h.hexdigest())
+PY
+"$wheel_abs_path")"
+req_file="$(mktemp)"
+printf "%s --hash=sha256:%s\n" "$wheel_abs_path" "$wheel_sha256" > "$req_file"
+pip install --no-index --no-deps --require-hashes -r "$req_file"
 python -c "import os, archive_r; arch = os.environ.get('ARCH', '?'); print(f'{arch} validated {archive_r.__version__}')"

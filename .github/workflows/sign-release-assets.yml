@@ -1,0 +1,56 @@
+name: Sign & Attest Release Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to sign/attest (e.g., v0.1.7)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  sign-and-attest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          mkdir -p release_assets
+          gh release download "$TAG" --dir release_assets
+          echo "Downloaded assets:" && ls -la release_assets
+
+      - name: Generate provenance attestations
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8
+        with:
+          subject-path: |
+            release_assets/*
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad
+
+      - name: Sign assets (keyless) and upload signatures
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          shopt -s nullglob
+
+          for f in release_assets/*; do
+            if [[ -f "$f" ]]; then
+              echo "Signing $f"
+              cosign sign-blob --yes --output-signature "${f}.sig" --output-certificate "${f}.crt" "$f"
+            fi
+          done
+
+          echo "Uploading signature artifacts to release $TAG"
+          gh release upload "$TAG" release_assets/*.sig release_assets/*.crt --clobber
