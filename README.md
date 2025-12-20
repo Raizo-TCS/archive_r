@@ -4,6 +4,7 @@
 [![Build Wheels](https://github.com/Raizo-TCS/archive_r/actions/workflows/build-wheels.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/build-wheels.yml)
 [![CodeQL](https://github.com/Raizo-TCS/archive_r/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/codeql.yml)
 [![Coverage](https://github.com/Raizo-TCS/archive_r/actions/workflows/coverage.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/coverage.yml)
+[![codecov](https://codecov.io/gh/Raizo-TCS/archive_r/branch/main/graph/badge.svg)](https://codecov.io/gh/Raizo-TCS/archive_r)
 [![Scorecard](https://github.com/Raizo-TCS/archive_r/actions/workflows/scorecard.yml/badge.svg?branch=main)](https://github.com/Raizo-TCS/archive_r/actions/workflows/scorecard.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Raizo-TCS/archive_r/badge)](https://scorecard.dev/viewer/?uri=github.com/Raizo-TCS/archive_r)
 
