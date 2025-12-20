@@ -22,11 +22,17 @@ vendor_src = vendor_root / 'src'
 libs_dir = binding_root / '.libs'
 local_readme = binding_root / 'README.md'
 local_license = binding_root / 'LICENSE'
+local_notice = binding_root / 'NOTICE'
 
 # Ensure LICENSE is present in the binding directory. Skip overwrite when a copy already exists
 # to avoid permission issues from prior root-owned builds.
 if (archive_r_root / 'LICENSE').exists() and not local_license.exists():
     shutil.copy(archive_r_root / 'LICENSE', local_license)
+
+# Ensure NOTICE is present in the binding directory. Skip overwrite when a copy already exists
+# to avoid permission issues from prior root-owned builds.
+if (archive_r_root / 'NOTICE').exists() and not local_notice.exists():
+    shutil.copy(archive_r_root / 'NOTICE', local_notice)
 
 local_version = binding_root / 'VERSION'
 system_name = platform.system().lower()

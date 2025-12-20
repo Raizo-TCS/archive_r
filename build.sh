@@ -141,6 +141,7 @@ sync_ruby_vendor_sources() {
     local include_src="$ROOT_DIR/include"
     local src_src="$ROOT_DIR/src"
     local license_source=""
+    local notice_source=""
 
     if [ ! -d "$include_src" ] || [ ! -d "$src_src" ]; then
         log_error "Cannot embed archive_r core sources for Ruby gem (missing include/src directories)"
@@ -158,11 +159,24 @@ sync_ruby_vendor_sources() {
         license_source="$ROOT_DIR/LICENSE.txt"
     fi
 
+    if [ -f "$ROOT_DIR/NOTICE" ]; then
+        notice_source="$ROOT_DIR/NOTICE"
+    elif [ -f "$ROOT_DIR/NOTICE.txt" ]; then
+        notice_source="$ROOT_DIR/NOTICE.txt"
+    fi
+
     if [ -n "$license_source" ]; then
         mkdir -p "$vendor_root"
         cp "$license_source" "$vendor_root/LICENSE"
         # Copy LICENSE to bindings/ruby/LICENSE for gemspec inclusion
         cp "$license_source" "$ROOT_DIR/bindings/ruby/LICENSE"
+    fi
+
+    if [ -n "$notice_source" ]; then
+        mkdir -p "$vendor_root"
+        cp "$notice_source" "$vendor_root/NOTICE"
+        # Copy NOTICE to bindings/ruby/NOTICE for gemspec inclusion
+        cp "$notice_source" "$ROOT_DIR/bindings/ruby/NOTICE"
     fi
 
     return 0
@@ -173,6 +187,8 @@ cleanup_ruby_vendor_sources() {
     rm -rf "$vendor_root"
     # Remove temporary LICENSE file
     rm -f "$ROOT_DIR/bindings/ruby/LICENSE"
+    # Remove temporary NOTICE file
+    rm -f "$ROOT_DIR/bindings/ruby/NOTICE"
 }
 
 purge_ruby_binding_artifacts() {

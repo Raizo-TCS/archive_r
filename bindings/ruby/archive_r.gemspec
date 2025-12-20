@@ -4,6 +4,8 @@ binding_root = __dir__
 project_root = File.expand_path('../..', binding_root)
 license_source = File.join(project_root, 'LICENSE')
 license_target = File.join(binding_root, 'LICENSE')
+notice_source = File.join(project_root, 'NOTICE')
+notice_target = File.join(binding_root, 'NOTICE')
 
 if File.exist?(license_source)
   # Ensure the gem bundles the root LICENSE verbatim to keep notices in sync
@@ -12,6 +14,15 @@ if File.exist?(license_source)
   end
 else
   warn "[archive_r] WARNING: LICENSE not found at #{license_source}"
+end
+
+if File.exist?(notice_source)
+  # Ensure the gem bundles the root NOTICE verbatim to keep notices in sync
+  unless File.exist?(notice_target) && FileUtils.identical?(notice_source, notice_target)
+    FileUtils.cp(notice_source, notice_target)
+  end
+else
+  warn "[archive_r] WARNING: NOTICE not found at #{notice_source}"
 end
 
 Gem::Specification.new do |spec|
@@ -27,7 +38,7 @@ Gem::Specification.new do |spec|
   
   spec.required_ruby_version = ">= 2.7.0"
   
-  spec.files         = Dir["lib/**/*", "ext/**/*", "README.md", "LICENSE"]
+  spec.files         = Dir["lib/**/*", "ext/**/*", "README.md", "LICENSE", "NOTICE"]
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/archive_r/extconf.rb"]
   

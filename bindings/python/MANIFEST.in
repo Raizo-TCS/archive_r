@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
+include NOTICE
 include VERSION
 include pyproject.toml
 include setup.cfg
