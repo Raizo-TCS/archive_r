@@ -44,22 +44,15 @@ mv "$repair_dir"/*.whl "$target_dir"/
 python -m venv .venv
 source .venv/bin/activate
 wheel_path="$(ls "$target_dir"/*.whl | head -n 1)"
-wheel_abs_path="$(python - <<'PY'
-import os
-import sys
-print(os.path.abspath(sys.argv[1]))
-PY
-"$wheel_path")"
-wheel_sha256="$(python - <<'PY'
-import hashlib
-import sys
-h=hashlib.sha256()
-with open(sys.argv[1],'rb') as f:
-	for chunk in iter(lambda: f.read(1024*1024), b''):
-		h.update(chunk)
-print(h.hexdigest())
-PY
-"$wheel_abs_path")"
+wheel_abs_path="$(python -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$wheel_path")"
+wheel_sha256="$(python -c 'import hashlib,sys; h=hashlib.sha256();
+f=open(sys.argv[1],"rb");
+buf=f.read(1024*1024)
+while buf:
+    h.update(buf)
+    buf=f.read(1024*1024)
+f.close()
+print(h.hexdigest())' "$wheel_abs_path")"
 req_file="$(mktemp)"
 printf "%s --hash=sha256:%s\n" "$wheel_abs_path" "$wheel_sha256" > "$req_file"
 pip install --no-index --no-deps --require-hashes -r "$req_file"
