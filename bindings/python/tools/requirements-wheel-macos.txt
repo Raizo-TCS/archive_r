@@ -26,3 +26,6 @@ altgraph==0.17.5 \
     --hash=sha256:c87b395dd12fabde9c99573a9749d67da8d29ef9de0125c7f536699b4a9bc9e7
 typing_extensions==4.15.0 \
     --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466
+
+tomli==2.3.0 \
+    --hash=sha256:64be704a875d2a59753d80ee8a533c3fe183e3f06807ff7dc2232938ccb01549
