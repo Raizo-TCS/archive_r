@@ -68,4 +68,5 @@ jobs:
           files: build/coverage.xml
           flags: core
           use_oidc: true
+          disable_search: true
           fail_ci_if_error: false
