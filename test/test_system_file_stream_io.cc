@@ -63,6 +63,16 @@ int main() {
     ok = ok && expect(n2 == 5, "second read should return 5 bytes");
     ok = ok && expect(std::string(buf, 5) == "01234", "second read content mismatch");
 
+    // Read to EOF
+    char eof_buf[20] = {0};
+    const ssize_t n3 = stream->read(eof_buf, sizeof(eof_buf));
+    ok = ok && expect(n3 == 11, "read to EOF should return remaining bytes"); // "0123456789ABCDEF" is 16 bytes, already read 5, remaining 11
+    ok = ok && expect(std::string(eof_buf, 11) == "56789ABCDEF", "EOF read content mismatch");
+
+    // Read past EOF should return 0
+    const ssize_t n4 = stream->read(eof_buf, sizeof(eof_buf));
+    ok = ok && expect(n4 == 0, "read past EOF should return 0");
+
   } catch (const std::exception &ex) {
     std::cerr << "Unexpected failure reading existing file: " << ex.what() << std::endl;
     ok = false;

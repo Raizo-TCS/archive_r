@@ -62,41 +62,7 @@ std::unordered_set<std::string> all_metadata_keys() {
   };
 }
 
-void dump_debug(struct archive_entry *e, const EntryMetadataMap &m) {
-  std::cerr << "--- debug: libarchive entry state ---" << std::endl;
-  if (!e) {
-    std::cerr << "entry=null" << std::endl;
-    return;
-  }
-
-  const char *pathname = archive_entry_pathname(e);
-  const char *pathname_utf8 = archive_entry_pathname_utf8(e);
-  std::cerr << "pathname=" << (pathname ? pathname : "(null)") << std::endl;
-  std::cerr << "pathname_utf8=" << (pathname_utf8 ? pathname_utf8 : "(null)") << std::endl;
-
-  const char *symlink = archive_entry_symlink(e);
-  const char *symlink_utf8 = archive_entry_symlink_utf8(e);
-  std::cerr << "symlink=" << (symlink ? symlink : "(null)") << std::endl;
-  std::cerr << "symlink_utf8=" << (symlink_utf8 ? symlink_utf8 : "(null)") << std::endl;
-
-  std::cerr << "size_is_set=" << (archive_entry_size_is_set(e) ? "true" : "false") << std::endl;
-  std::cerr << "size=" << static_cast<long long>(archive_entry_size(e)) << std::endl;
-  std::cerr << "sparse_count=" << archive_entry_sparse_count(e) << std::endl;
-  archive_entry_sparse_reset(e);
-  la_int64_t offset = 0;
-  la_int64_t length = 0;
-  int sparse_next_count = 0;
-  while (archive_entry_sparse_next(e, &offset, &length) == ARCHIVE_OK) {
-    ++sparse_next_count;
-    std::cerr << "sparse_next[" << sparse_next_count << "] offset=" << static_cast<long long>(offset) << " length=" << static_cast<long long>(length) << std::endl;
-  }
-
-  std::cerr << "--- debug: returned metadata keys ---" << std::endl;
-  for (const auto &kv : m) {
-    std::cerr << "key=" << kv.first << std::endl;
-  }
-  std::cerr << "--- debug: end ---" << std::endl;
-}
+};
 
 struct EntryHolder {
   struct archive_entry *entry = nullptr;
@@ -116,6 +82,7 @@ struct DummyArchive final : Archive {
 };
 
 void seed_common_fields(struct archive_entry *e) {
+  archive_entry_set_pathname(e, "/test/path");
   archive_entry_set_filetype(e, AE_IFREG);
   archive_entry_set_perm(e, 0644);
   archive_entry_set_mode(e, 0100644);
@@ -145,6 +112,8 @@ void seed_common_fields(struct archive_entry *e) {
   // xattr
   const char xattr_value[] = { 'v', 'a', 'l' };
   archive_entry_xattr_add_entry(e, "user.key", xattr_value, sizeof(xattr_value));
+  // Also add an empty xattr value to exercise the (value && size > 0) false branch.
+  archive_entry_xattr_add_entry(e, "user.empty", "", 0);
 
   // sparse
   archive_entry_sparse_add_entry(e, 100, 200);
@@ -385,8 +354,6 @@ bool verify_metadata_consistency(struct archive_entry *e, const std::unordered_s
   return true;
 }
 
-} // namespace
-
 int main() {
   try {
     DummyArchive a;
@@ -422,7 +389,6 @@ int main() {
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(keys);
       if (!verify_metadata_consistency(e, keys, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (utf8 case)")) {
           return 1;
         }
@@ -450,7 +416,6 @@ int main() {
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(keys);
       if (!verify_metadata_consistency(e, keys, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (plain case)")) {
           return 1;
         }
@@ -479,6 +444,342 @@ int main() {
       a.current_entry = nullptr;
     }
 
+    // 4) Subset allow-list: exercises the wants("...") == false branches.
+    {
+      const std::unordered_set<std::string> subset_keys = {
+        "pathname",
+        "uid",
+        "perm",
+        "size",
+      };
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+
+      archive_entry_set_pathname(e, "subset/path.txt");
+      archive_entry_set_uid(e, 1234);
+      archive_entry_set_perm(e, 0644);
+      archive_entry_set_size(e, 42);
+
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(subset_keys);
+
+      if (!verify_metadata_consistency(e, subset_keys, metadata)) {
+        if (!expect(false, "expected keys missing (subset allow-list case)")) {
+          return 1;
+        }
+        return 1;
+      }
+
+      if (!expect(metadata.size() == subset_keys.size(), "subset allow-list should not return extra keys")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // 5) "Deny" most keys while values exist: exercises compound conditions where wants("...") is false.
+    {
+      const std::unordered_set<std::string> perm_only = {
+        "perm",
+      };
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+
+      // Populate many values, but only "perm" is allowed.
+      archive_entry_set_pathname_utf8(e, "utf8/denied_path.txt");
+      archive_entry_copy_sourcepath(e, "/tmp/denied_source");
+      archive_entry_set_symlink_utf8(e, "utf8/denied_symlink");
+      archive_entry_set_hardlink_utf8(e, "utf8/denied_hardlink");
+      archive_entry_set_uname_utf8(e, "utf8_denied_user");
+      archive_entry_set_gname_utf8(e, "utf8_denied_group");
+      archive_entry_set_uid(e, 999);
+      archive_entry_set_gid(e, 888);
+
+      seed_common_fields(e);
+
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(perm_only);
+
+      if (!verify_metadata_consistency(e, perm_only, metadata)) {
+        if (!expect(false, "expected keys missing (perm-only allow-list case)")) {
+          return 1;
+        }
+        return 1;
+      }
+
+      if (!expect(metadata.size() == perm_only.size(), "perm-only allow-list should not return extra keys")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // 6) "pathname only": exercises wants("perm") == false and other numeric-key false branches.
+    {
+      const std::unordered_set<std::string> pathname_only = {
+        "pathname",
+      };
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+
+      archive_entry_set_pathname(e, "plain/pathname_only.txt");
+      seed_common_fields(e);
+
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(pathname_only);
+
+      if (!verify_metadata_consistency(e, pathname_only, metadata)) {
+        if (!expect(false, "expected keys missing (pathname-only allow-list case)")) {
+          return 1;
+        }
+        return 1;
+      }
+
+      if (!expect(metadata.size() == pathname_only.size(), "pathname-only allow-list should not return extra keys")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // 7) pathname_utf8 empty string: exercises the pathname utf8->fallback path.
+    {
+      const std::unordered_set<std::string> pathname_only = {
+        "pathname",
+      };
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+
+      // Make pathname_utf8 present-but-empty so the implementation should fall back to pathname.
+      archive_entry_set_pathname_utf8(e, "");
+      archive_entry_set_pathname(e, "plain/fallback_pathname.txt");
+
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(pathname_only);
+
+      if (!verify_metadata_consistency(e, pathname_only, metadata)) {
+        if (!expect(false, "expected keys missing (pathname utf8 empty fallback case)")) {
+          return 1;
+        }
+        return 1;
+      }
+
+      if (!expect(metadata.size() == pathname_only.size(), "pathname-only allow-list should not return extra keys")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: current_entry is null (should return empty metadata regardless of allowed_keys).
+    {
+      DummyArchive a;
+      const auto metadata = a.current_entry_metadata(all_metadata_keys());
+      if (!expect(metadata.empty(), "current_entry null should return empty metadata")) {
+        return 1;
+      }
+    }
+
+    // Test case: allowed_keys is empty (should return empty metadata regardless of current_entry).
+    {
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata({});
+      if (!expect(metadata.empty(), "empty allowed_keys should return empty metadata")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: pathname is null (should not include pathname in metadata).
+    {
+      const std::unordered_set<std::string> pathname_only = {"pathname"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+      // Do not set pathname or pathname_utf8.
+      archive_entry_set_pathname(e, nullptr);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(pathname_only);
+
+      if (!expect(metadata.find("pathname") == metadata.end(), "null pathname should not be included")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: uid/gid conditions (has_uid/gid false paths).
+    {
+      const std::unordered_set<std::string> uid_gid_only = {"uid", "gid"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+      // Clear uname/gname and set uid/gid to 0 to make has_uid/has_gid false.
+      archive_entry_set_uname(e, nullptr);
+      archive_entry_set_gname(e, nullptr);
+      archive_entry_set_uid(e, 0);
+      archive_entry_set_gid(e, 0);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(uid_gid_only);
+
+      if (!expect(metadata.find("uid") == metadata.end(), "uid should not be included when has_uid is false")) {
+        return 1;
+      }
+      if (!expect(metadata.find("gid") == metadata.end(), "gid should not be included when has_gid is false")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: symlink/hardlink present.
+    {
+      const std::unordered_set<std::string> symlink_hardlink_only = {"symlink", "hardlink"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+      archive_entry_set_symlink(e, "symlink_target");
+      archive_entry_set_hardlink(e, "hardlink_target");
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(symlink_hardlink_only);
+
+      if (!expect(metadata.find("symlink") != metadata.end(), "symlink should be included")) {
+        return 1;
+      }
+      if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: xattr present (xattr_count > 0).
+    {
+      const std::unordered_set<std::string> xattr_only = {"xattr"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+      // xattr is already present from archive_entry_new()
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(xattr_only);
+
+      if (!expect(metadata.find("xattr") != metadata.end(), "xattr should be included when xattr_count > 0")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: digests present.
+    {
+      const std::unordered_set<std::string> digests_only = {"digests"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+      // digests are present
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(digests_only);
+
+      if (!expect(metadata.find("digests") != metadata.end(), "digests should be included when digests are present")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: null current_entry.
+    {
+      const std::unordered_set<std::string> some_keys = {"pathname"};
+      DummyArchive a;
+      a.current_entry = nullptr;
+      const auto metadata = a.current_entry_metadata(some_keys);
+
+      if (!expect(metadata.empty(), "metadata should be empty when current_entry is null")) {
+        return 1;
+      }
+    }
+
+    // Test case: specific keys requested.
+    {
+      const std::unordered_set<std::string> specific_keys = {"pathname", "size", "mode"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(specific_keys);
+
+      if (!expect(metadata.size() == 3, "metadata should have 3 entries")) {
+        std::cerr << "actual size: " << metadata.size() << std::endl;
+        return 1;
+      }
+      if (!expect(metadata.count("pathname"), "pathname should be present")) {
+        return 1;
+      }
+      if (!expect(metadata.count("size"), "size should be present")) {
+        return 1;
+      }
+      if (!expect(metadata.count("mode"), "mode should be present")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: current_entry_size
+    {
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const uint64_t size = a.current_entry_size();
+
+      if (!expect(size == 4096, "current_entry_size should return 4096")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: current_entry_filetype
+    {
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const mode_t filetype = a.current_entry_filetype();
+
+      if (!expect(filetype == AE_IFREG, "current_entry_filetype should return AE_IFREG")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
   } catch (const std::exception &ex) {
     std::cerr << "Archive current_entry_metadata test failed: " << ex.what() << std::endl;
     return 1;

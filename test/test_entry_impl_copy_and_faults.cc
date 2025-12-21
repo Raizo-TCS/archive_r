@@ -97,6 +97,28 @@ int main() {
       (void)copy;
     }
 
+    // 5) Test name() with empty hierarchy
+    {
+      auto e = Entry::create(PathHierarchy{}, nullptr, true);
+      std::string n = e->name();
+      if (!expect(n.empty(), "name should be empty for empty hierarchy")) {
+        return 1;
+      }
+    }
+
+    // 6) Test read() error paths
+    {
+      auto e = Entry::create(make_single_path("nonexistent_file"), nullptr, true);
+      char buf[16] = {};
+      const ssize_t r = e->read(buf, sizeof(buf));
+      if (!expect(r < 0, "read should fail for nonexistent file")) {
+        return 1;
+      }
+      if (!expect(faults.count > 0, "read failure should emit fault")) {
+        return 1;
+      }
+    }
+
   } catch (const std::exception &ex) {
     std::cerr << "Entry impl copy/fault test failed: " << ex.what() << std::endl;
     return 1;

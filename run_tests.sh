@@ -733,6 +733,36 @@ if [ -n "$TEST_EXE" ]; then
     echo ""
 fi
 
+log_info "Running Archive stack cursor regression..."
+TEST_EXE=$(find_executable "test_archive_stack_cursor")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "archive_stack_cursor"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: archive_stack_cursor"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: archive_stack_cursor"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Find and traverse example..."
+TEST_EXE=$(find_executable "test_find_and_traverse")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "find_and_traverse"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: find_and_traverse"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: find_and_traverse"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
 log_info "Running Entry Impl copy/fault regression..."
 TEST_EXE=$(find_executable "test_entry_impl_copy_and_faults")
 if [ -n "$TEST_EXE" ]; then

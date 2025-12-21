@@ -186,6 +186,12 @@ target_link_libraries(test_archive_type_error_paths archive_r_core ${LibArchive_
 add_executable(test_archive_current_entry_metadata test/test_archive_current_entry_metadata.cc)
 target_link_libraries(test_archive_current_entry_metadata archive_r_core ${LibArchive_LIBRARIES})
 
+add_executable(test_archive_stack_cursor test/test_archive_stack_cursor.cc)
+target_link_libraries(test_archive_stack_cursor archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_find_and_traverse test/test_find_and_traverse.cc)
+target_link_libraries(test_find_and_traverse archive_r_core ${LibArchive_LIBRARIES})
+
 add_executable(test_system_file_stream_io test/test_system_file_stream_io.cc)
 target_link_libraries(test_system_file_stream_io archive_r_core ${LibArchive_LIBRARIES})
 

@@ -3,6 +3,11 @@
 
 #include "system_file_stream.h"
 
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 archive_r Team
+
+#include "system_file_stream.h"
+
 #include "archive_r/path_hierarchy.h"
 
 #include <filesystem>
@@ -163,3 +168,4 @@ int main() {
   std::cout << "SystemFileStream metadata tests passed" << std::endl;
   return 0;
 }
+      // Symlink creation may be disallowed; skip.
