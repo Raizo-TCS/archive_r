@@ -309,12 +309,8 @@ EntryMetadataMap Archive::current_entry_metadata(const std::unordered_set<std::s
   }
 
   if (const char *symlink_utf8 = archive_entry_symlink_utf8(current_entry)) {
-    if (*symlink_utf8 && wants("symlink")) {
+    if (wants("symlink")) {
       metadata["symlink"] = std::string(symlink_utf8);
-    }
-  } else if (const char *symlink = archive_entry_symlink(current_entry)) {
-    if (*symlink && wants("symlink")) {
-      metadata["symlink"] = std::string(symlink);
     }
   }
 
