@@ -37,7 +37,8 @@ public:
 
   ssize_t read(void *buf, size_t len) override {
     if (_pos >= _buffer.size()) return 0;
-    size_t to_read = std::min(len, _buffer.size() - _pos);
+    const size_t remaining = _buffer.size() - _pos;
+    const size_t to_read = (len < remaining) ? len : remaining;
     std::memcpy(buf, _buffer.data() + _pos, to_read);
     _pos += to_read;
     return static_cast<ssize_t>(to_read);
