@@ -5,8 +5,10 @@
 
 #include <archive_entry.h>
 
+#include <cstring>
 #include <cstdint>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -21,6 +23,30 @@ bool expect(bool condition, const char *message) {
     return false;
   }
   return true;
+}
+
+std::string cstr_debug(const char *s) {
+  if (!s) {
+    return "<null>";
+  }
+  std::ostringstream oss;
+  oss << '"' << s << '"' << " (len=" << std::strlen(s) << ')';
+  return oss.str();
+}
+
+std::string list_keys(const EntryMetadataMap &m) {
+  std::ostringstream oss;
+  oss << '[';
+  bool first = true;
+  for (const auto &kv : m) {
+    if (!first) {
+      oss << ", ";
+    }
+    first = false;
+    oss << kv.first;
+  }
+  oss << ']';
+  return oss.str();
 }
 
 std::unordered_set<std::string> all_metadata_keys() {
@@ -660,9 +686,15 @@ int main() {
       const auto metadata = a.current_entry_metadata(symlink_hardlink_only);
 
       if (!expect(metadata.find("symlink") != metadata.end(), "symlink should be included")) {
+        std::cerr << "DEBUG: metadata keys=" << list_keys(metadata) << std::endl;
+        std::cerr << "DEBUG: archive_entry_symlink_utf8=" << cstr_debug(archive_entry_symlink_utf8(e)) << std::endl;
+        std::cerr << "DEBUG: archive_entry_symlink=" << cstr_debug(archive_entry_symlink(e)) << std::endl;
         return 1;
       }
       if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included")) {
+        std::cerr << "DEBUG: metadata keys=" << list_keys(metadata) << std::endl;
+        std::cerr << "DEBUG: archive_entry_hardlink_utf8=" << cstr_debug(archive_entry_hardlink_utf8(e)) << std::endl;
+        std::cerr << "DEBUG: archive_entry_hardlink=" << cstr_debug(archive_entry_hardlink(e)) << std::endl;
         return 1;
       }
 
