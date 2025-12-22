@@ -232,9 +232,7 @@ bool Archive::search_forward_until_eof(const std::string &entryname) {
     if (current_entryname == entryname) {
       return true;
     }
-    if (!skip_data()) {
-      return false;
-    }
+    skip_data();
   }
   return false;
 }
@@ -247,9 +245,7 @@ bool Archive::search_until_position(const std::string &entryname, const std::str
     if (current_entryname == stop_position) {
       break;
     }
-    if (!skip_data()) {
-      return false;
-    }
+    skip_data();
   }
   return false;
 }

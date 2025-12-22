@@ -5,8 +5,10 @@
 
 #include <archive_entry.h>
 
+#include <cstring>
 #include <cstdint>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -21,6 +23,34 @@ bool expect(bool condition, const char *message) {
     return false;
   }
   return true;
+}
+
+bool expect(bool condition, const std::string &message) {
+  return expect(condition, message.c_str());
+}
+
+std::string cstr_debug(const char *s) {
+  if (!s) {
+    return "<null>";
+  }
+  std::ostringstream oss;
+  oss << '"' << s << '"' << " (len=" << std::strlen(s) << ')';
+  return oss.str();
+}
+
+std::string list_keys(const EntryMetadataMap &m) {
+  std::ostringstream oss;
+  oss << '[';
+  bool first = true;
+  for (const auto &kv : m) {
+    if (!first) {
+      oss << ", ";
+    }
+    first = false;
+    oss << kv.first;
+  }
+  oss << ']';
+  return oss.str();
 }
 
 std::unordered_set<std::string> all_metadata_keys() {
@@ -62,42 +92,7 @@ std::unordered_set<std::string> all_metadata_keys() {
   };
 }
 
-void dump_debug(struct archive_entry *e, const EntryMetadataMap &m) {
-  std::cerr << "--- debug: libarchive entry state ---" << std::endl;
-  if (!e) {
-    std::cerr << "entry=null" << std::endl;
-    return;
-  }
-
-  const char *pathname = archive_entry_pathname(e);
-  const char *pathname_utf8 = archive_entry_pathname_utf8(e);
-  std::cerr << "pathname=" << (pathname ? pathname : "(null)") << std::endl;
-  std::cerr << "pathname_utf8=" << (pathname_utf8 ? pathname_utf8 : "(null)") << std::endl;
-
-  const char *symlink = archive_entry_symlink(e);
-  const char *symlink_utf8 = archive_entry_symlink_utf8(e);
-  std::cerr << "symlink=" << (symlink ? symlink : "(null)") << std::endl;
-  std::cerr << "symlink_utf8=" << (symlink_utf8 ? symlink_utf8 : "(null)") << std::endl;
-
-  std::cerr << "size_is_set=" << (archive_entry_size_is_set(e) ? "true" : "false") << std::endl;
-  std::cerr << "size=" << static_cast<long long>(archive_entry_size(e)) << std::endl;
-  std::cerr << "sparse_count=" << archive_entry_sparse_count(e) << std::endl;
-  std::cerr << "xattr_count=" << archive_entry_xattr_count(e) << std::endl;
-  archive_entry_sparse_reset(e);
-  la_int64_t offset = 0;
-  la_int64_t length = 0;
-  int sparse_next_count = 0;
-  while (archive_entry_sparse_next(e, &offset, &length) == ARCHIVE_OK) {
-    ++sparse_next_count;
-    std::cerr << "sparse_next[" << sparse_next_count << "] offset=" << static_cast<long long>(offset) << " length=" << static_cast<long long>(length) << std::endl;
-  }
-
-  std::cerr << "--- debug: returned metadata keys ---" << std::endl;
-  for (const auto &kv : m) {
-    std::cerr << "key=" << kv.first << std::endl;
-  }
-  std::cerr << "--- debug: end ---" << std::endl;
-}
+};
 
 struct EntryHolder {
   struct archive_entry *entry = nullptr;
@@ -117,10 +112,11 @@ struct DummyArchive final : Archive {
 };
 
 void seed_common_fields(struct archive_entry *e) {
+  archive_entry_set_pathname(e, "/test/path");
   archive_entry_set_filetype(e, AE_IFREG);
   archive_entry_set_perm(e, 0644);
   archive_entry_set_mode(e, 0100644);
-  // archive_entry_set_size(e, 4096);
+  archive_entry_set_size(e, 4096);
   archive_entry_set_dev(e, 42);
   archive_entry_set_rdev(e, 7);
   archive_entry_set_ino(e, 99);
@@ -388,8 +384,6 @@ bool verify_metadata_consistency(struct archive_entry *e, const std::unordered_s
   return true;
 }
 
-} // namespace
-
 int main() {
   try {
     DummyArchive a;
@@ -425,7 +419,6 @@ int main() {
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(keys);
       if (!verify_metadata_consistency(e, keys, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (utf8 case)")) {
           return 1;
         }
@@ -453,7 +446,6 @@ int main() {
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(keys);
       if (!verify_metadata_consistency(e, keys, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (plain case)")) {
           return 1;
         }
@@ -503,7 +495,6 @@ int main() {
       const auto metadata = a.current_entry_metadata(subset_keys);
 
       if (!verify_metadata_consistency(e, subset_keys, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (subset allow-list case)")) {
           return 1;
         }
@@ -511,7 +502,6 @@ int main() {
       }
 
       if (!expect(metadata.size() == subset_keys.size(), "subset allow-list should not return extra keys")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
@@ -543,7 +533,6 @@ int main() {
       const auto metadata = a.current_entry_metadata(perm_only);
 
       if (!verify_metadata_consistency(e, perm_only, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (perm-only allow-list case)")) {
           return 1;
         }
@@ -551,7 +540,6 @@ int main() {
       }
 
       if (!expect(metadata.size() == perm_only.size(), "perm-only allow-list should not return extra keys")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
@@ -574,7 +562,6 @@ int main() {
       const auto metadata = a.current_entry_metadata(pathname_only);
 
       if (!verify_metadata_consistency(e, pathname_only, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (pathname-only allow-list case)")) {
           return 1;
         }
@@ -582,7 +569,6 @@ int main() {
       }
 
       if (!expect(metadata.size() == pathname_only.size(), "pathname-only allow-list should not return extra keys")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
@@ -606,7 +592,6 @@ int main() {
       const auto metadata = a.current_entry_metadata(pathname_only);
 
       if (!verify_metadata_consistency(e, pathname_only, metadata)) {
-        dump_debug(e, metadata);
         if (!expect(false, "expected keys missing (pathname utf8 empty fallback case)")) {
           return 1;
         }
@@ -614,7 +599,6 @@ int main() {
       }
 
       if (!expect(metadata.size() == pathname_only.size(), "pathname-only allow-list should not return extra keys")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
@@ -653,13 +637,13 @@ int main() {
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
       // Do not set pathname or pathname_utf8.
+      archive_entry_set_pathname(e, nullptr);
 
       DummyArchive a;
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(pathname_only);
 
       if (!expect(metadata.find("pathname") == metadata.end(), "null pathname should not be included")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
@@ -683,36 +667,61 @@ int main() {
       const auto metadata = a.current_entry_metadata(uid_gid_only);
 
       if (!expect(metadata.find("uid") == metadata.end(), "uid should not be included when has_uid is false")) {
-        dump_debug(e, metadata);
         return 1;
       }
       if (!expect(metadata.find("gid") == metadata.end(), "gid should not be included when has_gid is false")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
       a.current_entry = nullptr;
     }
 
-    // Test case: symlink/hardlink present.
+    // Test case: hardlink present.
     {
-      const std::unordered_set<std::string> symlink_hardlink_only = {"symlink", "hardlink"};
+      const std::unordered_set<std::string> hardlink_only = {"hardlink"};
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
-      archive_entry_set_symlink(e, "symlink_target");
       archive_entry_set_hardlink(e, "hardlink_target");
 
       DummyArchive a;
       a.current_entry = e;
-      const auto metadata = a.current_entry_metadata(symlink_hardlink_only);
+      const auto metadata = a.current_entry_metadata(hardlink_only);
 
-      if (!expect(metadata.find("symlink") != metadata.end(), "symlink should be included")) {
-        dump_debug(e, metadata);
+      if (!expect(metadata.find("hardlink") != metadata.end(),
+                 std::string("hardlink should be included") +
+                   " | keys=" + list_keys(metadata) +
+                   " | hardlink_utf8=" + cstr_debug(archive_entry_hardlink_utf8(e)) +
+                   " | hardlink=" + cstr_debug(archive_entry_hardlink(e)))) {
         return 1;
       }
-      if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included")) {
-        dump_debug(e, metadata);
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: symlink present.
+    {
+      const std::unordered_set<std::string> symlink_only = {"symlink"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      // IMPORTANT: Some libarchive builds do not expose symlink getters unless the entry
+      // is marked as a symlink.
+      archive_entry_set_filetype(e, AE_IFLNK);
+      archive_entry_set_perm(e, 0777);
+      archive_entry_set_mode(e, 0120777);
+      archive_entry_set_symlink(e, "symlink_target");
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(symlink_only);
+
+      if (!expect(metadata.find("symlink") != metadata.end(),
+                 std::string("symlink should be included") +
+                   " | keys=" + list_keys(metadata) +
+                   " | symlink_utf8=" + cstr_debug(archive_entry_symlink_utf8(e)) +
+                   " | symlink=" + cstr_debug(archive_entry_symlink(e)))) {
         return 1;
       }
 
@@ -732,7 +741,6 @@ int main() {
       const auto metadata = a.current_entry_metadata(xattr_only);
 
       if (!expect(metadata.find("xattr") != metadata.end(), "xattr should be included when xattr_count > 0")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
@@ -752,13 +760,85 @@ int main() {
       const auto metadata = a.current_entry_metadata(digests_only);
 
       if (!expect(metadata.find("digests") != metadata.end(), "digests should be included when digests are present")) {
-        dump_debug(e, metadata);
         return 1;
       }
 
       a.current_entry = nullptr;
     }
 
+    // Test case: null current_entry.
+    {
+      const std::unordered_set<std::string> some_keys = {"pathname"};
+      DummyArchive a;
+      a.current_entry = nullptr;
+      const auto metadata = a.current_entry_metadata(some_keys);
+
+      if (!expect(metadata.empty(), "metadata should be empty when current_entry is null")) {
+        return 1;
+      }
+    }
+
+    // Test case: specific keys requested.
+    {
+      const std::unordered_set<std::string> specific_keys = {"pathname", "size", "mode"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(specific_keys);
+
+      if (!expect(metadata.size() == 3, "metadata should have 3 entries")) {
+        std::cerr << "actual size: " << metadata.size() << std::endl;
+        return 1;
+      }
+      if (!expect(metadata.count("pathname"), "pathname should be present")) {
+        return 1;
+      }
+      if (!expect(metadata.count("size"), "size should be present")) {
+        return 1;
+      }
+      if (!expect(metadata.count("mode"), "mode should be present")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: current_entry_size
+    {
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const uint64_t size = a.current_entry_size();
+
+      if (!expect(size == 4096, "current_entry_size should return 4096")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: current_entry_filetype
+    {
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      DummyArchive a;
+      a.current_entry = e;
+      const mode_t filetype = a.current_entry_filetype();
+
+      if (!expect(filetype == AE_IFREG, "current_entry_filetype should return AE_IFREG")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
   } catch (const std::exception &ex) {
     std::cerr << "Archive current_entry_metadata test failed: " << ex.what() << std::endl;
     return 1;

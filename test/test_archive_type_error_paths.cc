@@ -10,6 +10,10 @@ using namespace archive_r;
 
 namespace {
 
+struct DummyArchive final : Archive {
+  void open_archive() override {}
+};
+
 bool expect(bool condition, const char *message) {
   if (!condition) {
     std::cerr << message << std::endl;
@@ -51,6 +55,55 @@ int main() {
   } catch (const std::exception &ex) {
     ok = false;
     std::cerr << "Unexpected exception type: " << ex.what() << std::endl;
+  }
+
+  // Uninitialized archive handle should raise std::logic_error.
+  try {
+    DummyArchive a;
+    (void)a.skip_to_next_header();
+    ok = false;
+    std::cerr << "Expected logic_error for skip_to_next_header without initialized handle" << std::endl;
+  } catch (const std::logic_error &) {
+    // expected
+  } catch (const std::exception &ex) {
+    ok = false;
+    std::cerr << "Unexpected exception type: " << ex.what() << std::endl;
+  }
+
+  try {
+    DummyArchive a;
+    (void)a.skip_data();
+    ok = false;
+    std::cerr << "Expected logic_error for skip_data without initialized handle" << std::endl;
+  } catch (const std::logic_error &) {
+    // expected
+  } catch (const std::exception &ex) {
+    ok = false;
+    std::cerr << "Unexpected exception type: " << ex.what() << std::endl;
+  }
+
+  try {
+    DummyArchive a;
+    uint8_t buf[16] = {};
+    (void)a.read_current(buf, sizeof(buf));
+    ok = false;
+    std::cerr << "Expected logic_error for read_current without initialized handle" << std::endl;
+  } catch (const std::logic_error &) {
+    // expected
+  } catch (const std::exception &ex) {
+    ok = false;
+    std::cerr << "Unexpected exception type: " << ex.what() << std::endl;
+  }
+
+  // No current_entry selected should return 0 for size/filetype.
+  {
+    DummyArchive a;
+    if (!expect(a.current_entry_size() == 0, "Expected current_entry_size() == 0 when current_entry is null")) {
+      ok = false;
+    }
+    if (!expect(a.current_entry_filetype() == 0, "Expected current_entry_filetype() == 0 when current_entry is null")) {
+      ok = false;
+    }
   }
 
   if (!expect(ok, "archive_type error path tests failed")) {

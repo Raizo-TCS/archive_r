@@ -31,6 +31,16 @@ bool test_component_at() {
     return false;
   }
 
+  PathEntry default_entry;
+  const std::string *i0 = path_entry_component_at(default_entry, 0);
+  if (!expect(i0 && i0->empty(), "component_at(default,0) should be empty string")) {
+    return false;
+  }
+  const std::string *i1 = path_entry_component_at(default_entry, 1);
+  if (!expect(i1 == nullptr, "component_at(default,1) should be nullptr")) {
+    return false;
+  }
+
   PathEntry mv = PathEntry::multi_volume({"a.part1", "a.part2"});
   const std::string *m0 = path_entry_component_at(mv, 0);
   const std::string *m1 = path_entry_component_at(mv, 1);
@@ -89,6 +99,15 @@ bool test_volume_helpers() {
     return false;
   }
 
+  PathHierarchy invalid_h;
+  invalid_h.push_back(PathEntry{});
+  if (!expect(pathhierarchy_volume_size(invalid_h) == 1, "volume_size(invalid tail) should be 1")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name(invalid_h, 0).empty(), "volume_entry_name(invalid tail,0) should be empty")) {
+    return false;
+  }
+
   return true;
 }
 
@@ -101,6 +120,19 @@ bool test_flatten_and_display() {
   PathEntry mv = PathEntry::multi_volume({"a", "b"});
   out.clear();
   if (!expect(!flatten_entry_to_string(mv, out), "flatten(mv) should be false")) {
+    return false;
+  }
+
+  PathEntry default_entry;
+  out.clear();
+  if (!expect(flatten_entry_to_string(default_entry, out) && out.empty(), "flatten(default) should yield empty string")) {
+    return false;
+  }
+  out.clear();
+  if (!expect(entry_name_from_component(default_entry, out) && out.empty(), "entry_name_from_component(default) should yield empty string")) {
+    return false;
+  }
+  if (!expect(path_entry_display(default_entry).empty(), "path_entry_display(default) should be empty")) {
     return false;
   }
   out.clear();
@@ -152,6 +184,41 @@ bool test_merge_multi_volume_sources() {
 
   PathHierarchy short_h = {PathEntry::single("outer.tar.gz")};
   if (!expect(merge_multi_volume_sources({h1, short_h}).empty(), "merge(mismatched sizes) should be empty")) {
+    return false;
+  }
+
+  // Failure: first hierarchy is empty (reference.empty()).
+  PathHierarchy empty_h;
+  if (!expect(merge_multi_volume_sources({empty_h, h1}).empty(), "merge(empty reference) should be empty")) {
+    return false;
+  }
+
+  // Failure: all entries equal but hierarchy sizes differ (difference_found == false path).
+  PathHierarchy same_prefix_short;
+  same_prefix_short.push_back(PathEntry::single("same"));
+
+  PathHierarchy same_prefix_long;
+  same_prefix_long.push_back(PathEntry::single("same"));
+  same_prefix_long.push_back(PathEntry::single("extra"));
+
+  if (!expect(merge_multi_volume_sources({same_prefix_short, same_prefix_long}).empty(), "merge(equal prefix, different sizes) should be empty")) {
+    return false;
+  }
+
+  // Failure: determine succeeds but required_size mismatch is caught in collect_multi_volume_parts.
+  PathHierarchy longer_tail;
+  longer_tail.push_back(PathEntry::single("outer.tar.gz"));
+  longer_tail.push_back(PathEntry::single("inner.part002"));
+  longer_tail.push_back(PathEntry::single("unexpected_suffix"));
+  if (!expect(merge_multi_volume_sources({h1, longer_tail}).empty(), "merge(required_size mismatch) should be empty")) {
+    return false;
+  }
+
+  // Failure: multi-volume part component must be single.
+  PathHierarchy non_single_part;
+  non_single_part.push_back(PathEntry::single("outer.tar.gz"));
+  non_single_part.push_back(PathEntry::multi_volume({"inner.part002", "inner.part003"}));
+  if (!expect(merge_multi_volume_sources({h1, non_single_part}).empty(), "merge(non-single part) should be empty")) {
     return false;
   }
 

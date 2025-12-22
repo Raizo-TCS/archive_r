@@ -3,6 +3,11 @@
 
 #include "system_file_stream.h"
 
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 archive_r Team
+
+#include "system_file_stream.h"
+
 #include "archive_r/path_hierarchy.h"
 
 #include <filesystem>
@@ -115,12 +120,40 @@ int main() {
     ok = expect(info.metadata.find("size") != info.metadata.end(), "Expected size metadata") && ok;
   }
 
+  // allowed_keys empty: metadata should be empty, but size/filetype should still be populated.
+  {
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(regular_path.string()));
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{});
+    ok = expect(info.metadata.empty(), "Expected empty metadata when allowed_keys is empty") && ok;
+    ok = expect(info.filetype != 0, "Expected filetype to be set even when allowed_keys is empty") && ok;
+    ok = expect(info.size == 5, "Expected size to be set for regular file even when allowed_keys is empty") && ok;
+  }
+
   {
     PathHierarchy h;
     h.emplace_back(PathEntry::single(dir_path.string()));
 
-    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"filetype"});
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"filetype", "size"});
     ok = expect(info.metadata.find("filetype") != info.metadata.end(), "Expected filetype metadata for directory") && ok;
+    ok = expect(info.metadata.find("size") != info.metadata.end(), "Expected size metadata for directory (stat-derived)") && ok;
+  }
+
+  // size metadata should be present even for empty files (size==0) when stat succeeds.
+  {
+    const auto empty_path = root / "empty.txt";
+    {
+      std::ofstream out(empty_path, std::ios::binary | std::ios::trunc);
+    }
+
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(empty_path.string()));
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"size"});
+    const auto it = info.metadata.find("size");
+    ok = expect(it != info.metadata.end(), "Expected size metadata for empty file") && ok;
+    if (it != info.metadata.end()) {
+      ok = expect(std::get<uint64_t>(it->second) == 0, "Expected size==0 for empty file") && ok;
+    }
   }
 
   {
@@ -163,3 +196,4 @@ int main() {
   std::cout << "SystemFileStream metadata tests passed" << std::endl;
   return 0;
 }
+      // Symlink creation may be disallowed; skip.
