@@ -25,6 +25,10 @@ bool expect(bool condition, const char *message) {
   return true;
 }
 
+bool expect(bool condition, const std::string &message) {
+  return expect(condition, message.c_str());
+}
+
 std::string cstr_debug(const char *s) {
   if (!s) {
     return "<null>";
@@ -672,29 +676,52 @@ int main() {
       a.current_entry = nullptr;
     }
 
-    // Test case: symlink/hardlink present.
+    // Test case: hardlink present.
     {
-      const std::unordered_set<std::string> symlink_hardlink_only = {"symlink", "hardlink"};
+      const std::unordered_set<std::string> hardlink_only = {"hardlink"};
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
-      archive_entry_set_symlink(e, "symlink_target");
       archive_entry_set_hardlink(e, "hardlink_target");
 
       DummyArchive a;
       a.current_entry = e;
-      const auto metadata = a.current_entry_metadata(symlink_hardlink_only);
+      const auto metadata = a.current_entry_metadata(hardlink_only);
 
-      if (!expect(metadata.find("symlink") != metadata.end(), "symlink should be included")) {
-        std::cerr << "DEBUG: metadata keys=" << list_keys(metadata) << std::endl;
-        std::cerr << "DEBUG: archive_entry_symlink_utf8=" << cstr_debug(archive_entry_symlink_utf8(e)) << std::endl;
-        std::cerr << "DEBUG: archive_entry_symlink=" << cstr_debug(archive_entry_symlink(e)) << std::endl;
+      if (!expect(metadata.find("hardlink") != metadata.end(),
+                 std::string("hardlink should be included") +
+                   " | keys=" + list_keys(metadata) +
+                   " | hardlink_utf8=" + cstr_debug(archive_entry_hardlink_utf8(e)) +
+                   " | hardlink=" + cstr_debug(archive_entry_hardlink(e)))) {
         return 1;
       }
-      if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included")) {
-        std::cerr << "DEBUG: metadata keys=" << list_keys(metadata) << std::endl;
-        std::cerr << "DEBUG: archive_entry_hardlink_utf8=" << cstr_debug(archive_entry_hardlink_utf8(e)) << std::endl;
-        std::cerr << "DEBUG: archive_entry_hardlink=" << cstr_debug(archive_entry_hardlink(e)) << std::endl;
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: symlink present.
+    {
+      const std::unordered_set<std::string> symlink_only = {"symlink"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+      seed_common_fields(e);
+
+      // IMPORTANT: Some libarchive builds do not expose symlink getters unless the entry
+      // is marked as a symlink.
+      archive_entry_set_filetype(e, AE_IFLNK);
+      archive_entry_set_perm(e, 0777);
+      archive_entry_set_mode(e, 0120777);
+      archive_entry_set_symlink(e, "symlink_target");
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(symlink_only);
+
+      if (!expect(metadata.find("symlink") != metadata.end(),
+                 std::string("symlink should be included") +
+                   " | keys=" + list_keys(metadata) +
+                   " | symlink_utf8=" + cstr_debug(archive_entry_symlink_utf8(e)) +
+                   " | symlink=" + cstr_debug(archive_entry_symlink(e)))) {
         return 1;
       }
 
