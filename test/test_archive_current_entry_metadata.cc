@@ -818,17 +818,33 @@ int main() {
       const std::string bad_path = make_invalid_utf8("bad_path_");
       archive_entry_set_pathname(e, bad_path.c_str());
 
-      // On libarchive, invalid byte sequences should generally not produce a UTF-8 view.
+      // On libarchive, invalid byte sequences may or may not produce a UTF-8 view depending on
+      // platform/build. If a non-empty UTF-8 view exists, Archive::current_entry_metadata()
+      // should prefer it; otherwise it should fall back to pathname.
       const char *pathname_utf8 = archive_entry_pathname_utf8(e);
-      if (!expect(pathname_utf8 == nullptr || *pathname_utf8 == '\0',
-                  std::string("expected pathname_utf8 to be null/empty for invalid bytes, got: ") + cstr_debug(pathname_utf8))) {
-        return 1;
+      const char *expected = nullptr;
+      if (pathname_utf8 && *pathname_utf8 != '\0') {
+        expected = pathname_utf8;
+      } else {
+        expected = bad_path.c_str();
       }
 
       DummyArchive a;
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(pathname_only);
       if (!expect(metadata.find("pathname") != metadata.end(), "pathname should be included via non-utf8 fallback")) {
+        return 1;
+      }
+
+      const auto it = metadata.find("pathname");
+      if (it == metadata.end()) {
+        return 1;
+      }
+      const std::string *pathname = std::get_if<std::string>(&it->second);
+      if (!expect(pathname != nullptr, "pathname should be a string")) {
+        return 1;
+      }
+      if (!expect(*pathname == expected, std::string("pathname mismatch; expected: ") + cstr_debug(expected) + ", got: " + cstr_debug(pathname->c_str()))) {
         return 1;
       }
       a.current_entry = nullptr;
