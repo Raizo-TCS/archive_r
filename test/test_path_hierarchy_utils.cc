@@ -286,17 +286,11 @@ bool test_compare_entries_single_ordering_branches() {
   PathEntry b = PathEntry::single("b");
   PathEntry a2 = PathEntry::single("a");
 
-  if (!expect(compare_entries(a, b) < 0, "compare_entries(a,b) should be < 0")) {
-    return false;
-  }
-  if (!expect(compare_entries(b, a) > 0, "compare_entries(b,a) should be > 0")) {
-    return false;
-  }
-  if (!expect(compare_entries(a, a2) == 0, "compare_entries(a,a) should be == 0")) {
-    return false;
-  }
-
-  return true;
+  bool ok = true;
+  ok &= expect(compare_entries(a, b) < 0, "compare_entries(a,b) should be < 0");
+  ok &= expect(compare_entries(b, a) > 0, "compare_entries(b,a) should be > 0");
+  ok &= expect(compare_entries(a, a2) == 0, "compare_entries(a,a) should be == 0");
+  return ok;
 }
 
 bool test_compare_hierarchies_size_mismatch_branches() {
@@ -307,67 +301,57 @@ bool test_compare_hierarchies_size_mismatch_branches() {
   long_h.push_back(PathEntry::single("same"));
   long_h.push_back(PathEntry::single("extra"));
 
-  if (!expect(compare_hierarchies(short_h, long_h) < 0, "compare_hierarchies(short,long) should be < 0")) {
-    return false;
-  }
-  if (!expect(compare_hierarchies(long_h, short_h) > 0, "compare_hierarchies(long,short) should be > 0")) {
-    return false;
-  }
+  bool ok = true;
+  ok &= expect(compare_hierarchies(short_h, long_h) < 0, "compare_hierarchies(short,long) should be < 0");
+  ok &= expect(compare_hierarchies(long_h, short_h) > 0, "compare_hierarchies(long,short) should be > 0");
 
   PathHierarchy different_first = make_single_path("a");
   PathHierarchy different_second = make_single_path("b");
-  if (!expect(compare_hierarchies(different_first, different_second) < 0, "compare_hierarchies(a,b) should be < 0")) {
-    return false;
-  }
-  if (!expect(compare_hierarchies(different_second, different_first) > 0, "compare_hierarchies(b,a) should be > 0")) {
-    return false;
-  }
-
-  return true;
+  ok &= expect(compare_hierarchies(different_first, different_second) < 0, "compare_hierarchies(a,b) should be < 0");
+  ok &= expect(compare_hierarchies(different_second, different_first) > 0, "compare_hierarchies(b,a) should be > 0");
+  return ok;
 }
 
 bool test_pathhierarchy_prefix_until_bounds() {
+  bool ok = true;
+
   // empty input
-  if (!expect(pathhierarchy_prefix_until({}, 0).empty(), "prefix_until(empty,0) should be empty")) {
-    return false;
-  }
+  ok &= expect(pathhierarchy_prefix_until({}, 0).empty(), "prefix_until(empty,0) should be empty");
 
   PathHierarchy h;
   h.push_back(PathEntry::single("a"));
   h.push_back(PathEntry::single("b"));
 
   // inclusive_index out of range
-  if (!expect(pathhierarchy_prefix_until(h, h.size()).empty(), "prefix_until(out of range) should be empty")) {
-    return false;
-  }
+  ok &= expect(pathhierarchy_prefix_until(h, h.size()).empty(), "prefix_until(out of range) should be empty");
 
   // inclusive_index in range
   PathHierarchy p0 = pathhierarchy_prefix_until(h, 0);
-  if (!expect(p0.size() == 1 && p0[0].is_single() && p0[0].single_value() == "a", "prefix_until(h,0) mismatch")) {
-    return false;
-  }
+  ok &= expect(p0.size() == 1, "prefix_until(h,0) size mismatch");
+  ok &= expect(p0[0].is_single(), "prefix_until(h,0) entry type mismatch");
+  ok &= expect(p0[0].single_value() == "a", "prefix_until(h,0) value mismatch");
 
   PathHierarchy p1 = pathhierarchy_prefix_until(h, 1);
-  if (!expect(p1.size() == 2 && p1[1].is_single() && p1[1].single_value() == "b", "prefix_until(h,1) mismatch")) {
-    return false;
-  }
+  ok &= expect(p1.size() == 2, "prefix_until(h,1) size mismatch");
+  ok &= expect(p1[1].is_single(), "prefix_until(h,1) entry type mismatch");
+  ok &= expect(p1[1].single_value() == "b", "prefix_until(h,1) value mismatch");
 
-  return true;
+  return ok;
 }
 
 } // namespace
 
 int main() {
   bool ok = true;
-  ok = ok && test_component_at();
-  ok = ok && test_volume_helpers();
-  ok = ok && test_flatten_and_display();
-  ok = ok && test_merge_multi_volume_sources();
-  ok = ok && test_sort_hierarchies();
-  ok = ok && test_compare_entries_multivolume_size_mismatch();
-  ok = ok && test_compare_entries_single_ordering_branches();
-  ok = ok && test_compare_hierarchies_size_mismatch_branches();
-  ok = ok && test_pathhierarchy_prefix_until_bounds();
+  ok &= test_component_at();
+  ok &= test_volume_helpers();
+  ok &= test_flatten_and_display();
+  ok &= test_merge_multi_volume_sources();
+  ok &= test_sort_hierarchies();
+  ok &= test_compare_entries_multivolume_size_mismatch();
+  ok &= test_compare_entries_single_ordering_branches();
+  ok &= test_compare_hierarchies_size_mismatch_branches();
+  ok &= test_pathhierarchy_prefix_until_bounds();
 
   if (!ok) {
     return 1;
