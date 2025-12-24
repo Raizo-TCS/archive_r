@@ -271,14 +271,10 @@ bool test_compare_entries_multivolume_size_mismatch() {
   PathEntry short_mv = PathEntry::multi_volume({"a"});
   PathEntry long_mv = PathEntry::multi_volume({"a", "b"});
 
-  if (!expect(compare_entries(short_mv, long_mv) < 0, "compare_entries(short_mv,long_mv) should be < 0")) {
-    return false;
-  }
-  if (!expect(compare_entries(long_mv, short_mv) > 0, "compare_entries(long_mv,short_mv) should be > 0")) {
-    return false;
-  }
-
-  return true;
+  bool ok = true;
+  ok &= expect(compare_entries(short_mv, long_mv) < 0, "compare_entries(short_mv,long_mv) should be < 0");
+  ok &= expect(compare_entries(long_mv, short_mv) > 0, "compare_entries(long_mv,short_mv) should be > 0");
+  return ok;
 }
 
 bool test_compare_entries_single_ordering_branches() {
