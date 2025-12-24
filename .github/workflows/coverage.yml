@@ -50,6 +50,7 @@ jobs:
             --filter '(.*/)?(src/|include/archive_r/)' \
             --exclude '^src/simple_profiler\.h$' \
             --exclude-directories '.*build/CMakeFiles/.*/CompilerIdCXX.*' \
+            --exclude-throw-branches \
             --gcov-ignore-parse-errors=negative_hits.warn_once_per_file \
             --xml-pretty \
             --output build/coverage.xml
