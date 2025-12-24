@@ -36,20 +36,6 @@ Entry::Impl::Impl(const Impl &other)
 }
 
 // Copy assignment operator
-Entry::Impl &Entry::Impl::operator=(const Impl &other) {
-  if (this != &other) {
-    _path_hierarchy = other._path_hierarchy;
-    _size = other._size;
-    _filetype = other._filetype;
-    _metadata = other._metadata;
-    _descend_enabled = other._descend_enabled;
-    _orchestrator.reset();
-    _shares_traverser_orchestrator = false;
-    _archive_options = other._archive_options;
-  }
-  return *this;
-}
-
 Entry::Impl::Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent)
     : _path_hierarchy(hierarchy)
     , _size(0)

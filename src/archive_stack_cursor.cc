@@ -289,7 +289,7 @@ ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
   return 0;
 }
 
-StreamArchive *ArchiveStackCursor::current_archive() {
+StreamArchive *ArchiveStackCursor::current_archive() noexcept {
   return _current_archive.get();
 }
 

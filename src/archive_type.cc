@@ -265,7 +265,7 @@ ssize_t Archive::read_current(void *buff, size_t len) {
 }
 
 // Returns the current entry size in bytes, or 0 when no entry is selected.
-uint64_t Archive::current_entry_size() const {
+uint64_t Archive::current_entry_size() const noexcept {
   if (!current_entry) {
     return 0;
   }
@@ -273,7 +273,7 @@ uint64_t Archive::current_entry_size() const {
 }
 
 // Returns the current entry filetype bits, or 0 when no entry is selected.
-mode_t Archive::current_entry_filetype() const {
+mode_t Archive::current_entry_filetype() const noexcept {
   if (!current_entry) {
     return 0;
   }
@@ -449,14 +449,9 @@ EntryMetadataMap Archive::current_entry_metadata(const std::unordered_set<std::s
     }
   }
 
-  ssize_t acl_length = 0;
-  char *acl_text = wants("acl_text") ? archive_entry_acl_to_text(current_entry, &acl_length, ARCHIVE_ENTRY_ACL_STYLE_SEPARATOR_COMMA) : nullptr;
+  char *acl_text = wants("acl_text") ? archive_entry_acl_to_text(current_entry, nullptr, ARCHIVE_ENTRY_ACL_STYLE_SEPARATOR_COMMA) : nullptr;
   if (acl_text) {
-    if (acl_length >= 0) {
-      metadata["acl_text"] = std::string(acl_text, static_cast<size_t>(acl_length));
-    } else {
-      metadata["acl_text"] = std::string(acl_text);
-    }
+    metadata["acl_text"] = std::string(acl_text);
     std::free(acl_text);
   }
 

@@ -688,6 +688,21 @@ if [ -n "$TEST_EXE" ]; then
     echo ""
 fi
 
+log_info "Running SimpleProfiler coverage regression..."
+TEST_EXE=$(find_executable "test_simple_profiler")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "simple_profiler"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: simple_profiler"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: simple_profiler"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
 log_info "Running archive metadata key coverage regression..."
 TEST_EXE=$(find_executable "test_archive_metadata_keys")
 if [ -n "$TEST_EXE" ]; then
@@ -778,6 +793,21 @@ if [ -n "$TEST_EXE" ]; then
     echo ""
 fi
 
+log_info "Running OOM operator new injection regression..."
+TEST_EXE=$(find_executable "test_oom_operator_new")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "oom_operator_new"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: oom_operator_new"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: oom_operator_new"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
 log_info "Running Traverser iterator semantics regression..."
 TEST_EXE=$(find_executable "test_traverser_iterator_semantics")
 if [ -n "$TEST_EXE" ]; then
@@ -788,6 +818,81 @@ if [ -n "$TEST_EXE" ]; then
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
         log_error "Test FAILED: traverser_iterator_semantics"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Traverser pending multi-volume fault regression..."
+TEST_EXE=$(find_executable "test_traverser_pending_multi_volume_fault")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "traverser_pending_multi_volume_fault"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: traverser_pending_multi_volume_fault"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: traverser_pending_multi_volume_fault"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Orchestrator multi-volume skip_to_eof coverage..."
+TEST_EXE=$(find_executable "test_orchestrator_multivolume_skip_to_eof")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "orchestrator_multivolume_skip_to_eof"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: orchestrator_multivolume_skip_to_eof"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: orchestrator_multivolume_skip_to_eof"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Traverser unsupported format regression..."
+TEST_EXE=$(find_executable "test_traverser_unsupported_format")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "traverser_unsupported_format"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: traverser_unsupported_format"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: traverser_unsupported_format"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running Traverser format samples regression..."
+TEST_EXE=$(find_executable "test_traverser_format_samples")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "traverser_format_samples"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: traverser_format_samples"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: traverser_format_samples"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
+log_info "Running ArchiveEntry metadata branches regression..."
+TEST_EXE=$(find_executable "test_archive_entry_metadata_branches")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "archive_entry_metadata_branches"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: archive_entry_metadata_branches"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: archive_entry_metadata_branches"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     echo ""

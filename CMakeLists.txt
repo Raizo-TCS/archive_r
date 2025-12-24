@@ -186,6 +186,9 @@ target_link_libraries(test_archive_type_error_paths archive_r_core ${LibArchive_
 add_executable(test_archive_current_entry_metadata test/test_archive_current_entry_metadata.cc)
 target_link_libraries(test_archive_current_entry_metadata archive_r_core ${LibArchive_LIBRARIES})
 
+add_executable(test_archive_entry_metadata_branches test/test_archive_entry_metadata_branches.cc)
+target_link_libraries(test_archive_entry_metadata_branches archive_r_core ${LibArchive_LIBRARIES})
+
 add_executable(test_archive_stack_cursor test/test_archive_stack_cursor.cc)
 target_link_libraries(test_archive_stack_cursor archive_r_core ${LibArchive_LIBRARIES})
 
@@ -194,6 +197,9 @@ target_link_libraries(test_find_and_traverse archive_r_core ${LibArchive_LIBRARI
 
 add_executable(test_system_file_stream_io test/test_system_file_stream_io.cc)
 target_link_libraries(test_system_file_stream_io archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_simple_profiler test/test_simple_profiler.cc)
+target_link_libraries(test_simple_profiler archive_r_core ${LibArchive_LIBRARIES})
 
 add_executable(test_traverser_invalid_args test/test_traverser_invalid_args.cc)
 target_link_libraries(test_traverser_invalid_args archive_r_core ${LibArchive_LIBRARIES})
@@ -204,6 +210,18 @@ target_link_libraries(test_entry_impl_copy_and_faults archive_r_core ${LibArchiv
 add_executable(test_traverser_iterator_semantics test/test_traverser_iterator_semantics.cc)
 target_link_libraries(test_traverser_iterator_semantics archive_r_core ${LibArchive_LIBRARIES})
 
+add_executable(test_traverser_pending_multi_volume_fault test/test_traverser_pending_multi_volume_fault.cc)
+target_link_libraries(test_traverser_pending_multi_volume_fault archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_orchestrator_multivolume_skip_to_eof test/test_orchestrator_multivolume_skip_to_eof.cc)
+target_link_libraries(test_orchestrator_multivolume_skip_to_eof archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_traverser_unsupported_format test/test_traverser_unsupported_format.cc)
+target_link_libraries(test_traverser_unsupported_format archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_traverser_format_samples test/test_traverser_format_samples.cc)
+target_link_libraries(test_traverser_format_samples archive_r_core ${LibArchive_LIBRARIES})
+
 add_executable(test_system_file_stream_metadata test/test_system_file_stream_metadata.cc)
 target_link_libraries(test_system_file_stream_metadata archive_r_core ${LibArchive_LIBRARIES})
 
@@ -212,6 +230,9 @@ target_link_libraries(test_entry_fault_paths archive_r_core ${LibArchive_LIBRARI
 
 add_executable(test_entry_name_and_copy test/test_entry_name_and_copy.cc)
 target_link_libraries(test_entry_name_and_copy archive_r_core ${LibArchive_LIBRARIES})
+
+add_executable(test_oom_operator_new test/test_oom_operator_new.cc)
+target_link_libraries(test_oom_operator_new archive_r_core ${LibArchive_LIBRARIES})
 
 add_executable(test_error_utilities_and_orchestrator_paths test/test_error_utilities_and_orchestrator_paths.cc)
 target_link_libraries(test_error_utilities_and_orchestrator_paths archive_r_core ${LibArchive_LIBRARIES})

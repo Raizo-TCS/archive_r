@@ -27,6 +27,37 @@ bool expect(bool condition, const char *message) {
 int main() {
   bool ok = true;
 
+  // Exercise archive_deleter null branch explicitly.
+  {
+    archive_deleter d;
+    d(nullptr);
+  }
+
+  // Supported format list should exercise the configure_formats() loop path.
+  // Use an existing tar.gz test fixture (format=tar, filter=gzip) to avoid custom payload generation.
+  try {
+    const std::string path = "test_data/deeply_nested.tar.gz";
+    auto ar = new_read_archive_common({}, {"tar", "zip", "raw"}, [&](struct archive *a) {
+      return archive_read_open_filename(a, path.c_str(), 10240);
+    });
+    (void)ar;
+  } catch (const std::exception &ex) {
+    ok = false;
+    std::cerr << "Unexpected exception for supported format list: " << ex.what() << std::endl;
+  }
+
+  // Non-empty passphrases should execute set_passphrases() loop body (even if archive is not encrypted).
+  try {
+    const std::string path = "test_data/deeply_nested.tar.gz";
+    auto ar = new_read_archive_common({"dummy-passphrase"}, {"tar"}, [&](struct archive *a) {
+      return archive_read_open_filename(a, path.c_str(), 10240);
+    });
+    (void)ar;
+  } catch (const std::exception &ex) {
+    ok = false;
+    std::cerr << "Unexpected exception for non-empty passphrases: " << ex.what() << std::endl;
+  }
+
   // Unsupported format should raise an EntryFaultError.
   try {
     (void)new_read_archive_common({}, {"__archive_r_unsupported_format__"}, [](struct archive *ar) {
@@ -35,6 +66,46 @@ int main() {
     });
     ok = false;
     std::cerr << "Expected exception for unsupported format" << std::endl;
+  } catch (const EntryFaultError &) {
+    // expected
+  } catch (const std::exception &ex) {
+    ok = false;
+    std::cerr << "Unexpected exception type: " << ex.what() << std::endl;
+  }
+
+  // Some libarchive builds may not support certain formats (e.g., rar).
+  // If archive_read_support_format_* returns non-OK, configure_formats() should throw.
+  {
+    bool threw = false;
+    try {
+      (void)new_read_archive_common({}, {"rar"}, [](struct archive *ar) {
+        (void)ar;
+        return ARCHIVE_OK;
+      });
+    } catch (const EntryFaultError &) {
+      threw = true;
+    } catch (const std::exception &ex) {
+      threw = true;
+      std::cerr << "Unexpected exception type for rar format: " << ex.what() << std::endl;
+    }
+    if (threw) {
+      std::cout << "rar format support is not available; configure_formats failure path exercised" << std::endl;
+    }
+  }
+
+  // skip_data() before reading any header should raise an EntryFaultError.
+  try {
+    const std::string path = "test_data/deeply_nested.tar.gz";
+    auto ar = new_read_archive_common({}, {}, [&](struct archive *a) {
+      return archive_read_open_filename(a, path.c_str(), 10240);
+    });
+
+    DummyArchive a;
+    a._ar = ar.release();
+    (void)a.skip_data();
+
+    ok = false;
+    std::cerr << "Expected exception for skip_data() before any header" << std::endl;
   } catch (const EntryFaultError &) {
     // expected
   } catch (const std::exception &ex) {

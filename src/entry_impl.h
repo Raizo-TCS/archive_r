@@ -19,7 +19,6 @@ public:
   // No libarchive dependency
   // Copy constructor and assignment (orchestrator is not copied)
   Impl(const Impl &other);
-  Impl &operator=(const Impl &other);
 
   Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent);
 

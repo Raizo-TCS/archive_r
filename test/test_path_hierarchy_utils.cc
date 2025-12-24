@@ -265,6 +265,22 @@ bool test_sort_hierarchies() {
   return true;
 }
 
+bool test_compare_entries_multivolume_size_mismatch() {
+  // Compare multi-volume entries where the common prefix is identical but the
+  // number of parts differs. This should take the lsize!=rsize branch.
+  PathEntry short_mv = PathEntry::multi_volume({"a"});
+  PathEntry long_mv = PathEntry::multi_volume({"a", "b"});
+
+  if (!expect(compare_entries(short_mv, long_mv) < 0, "compare_entries(short_mv,long_mv) should be < 0")) {
+    return false;
+  }
+  if (!expect(compare_entries(long_mv, short_mv) > 0, "compare_entries(long_mv,short_mv) should be > 0")) {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace
 
 int main() {
@@ -274,6 +290,7 @@ int main() {
   ok = ok && test_flatten_and_display();
   ok = ok && test_merge_multi_volume_sources();
   ok = ok && test_sort_hierarchies();
+  ok = ok && test_compare_entries_multivolume_size_mismatch();
 
   if (!ok) {
     return 1;

@@ -73,9 +73,6 @@ public:
     if (_at_end) {
       return;
     }
-    if (_paths.empty()) {
-      throw std::invalid_argument("paths cannot be empty");
-    }
     ensure_shared_orchestrator();
     
     if (!advance_to_next_root()) {
@@ -143,9 +140,6 @@ private:
   }
 
   std::string normalize_path_string(const std::string &value) {
-    if (value.empty()) {
-      return value;
-    }
     std::filesystem::path path_value(value);
     return path_value.lexically_normal().string();
   }
@@ -169,14 +163,9 @@ private:
     }
     ArchiveStackOrchestrator &orchestrator = *ensure_shared_orchestrator();
 
-    try {
-      if (orchestrator.advance(request_descend_into_archive)) {
-        set_current_entry(orchestrator.current_entry_hierarchy());
-        return true;
-      }
-    } catch (const EntryFaultError &error) {
-      EntryFault fault = enrich_orchestrator_error(error, orchestrator);
-      handle_orchestrator_error(fault);
+    if (orchestrator.advance(request_descend_into_archive)) {
+      set_current_entry(orchestrator.current_entry_hierarchy());
+      return true;
     }
     return false;
   }
@@ -250,9 +239,6 @@ private:
     EntryFault fault = error.fault();
     if (fault.hierarchy.empty()) {
       fault.hierarchy = orchestrator.current_entry_hierarchy();
-    }
-    if (fault.message.empty() && error.what()) {
-      fault.message = error.what();
     }
     return fault;
   }

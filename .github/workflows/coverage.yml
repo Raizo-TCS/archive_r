@@ -54,6 +54,11 @@ jobs:
             --xml-pretty \
             --output build/coverage.xml
 
+      - name: Print line coverage summary
+        run: |
+          set -euo pipefail
+          python3 -c "import xml.etree.ElementTree as ET; root=ET.parse('build/coverage.xml').getroot(); lr=float(root.attrib.get('line-rate','0')); lc=root.attrib.get('lines-covered'); lv=root.attrib.get('lines-valid'); msg=f'LINE_RATE: {lr*100.0:.2f}%'; msg += f' (LINES: {lc}/{lv})' if (lc is not None and lv is not None) else ''; print(msg)"
+
       - name: Upload coverage.xml artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:

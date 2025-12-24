@@ -29,11 +29,11 @@ public:
   bool advance(bool descend_request = true);
   const std::string &current_entryname();
 
-  size_t depth() const;
+  size_t depth() const noexcept;
   PathHierarchy current_entry_hierarchy();
   bool synchronize_to_hierarchy(const PathHierarchy &path_hierarchy);
 
-  StreamArchive *current_archive();
+  StreamArchive *current_archive() noexcept;
   ssize_t read_head(void *buff, size_t len);
 
   const std::unordered_set<std::string> &metadata_keys() const { return _archive_options.metadata_keys; }

@@ -26,9 +26,9 @@ ArchiveStackOrchestrator::ArchiveStackOrchestrator(const ArchiveOption &options)
 
 ArchiveStackOrchestrator::~ArchiveStackOrchestrator() = default;
 
-size_t ArchiveStackOrchestrator::depth() const { return _head.depth(); }
+size_t ArchiveStackOrchestrator::depth() const noexcept { return _head.depth(); }
 
-StreamArchive *ArchiveStackOrchestrator::current_archive() { return _head.current_archive(); }
+StreamArchive *ArchiveStackOrchestrator::current_archive() noexcept { return _head.current_archive(); }
 
 // Drives the traversal state machine:
 // 1. Optionally descend into the current entry when requested.

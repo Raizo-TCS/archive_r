@@ -54,8 +54,8 @@ struct Archive {
   ssize_t read_current(void *buff, size_t len);
 
   // Get current entry metadata
-  uint64_t current_entry_size() const;
-  mode_t current_entry_filetype() const;
+  uint64_t current_entry_size() const noexcept;
+  mode_t current_entry_filetype() const noexcept;
   EntryMetadataMap current_entry_metadata(const std::unordered_set<std::string> &allowed_keys) const;
 
   struct archive *_ar;
