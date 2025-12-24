@@ -992,7 +992,9 @@ int main() {
       a.current_entry = nullptr;
     }
 
-    // Test case: uname/gname fallback branches (uname_utf8/gname_utf8 are null but uname/gname exist).
+    // Test case: uname/gname branches.
+    // Some libarchive builds may return non-empty *_utf8 even for invalid bytes;
+    // the implementation prefers *_utf8 when available and otherwise falls back to non-utf8.
     {
       const std::unordered_set<std::string> user_group_only = {"uname", "gname"};
       EntryHolder eh(archive_entry_new());
@@ -1015,23 +1017,11 @@ int main() {
         return 1;
       }
 
-      bool ok = true;
-      if (!(uname_utf8 == nullptr || *uname_utf8 == '\0')) {
-        std::cerr << "expected uname_utf8 to be null/empty for invalid bytes, got: " << cstr_debug(uname_utf8) << std::endl;
-        ok = false;
-      }
-      if (!(gname_utf8 == nullptr || *gname_utf8 == '\0')) {
-        std::cerr << "expected gname_utf8 to be null/empty for invalid bytes, got: " << cstr_debug(gname_utf8) << std::endl;
-        ok = false;
-      }
+      const bool has_uname_utf8 = (uname_utf8 != nullptr && *uname_utf8 != '\0');
+      const bool has_gname_utf8 = (gname_utf8 != nullptr && *gname_utf8 != '\0');
 
-      if (!ok) {
-        std::cerr << "DEBUG: invalid-bytes user/group getters" << std::endl;
-        std::cerr << "  uname_utf8=" << cstr_debug(uname_utf8) << std::endl;
-        std::cerr << "  uname     =" << cstr_debug(uname) << std::endl;
-        std::cerr << "  gname_utf8=" << cstr_debug(gname_utf8) << std::endl;
-        std::cerr << "  gname     =" << cstr_debug(gname) << std::endl;
-      }
+      const char *expected_uname = has_uname_utf8 ? uname_utf8 : uname;
+      const char *expected_gname = has_gname_utf8 ? gname_utf8 : gname;
 
       DummyArchive a;
       a.current_entry = e;
@@ -1043,14 +1033,24 @@ int main() {
         return 1;
       }
 
-      if (!ok) {
-        const auto it_u = metadata.find("uname");
-        const auto it_g = metadata.find("gname");
-        const std::string *uname_value = (it_u == metadata.end()) ? nullptr : std::get_if<std::string>(&it_u->second);
-        const std::string *gname_value = (it_g == metadata.end()) ? nullptr : std::get_if<std::string>(&it_g->second);
-        std::cerr << "DEBUG: current_entry_metadata values" << std::endl;
-        std::cerr << "  uname=" << (uname_value ? cstr_debug(uname_value->c_str()) : std::string("<non-string-or-missing>")) << std::endl;
-        std::cerr << "  gname=" << (gname_value ? cstr_debug(gname_value->c_str()) : std::string("<non-string-or-missing>")) << std::endl;
+      const auto it_u = metadata.find("uname");
+      const auto it_g = metadata.find("gname");
+      const std::string *uname_value = (it_u == metadata.end()) ? nullptr : std::get_if<std::string>(&it_u->second);
+      const std::string *gname_value = (it_g == metadata.end()) ? nullptr : std::get_if<std::string>(&it_g->second);
+      if (!expect(uname_value != nullptr, "uname should be a string")) {
+        return 1;
+      }
+      if (!expect(gname_value != nullptr, "gname should be a string")) {
+        return 1;
+      }
+      if (!expect(*uname_value == expected_uname,
+                  std::string("uname mismatch; expected: ") + cstr_debug(expected_uname) + ", got: " +
+                      cstr_debug(uname_value->c_str()))) {
+        return 1;
+      }
+      if (!expect(*gname_value == expected_gname,
+                  std::string("gname mismatch; expected: ") + cstr_debug(expected_gname) + ", got: " +
+                      cstr_debug(gname_value->c_str()))) {
         return 1;
       }
 
