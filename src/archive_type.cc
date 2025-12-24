@@ -449,14 +449,9 @@ EntryMetadataMap Archive::current_entry_metadata(const std::unordered_set<std::s
     }
   }
 
-  ssize_t acl_length = 0;
-  char *acl_text = wants("acl_text") ? archive_entry_acl_to_text(current_entry, &acl_length, ARCHIVE_ENTRY_ACL_STYLE_SEPARATOR_COMMA) : nullptr;
+  char *acl_text = wants("acl_text") ? archive_entry_acl_to_text(current_entry, nullptr, ARCHIVE_ENTRY_ACL_STYLE_SEPARATOR_COMMA) : nullptr;
   if (acl_text) {
-    if (acl_length >= 0) {
-      metadata["acl_text"] = std::string(acl_text, static_cast<size_t>(acl_length));
-    } else {
-      metadata["acl_text"] = std::string(acl_text);
-    }
+    metadata["acl_text"] = std::string(acl_text);
     std::free(acl_text);
   }
 

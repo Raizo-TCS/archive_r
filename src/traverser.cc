@@ -32,8 +32,7 @@ archive_r::ArchiveOption to_archive_option(const TraverserOptions &options) {
   converted.passphrases = options.passphrases;
   converted.formats = options.formats;
   converted.metadata_keys.insert(options.metadata_keys.begin(), options.metadata_keys.end());
-  return converted;
-}
+  return converted; }
 
 } // namespace
 
@@ -73,15 +72,9 @@ public:
     if (_at_end) {
       return;
     }
-    if (_paths.empty()) {
-      throw std::invalid_argument("paths cannot be empty");
-    }
     ensure_shared_orchestrator();
     
-    if (!advance_to_next_root()) {
-      _at_end = true;
-    }
-  }
+      _at_end = !advance_to_next_root(); }
 
   Entry &get_entry() {
     if (!_current_entry) {
@@ -128,10 +121,7 @@ public:
     if (this == other) {
       return true;
     }
-    if (!other) {
-      return false;
-    }
-    return _at_end && other->_at_end;
+      return other && _at_end && other->_at_end;
   }
 
 private:
@@ -143,9 +133,6 @@ private:
   }
 
   std::string normalize_path_string(const std::string &value) {
-    if (value.empty()) {
-      return value;
-    }
     std::filesystem::path path_value(value);
     return path_value.lexically_normal().string();
   }
@@ -169,14 +156,9 @@ private:
     }
     ArchiveStackOrchestrator &orchestrator = *ensure_shared_orchestrator();
 
-    try {
-      if (orchestrator.advance(request_descend_into_archive)) {
-        set_current_entry(orchestrator.current_entry_hierarchy());
-        return true;
-      }
-    } catch (const EntryFaultError &error) {
-      EntryFault fault = enrich_orchestrator_error(error, orchestrator);
-      handle_orchestrator_error(fault);
+    if (orchestrator.advance(request_descend_into_archive)) {
+      set_current_entry(orchestrator.current_entry_hierarchy());
+      return true;
     }
     return false;
   }
@@ -251,11 +233,7 @@ private:
     if (fault.hierarchy.empty()) {
       fault.hierarchy = orchestrator.current_entry_hierarchy();
     }
-    if (fault.message.empty() && error.what()) {
-      fault.message = error.what();
-    }
-    return fault;
-  }
+      return fault; }
 
   std::vector<PathHierarchy> _paths;
   size_t _current_path_index = 0;

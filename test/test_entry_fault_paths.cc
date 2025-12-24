@@ -57,7 +57,11 @@ int main() {
     ok = expect(!faults.back().message.empty(), "Expected read() fault message to be non-empty") && ok;
   }
 
+  // Exercise dispatch path where callback object exists but is empty (short-circuit second operand false).
+  faults.clear();
   register_fault_callback(FaultCallback{});
+  dispatch_registered_fault(EntryFault{});
+  ok = expect(faults.empty(), "Expected no fault callback invocation after clearing callback") && ok;
 
   if (!ok) {
     return 1;

@@ -68,14 +68,6 @@ static bool lookup_groupname(gid_t gid, std::string &name_out) {
 SystemFileStream::SystemFileStream(PathHierarchy logical_path)
   : MultiVolumeStreamBase(std::move(logical_path), true)
   , _handle(nullptr) {
-  if (_logical_path.empty()) {
-    throw std::invalid_argument("Root file hierarchy cannot be empty");
-  }
-
-  const PathEntry &root_entry = _logical_path.front();
-  if (!root_entry.is_single() && !root_entry.is_multi_volume()) {
-    throw std::invalid_argument("Root file hierarchy must be a single file or multi-volume source");
-  }
 }
 
 SystemFileStream::~SystemFileStream() {

@@ -120,6 +120,35 @@ int main() {
     ok = expect(info.metadata.find("size") != info.metadata.end(), "Expected size metadata") && ok;
   }
 
+#if !defined(_WIN32)
+  // Exercise needs_stat short-circuit terms independently (system_file_stream.cc: needs_stat).
+  // We avoid asserting uname/gname presence because NSS configuration can vary.
+  {
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(regular_path.string()));
+
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"gid"});
+    ok = expect(info.filetype != 0, "Expected filetype to be set (gid-only)") && ok;
+    ok = expect(info.metadata.find("gid") != info.metadata.end(), "Expected gid metadata when requested") && ok;
+  }
+
+  {
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(regular_path.string()));
+
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"uname"});
+    ok = expect(info.filetype != 0, "Expected filetype to be set (uname-only)") && ok;
+  }
+
+  {
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(regular_path.string()));
+
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"gname"});
+    ok = expect(info.filetype != 0, "Expected filetype to be set (gname-only)") && ok;
+  }
+#endif
+
   // allowed_keys empty: metadata should be empty, but size/filetype should still be populated.
   {
     PathHierarchy h;
@@ -128,6 +157,27 @@ int main() {
     ok = expect(info.metadata.empty(), "Expected empty metadata when allowed_keys is empty") && ok;
     ok = expect(info.filetype != 0, "Expected filetype to be set even when allowed_keys is empty") && ok;
     ok = expect(info.size == 5, "Expected size to be set for regular file even when allowed_keys is empty") && ok;
+  }
+
+  // allowed_keys non-empty but does not contain any recognized keys:
+  // - exercises wants("...")==false paths
+  // - ensures needs_stat short-circuit terms can be evaluated as false
+  {
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(regular_path.string()));
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"__dummy__"});
+    ok = expect(info.metadata.empty(), "Expected empty metadata when allowed_keys has no recognized keys") && ok;
+    ok = expect(info.filetype != 0, "Expected filetype to be set even when allowed_keys has no recognized keys") && ok;
+    ok = expect(info.size == 5, "Expected size to be set for regular file even when allowed_keys has no recognized keys") && ok;
+  }
+
+  // Exercise wants("pathname")==false while still populating some metadata.
+  {
+    PathHierarchy h;
+    h.emplace_back(PathEntry::single(regular_path.string()));
+    FilesystemMetadataInfo info = collect_root_path_metadata(h, std::unordered_set<std::string>{"filetype"});
+    ok = expect(info.metadata.find("pathname") == info.metadata.end(), "Did not expect pathname when not requested") && ok;
+    ok = expect(info.metadata.find("filetype") != info.metadata.end(), "Expected filetype when requested") && ok;
   }
 
   {

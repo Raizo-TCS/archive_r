@@ -155,17 +155,7 @@ void EntryPayloadStream::close_single_part() {
 }
 
 ssize_t EntryPayloadStream::read_from_single_part(void *buffer, size_t size) {
-  if (size == 0) {
-    return 0;
-  }
   return _parent_archive->read_current(buffer, size);
-}
-
-int64_t EntryPayloadStream::seek_within_single_part(int64_t offset, int whence) { return -1; }
-
-int64_t EntryPayloadStream::size_of_single_part(const PathHierarchy &single_part) {
-  (void)single_part;
-  return -1;
 }
 
 // ============================================================================
@@ -207,17 +197,12 @@ bool ArchiveStackCursor::descend() {
 }
 
 bool ArchiveStackCursor::ascend() {
-  if (depth() <= 0) {
+  if (!_current_archive) {
     return false;
   }
 
-  if (_current_archive) {
-    _current_stream = _current_archive->get_stream();
-    _current_archive = _current_archive->parent_archive();
-  } else {
-    _current_stream = nullptr;
-  }
-
+  _current_stream = _current_archive->get_stream();
+  _current_archive = _current_archive->parent_archive();
   return true;
 }
 
@@ -294,7 +279,7 @@ StreamArchive *ArchiveStackCursor::current_archive() {
 }
 
 PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
-  if (depth() == 0 || (!_current_stream && !_current_archive)) {
+  if (!_current_stream && !_current_archive) {
     return {};
   }
 
@@ -306,7 +291,7 @@ PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
     return path;
   }
 
-  return _current_stream->source_hierarchy();
+  return _current_stream ? _current_stream->source_hierarchy() : PathHierarchy{};
 }
 
 std::shared_ptr<IDataStream> ArchiveStackCursor::create_stream(const PathHierarchy &hierarchy) {

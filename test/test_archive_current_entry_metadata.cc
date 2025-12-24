@@ -111,6 +111,13 @@ struct DummyArchive final : Archive {
   void open_archive() override {}
 };
 
+std::string make_invalid_utf8(const char *prefix) {
+  std::string s(prefix);
+  s.push_back(static_cast<char>(0xFF));
+  s += "suffix";
+  return s;
+}
+
 void seed_common_fields(struct archive_entry *e) {
   archive_entry_set_pathname(e, "/test/path");
   archive_entry_set_filetype(e, AE_IFREG);
@@ -144,6 +151,8 @@ void seed_common_fields(struct archive_entry *e) {
   archive_entry_xattr_add_entry(e, "user.key", xattr_value, sizeof(xattr_value));
   // Also add an empty xattr value to exercise the (value && size > 0) false branch.
   archive_entry_xattr_add_entry(e, "user.empty", "", 0);
+  // Also add a nullptr value to exercise the (value && ...) false branch explicitly.
+  archive_entry_xattr_add_entry(e, "user.null", nullptr, 0);
 
   // sparse
   archive_entry_sparse_add_entry(e, 100, 200);
@@ -508,6 +517,161 @@ int main() {
       a.current_entry = nullptr;
     }
 
+    // 4c) xattr/sparse/mac metadata present but excluded from allow-list: exercises the
+    //     (count>0 && wants==false) paths.
+    {
+      const std::unordered_set<std::string> exclude_blob_keys = {
+        "pathname",
+      };
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+      archive_entry_set_pathname(e, "excluded_blobs/path.txt");
+      seed_common_fields(e);
+
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(exclude_blob_keys);
+      if (!verify_metadata_consistency(e, exclude_blob_keys, metadata)) {
+        if (!expect(false, "expected keys missing (excluded blobs case)")) {
+          return 1;
+        }
+        return 1;
+      }
+
+      if (!expect(metadata.find("xattr") == metadata.end(), "xattr should be absent when not allowed")) {
+        return 1;
+      }
+      if (!expect(metadata.find("sparse") == metadata.end(), "sparse should be absent when not allowed")) {
+        return 1;
+      }
+      if (!expect(metadata.find("mac_metadata") == metadata.end(), "mac_metadata should be absent when not allowed")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // 4b) Optional metadata not set: exercises wants(key)==true but missing/unknown values.
+    {
+      const std::unordered_set<std::string> optional_keys = {
+        "pathname",
+        "atime",
+        "size",
+        "dev",
+        "mtime",
+        "birthtime",
+        "ctime",
+        "fflags",
+        "xattr",
+        "sparse",
+        "mac_metadata",
+        "is_data_encrypted",
+        "is_metadata_encrypted",
+        "is_encrypted",
+      };
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+
+      archive_entry_set_pathname(e, "unset_optional/path.txt");
+
+      // Ensure the underlying libarchive reports these fields as "not set" so the tested
+      // branches are exercised deterministically.
+      if (!expect(archive_entry_size_is_set(e) == 0, "precondition failed: size should be unset")) {
+        return 1;
+      }
+      if (!expect(archive_entry_dev_is_set(e) == 0, "precondition failed: dev should be unset")) {
+        return 1;
+      }
+
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(optional_keys);
+
+      if (!expect(metadata.find("pathname") != metadata.end(), "pathname should be present when set")) {
+        return 1;
+      }
+
+      if (!expect(metadata.find("atime") == metadata.end(), "atime should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("size") == metadata.end(), "size should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("dev") == metadata.end(), "dev should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("mtime") == metadata.end(), "mtime should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("birthtime") == metadata.end(), "birthtime should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("ctime") == metadata.end(), "ctime should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("fflags") == metadata.end(), "fflags should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("xattr") == metadata.end(), "xattr should be absent when no xattrs exist")) {
+        return 1;
+      }
+      if (!expect(metadata.find("sparse") == metadata.end(), "sparse should be absent when no sparse regions exist")) {
+        return 1;
+      }
+      if (!expect(metadata.find("mac_metadata") == metadata.end(), "mac_metadata should be absent when not set")) {
+        return 1;
+      }
+      if (!expect(metadata.find("is_data_encrypted") != metadata.end(), "is_data_encrypted should be present (false) when unset")) {
+        return 1;
+      }
+      if (!expect(metadata.find("is_metadata_encrypted") != metadata.end(), "is_metadata_encrypted should be present (false) when unset")) {
+        return 1;
+      }
+      if (!expect(metadata.find("is_encrypted") != metadata.end(), "is_encrypted should be present (false) when unset")) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // 4d) fflags set-only / clear-only: exercises (fflags_set != 0 || fflags_clear != 0) sub-branches.
+    {
+      const std::unordered_set<std::string> fflags_only = {
+        "pathname",
+        "fflags",
+      };
+
+      // set-only
+      {
+        EntryHolder h(archive_entry_new());
+        struct archive_entry *e = h.entry;
+        archive_entry_set_pathname(e, "fflags/set_only.txt");
+        archive_entry_set_fflags(e, 1UL, 0UL);
+
+        a.current_entry = e;
+        const auto metadata = a.current_entry_metadata(fflags_only);
+        if (!expect(metadata.find("fflags") != metadata.end(), "fflags should be present when set-only")) {
+          return 1;
+        }
+        a.current_entry = nullptr;
+      }
+
+      // clear-only
+      {
+        EntryHolder h(archive_entry_new());
+        struct archive_entry *e = h.entry;
+        archive_entry_set_pathname(e, "fflags/clear_only.txt");
+        archive_entry_set_fflags(e, 0UL, 1UL);
+
+        a.current_entry = e;
+        const auto metadata = a.current_entry_metadata(fflags_only);
+        if (!expect(metadata.find("fflags") != metadata.end(), "fflags should be present when clear-only")) {
+          return 1;
+        }
+        a.current_entry = nullptr;
+      }
+    }
+
     // 5) "Deny" most keys while values exist: exercises compound conditions where wants("...") is false.
     {
       const std::unordered_set<std::string> perm_only = {
@@ -605,6 +769,87 @@ int main() {
       a.current_entry = nullptr;
     }
 
+    // 7c) pathname_utf8 preferred when present: exercises the (pathname_utf8 && *pathname_utf8 && wants("pathname")) true path.
+    {
+      const std::unordered_set<std::string> pathname_only = {"pathname"};
+
+      EntryHolder h(archive_entry_new());
+      struct archive_entry *e = h.entry;
+
+      // Make sure both pathname and pathname_utf8 are populated with different values so we can
+      // verify that pathname_utf8 is preferred.
+      archive_entry_set_pathname(e, "plain/fallback_pathname.txt");
+      archive_entry_set_pathname_utf8(e, "utf8/preferred_path.txt");
+
+      const char *pathname_utf8 = archive_entry_pathname_utf8(e);
+      if (!expect(pathname_utf8 != nullptr && *pathname_utf8 != '\0', "precondition failed: pathname_utf8 should be non-empty")) {
+        return 1;
+      }
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(pathname_only);
+
+      if (!expect(metadata.find("pathname") != metadata.end(), "pathname should be included from pathname_utf8")) {
+        return 1;
+      }
+
+      const auto it = metadata.find("pathname");
+      if (it == metadata.end()) {
+        return 1;
+      }
+      const std::string *pathname = std::get_if<std::string>(&it->second);
+      if (!expect(pathname != nullptr, "pathname should be a string")) {
+        return 1;
+      }
+      if (!expect(*pathname == "utf8/preferred_path.txt", std::string("pathname should prefer pathname_utf8, got: ") + *pathname)) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // 7b) pathname_utf8 is null but pathname exists: exercises the fallback assignment branch.
+    {
+      const std::unordered_set<std::string> pathname_only = {"pathname"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+
+      const std::string bad_path = make_invalid_utf8("bad_path_");
+      archive_entry_set_pathname(e, bad_path.c_str());
+
+      // On libarchive, invalid byte sequences may or may not produce a UTF-8 view depending on
+      // platform/build. If a non-empty UTF-8 view exists, Archive::current_entry_metadata()
+      // should prefer it; otherwise it should fall back to pathname.
+      const char *pathname_utf8 = archive_entry_pathname_utf8(e);
+      const char *expected = nullptr;
+      if (pathname_utf8 && *pathname_utf8 != '\0') {
+        expected = pathname_utf8;
+      } else {
+        expected = bad_path.c_str();
+      }
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(pathname_only);
+      if (!expect(metadata.find("pathname") != metadata.end(), "pathname should be included via non-utf8 fallback")) {
+        return 1;
+      }
+
+      const auto it = metadata.find("pathname");
+      if (it == metadata.end()) {
+        return 1;
+      }
+      const std::string *pathname = std::get_if<std::string>(&it->second);
+      if (!expect(pathname != nullptr, "pathname should be a string")) {
+        return 1;
+      }
+      if (!expect(*pathname == expected, std::string("pathname mismatch; expected: ") + cstr_debug(expected) + ", got: " + cstr_debug(pathname->c_str()))) {
+        return 1;
+      }
+      a.current_entry = nullptr;
+    }
+
     // Test case: current_entry is null (should return empty metadata regardless of allowed_keys).
     {
       DummyArchive a;
@@ -693,6 +938,119 @@ int main() {
                    " | keys=" + list_keys(metadata) +
                    " | hardlink_utf8=" + cstr_debug(archive_entry_hardlink_utf8(e)) +
                    " | hardlink=" + cstr_debug(archive_entry_hardlink(e)))) {
+        return 1;
+      }
+
+      a.current_entry = nullptr;
+    }
+
+    // Test case: hardlink fallback branch (hardlink_utf8 is null but hardlink exists).
+    {
+      const std::unordered_set<std::string> hardlink_only = {"hardlink"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+
+      const std::string bad_hardlink = make_invalid_utf8("bad_hardlink_");
+      archive_entry_set_hardlink(e, bad_hardlink.c_str());
+
+      const char *hardlink_utf8 = archive_entry_hardlink_utf8(e);
+      const char *hardlink = archive_entry_hardlink(e);
+      if (!expect(hardlink != nullptr && *hardlink != '\0',
+                  std::string("expected hardlink to be set, got: ") + cstr_debug(hardlink))) {
+        return 1;
+      }
+
+      // On libarchive, invalid byte sequences may or may not produce a UTF-8 view depending on
+      // platform/build. If a non-empty UTF-8 view exists, Archive::current_entry_metadata()
+      // should prefer it; otherwise it should fall back to hardlink.
+      const char *expected = nullptr;
+      if (hardlink_utf8 && *hardlink_utf8 != '\0') {
+        expected = hardlink_utf8;
+      } else {
+        expected = hardlink;
+      }
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(hardlink_only);
+      if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included")) {
+        return 1;
+      }
+
+      const auto it = metadata.find("hardlink");
+      if (it == metadata.end()) {
+        return 1;
+      }
+      const std::string *hardlink_value = std::get_if<std::string>(&it->second);
+      if (!expect(hardlink_value != nullptr, "hardlink should be a string")) {
+        return 1;
+      }
+      if (!expect(*hardlink_value == expected,
+                  std::string("hardlink mismatch; expected: ") + cstr_debug(expected) + ", got: " + cstr_debug(hardlink_value->c_str()))) {
+        return 1;
+      }
+      a.current_entry = nullptr;
+    }
+
+    // Test case: uname/gname branches.
+    // Some libarchive builds may return non-empty *_utf8 even for invalid bytes;
+    // the implementation prefers *_utf8 when available and otherwise falls back to non-utf8.
+    {
+      const std::unordered_set<std::string> user_group_only = {"uname", "gname"};
+      EntryHolder eh(archive_entry_new());
+      struct archive_entry *e = eh.entry;
+
+      const std::string bad_uname = make_invalid_utf8("bad_uname_");
+      const std::string bad_gname = make_invalid_utf8("bad_gname_");
+      archive_entry_set_uname(e, bad_uname.c_str());
+      archive_entry_set_gname(e, bad_gname.c_str());
+
+      const char *uname_utf8 = archive_entry_uname_utf8(e);
+      const char *uname = archive_entry_uname(e);
+      const char *gname_utf8 = archive_entry_gname_utf8(e);
+      const char *gname = archive_entry_gname(e);
+
+      if (!expect(uname != nullptr && *uname != '\0', std::string("expected uname to be set, got: ") + cstr_debug(uname))) {
+        return 1;
+      }
+      if (!expect(gname != nullptr && *gname != '\0', std::string("expected gname to be set, got: ") + cstr_debug(gname))) {
+        return 1;
+      }
+
+      const bool has_uname_utf8 = (uname_utf8 != nullptr && *uname_utf8 != '\0');
+      const bool has_gname_utf8 = (gname_utf8 != nullptr && *gname_utf8 != '\0');
+
+      const char *expected_uname = has_uname_utf8 ? uname_utf8 : uname;
+      const char *expected_gname = has_gname_utf8 ? gname_utf8 : gname;
+
+      DummyArchive a;
+      a.current_entry = e;
+      const auto metadata = a.current_entry_metadata(user_group_only);
+      if (!expect(metadata.find("uname") != metadata.end(), "uname should be included via non-utf8 fallback")) {
+        return 1;
+      }
+      if (!expect(metadata.find("gname") != metadata.end(), "gname should be included via non-utf8 fallback")) {
+        return 1;
+      }
+
+      const auto it_u = metadata.find("uname");
+      const auto it_g = metadata.find("gname");
+      const std::string *uname_value = (it_u == metadata.end()) ? nullptr : std::get_if<std::string>(&it_u->second);
+      const std::string *gname_value = (it_g == metadata.end()) ? nullptr : std::get_if<std::string>(&it_g->second);
+      if (!expect(uname_value != nullptr, "uname should be a string")) {
+        return 1;
+      }
+      if (!expect(gname_value != nullptr, "gname should be a string")) {
+        return 1;
+      }
+      if (!expect(*uname_value == expected_uname,
+                  std::string("uname mismatch; expected: ") + cstr_debug(expected_uname) + ", got: " +
+                      cstr_debug(uname_value->c_str()))) {
+        return 1;
+      }
+      if (!expect(*gname_value == expected_gname,
+                  std::string("gname mismatch; expected: ") + cstr_debug(expected_gname) + ", got: " +
+                      cstr_debug(gname_value->c_str()))) {
         return 1;
       }
 

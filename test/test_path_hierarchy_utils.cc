@@ -62,6 +62,15 @@ bool test_volume_helpers() {
   if (!expect(pathhierarchy_volume_size({}) == 0, "volume_size(empty) should be 0")) {
     return false;
   }
+  if (!expect(pathhierarchy_is_multivolume({}) == false, "is_multivolume(empty) should be false")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_select_single_part({}, 0).empty(), "select_single_part(empty) should be empty")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name({}, 0).empty(), "volume_entry_name(empty,0) should be empty")) {
+    return false;
+  }
 
   PathHierarchy single_h = make_single_path("root.zip");
   if (!expect(pathhierarchy_volume_size(single_h) == 1, "volume_size(single) should be 1")) {
@@ -139,6 +148,15 @@ bool test_flatten_and_display() {
   if (!expect(entry_name_from_component(mv, out) && out == "a", "entry_name_from_component(mv) should be first part")) {
     return false;
   }
+
+  // Defensive path: allow callers to mutate multi-volume parts into empty.
+  PathEntry mv_empty = PathEntry::multi_volume({"only"});
+  mv_empty.multi_volume_parts_mut().values.clear();
+  out.clear();
+  if (!expect(!entry_name_from_component(mv_empty, out), "entry_name_from_component(empty mv parts) should be false")) {
+    return false;
+  }
+
   if (!expect(path_entry_display(mv) == "[a|b]", "path_entry_display(mv) mismatch")) {
     return false;
   }
@@ -265,15 +283,89 @@ bool test_sort_hierarchies() {
   return true;
 }
 
+bool test_compare_entries_multivolume_size_mismatch() {
+  // Compare multi-volume entries where the common prefix is identical but the
+  // number of parts differs. This should take the lsize!=rsize branch.
+  PathEntry short_mv = PathEntry::multi_volume({"a"});
+  PathEntry long_mv = PathEntry::multi_volume({"a", "b"});
+
+  bool ok = true;
+  ok &= expect(compare_entries(short_mv, long_mv) < 0, "compare_entries(short_mv,long_mv) should be < 0");
+  ok &= expect(compare_entries(long_mv, short_mv) > 0, "compare_entries(long_mv,short_mv) should be > 0");
+  return ok;
+}
+
+bool test_compare_entries_single_ordering_branches() {
+  PathEntry a = PathEntry::single("a");
+  PathEntry b = PathEntry::single("b");
+  PathEntry a2 = PathEntry::single("a");
+
+  bool ok = true;
+  ok &= expect(compare_entries(a, b) < 0, "compare_entries(a,b) should be < 0");
+  ok &= expect(compare_entries(b, a) > 0, "compare_entries(b,a) should be > 0");
+  ok &= expect(compare_entries(a, a2) == 0, "compare_entries(a,a) should be == 0");
+  return ok;
+}
+
+bool test_compare_hierarchies_size_mismatch_branches() {
+  PathHierarchy short_h;
+  short_h.push_back(PathEntry::single("same"));
+
+  PathHierarchy long_h;
+  long_h.push_back(PathEntry::single("same"));
+  long_h.push_back(PathEntry::single("extra"));
+
+  bool ok = true;
+  ok &= expect(compare_hierarchies(short_h, long_h) < 0, "compare_hierarchies(short,long) should be < 0");
+  ok &= expect(compare_hierarchies(long_h, short_h) > 0, "compare_hierarchies(long,short) should be > 0");
+
+  PathHierarchy different_first = make_single_path("a");
+  PathHierarchy different_second = make_single_path("b");
+  ok &= expect(compare_hierarchies(different_first, different_second) < 0, "compare_hierarchies(a,b) should be < 0");
+  ok &= expect(compare_hierarchies(different_second, different_first) > 0, "compare_hierarchies(b,a) should be > 0");
+  return ok;
+}
+
+bool test_pathhierarchy_prefix_until_bounds() {
+  bool ok = true;
+
+  // empty input
+  ok &= expect(pathhierarchy_prefix_until({}, 0).empty(), "prefix_until(empty,0) should be empty");
+
+  PathHierarchy h;
+  h.push_back(PathEntry::single("a"));
+  h.push_back(PathEntry::single("b"));
+
+  // inclusive_index out of range
+  ok &= expect(pathhierarchy_prefix_until(h, h.size()).empty(), "prefix_until(out of range) should be empty");
+
+  // inclusive_index in range
+  PathHierarchy p0 = pathhierarchy_prefix_until(h, 0);
+  ok &= expect(p0.size() == 1, "prefix_until(h,0) size mismatch");
+  ok &= expect(p0[0].is_single(), "prefix_until(h,0) entry type mismatch");
+  ok &= expect(p0[0].single_value() == "a", "prefix_until(h,0) value mismatch");
+
+  PathHierarchy p1 = pathhierarchy_prefix_until(h, 1);
+  ok &= expect(p1.size() == 2, "prefix_until(h,1) size mismatch");
+  ok &= expect(p1[1].is_single(), "prefix_until(h,1) entry type mismatch");
+  ok &= expect(p1[1].single_value() == "b", "prefix_until(h,1) value mismatch");
+
+  return ok;
+}
+
 } // namespace
 
 int main() {
   bool ok = true;
-  ok = ok && test_component_at();
-  ok = ok && test_volume_helpers();
-  ok = ok && test_flatten_and_display();
-  ok = ok && test_merge_multi_volume_sources();
-  ok = ok && test_sort_hierarchies();
+  ok &= test_component_at();
+  ok &= test_volume_helpers();
+  ok &= test_flatten_and_display();
+  ok &= test_merge_multi_volume_sources();
+  ok &= test_sort_hierarchies();
+  ok &= test_compare_entries_multivolume_size_mismatch();
+  ok &= test_compare_entries_single_ordering_branches();
+  ok &= test_compare_hierarchies_size_mismatch_branches();
+  ok &= test_pathhierarchy_prefix_until_bounds();
 
   if (!ok) {
     return 1;

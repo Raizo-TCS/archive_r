@@ -90,6 +90,33 @@ int main() {
     ok = expect(it0 != it2, "Expected moved-from iterator to compare unequal with a valid iterator") && ok;
   }
 
+  // Iterator should compare equal with itself.
+  {
+    TraverserOptions opts;
+    Traverser t(std::string("."), opts);
+    auto it = t.begin();
+    ok = expect(it == it, "Expected iterator to compare equal with itself") && ok;
+  }
+
+  // Incrementing end iterator should be a no-op.
+  {
+    TraverserOptions opts;
+    Traverser t(std::string("."), opts);
+    auto e = t.end();
+    ++e;
+    ok = expect(e == t.end(), "Expected ++end iterator to remain end") && ok;
+  }
+
+  // Move assignment should transfer the iterator state.
+  {
+    TraverserOptions opts;
+    Traverser t(std::string("."), opts);
+    auto src = t.begin();
+    auto dst = t.begin();
+    dst = std::move(src);
+    ok = expect(dst != t.end(), "Expected move-assigned iterator to be valid") && ok;
+  }
+
   // Directory traversal should disable recursion when descent is disabled.
   {
     TempDir temp;

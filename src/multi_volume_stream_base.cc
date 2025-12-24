@@ -122,6 +122,17 @@ int64_t MultiVolumeStreamBase::seek(int64_t offset, int whence) {
 
 int64_t MultiVolumeStreamBase::tell() const { return _impl->logical_offset; }
 
+int64_t MultiVolumeStreamBase::seek_within_single_part(int64_t offset, int whence) {
+  (void)offset;
+  (void)whence;
+  return -1;
+}
+
+int64_t MultiVolumeStreamBase::size_of_single_part(const PathHierarchy &single_part) {
+  (void)single_part;
+  return -1;
+}
+
 void MultiVolumeStreamBase::Impl::ensure_part_active(std::size_t part_index) {
   if (part_open && open_part_index == part_index) {
     return;

@@ -73,10 +73,6 @@ bool determine_multi_volume_segments(const std::vector<PathHierarchy> &sources, 
 }
 
 bool collect_multi_volume_parts(const std::vector<PathHierarchy> &sources, const CollapseSegments &segments, std::vector<std::string> &parts) {
-  if (sources.empty()) {
-    return false;
-  }
-
   const std::size_t suffix_size = segments.suffix.size();
   const std::size_t required_size = segments.multi_volume_depth + 1 + suffix_size;
 
@@ -111,14 +107,6 @@ bool collect_multi_volume_parts(const std::vector<PathHierarchy> &sources, const
   return true;
 }
 
-bool flatten_single_entry(const PathEntry &entry, std::string &output) {
-  if (entry.is_single()) {
-    output = entry.single_value();
-    return true;
-  }
-  return flatten_entry_to_string(entry, output);
-}
-
 } // namespace
 
 const std::string *path_entry_component_at(const PathEntry &entry, std::size_t index) {
@@ -129,14 +117,10 @@ const std::string *path_entry_component_at(const PathEntry &entry, std::size_t i
     return nullptr;
   }
 
-  if (entry.is_multi_volume()) {
-    const auto &parts = entry.multi_volume_parts().values;
-    if (index < parts.size()) {
-      return &parts[index];
-    }
-    return nullptr;
+  const auto &parts = entry.multi_volume_parts().values;
+  if (index < parts.size()) {
+    return &parts[index];
   }
-
   return nullptr;
 }
 
@@ -162,11 +146,7 @@ std::string pathhierarchy_volume_entry_name(const PathHierarchy &logical, std::s
       return {};
     }
 
-    std::string entry_name;
-    if (!flatten_single_entry(tail, entry_name)) {
-      return {};
-    }
-    return entry_name;
+    return tail.single_value();
   }
 
   const auto &parts = tail.multi_volume_parts().values;
@@ -241,20 +221,18 @@ std::string path_entry_display(const PathEntry &entry) {
   if (entry.is_single()) {
     return entry.single_value();
   }
-  if (entry.is_multi_volume()) {
-    std::string value = "[";
-    bool first = true;
-    for (const auto &part : entry.multi_volume_parts().values) {
-      if (!first) {
-        value.push_back('|');
-      }
-      value += part;
-      first = false;
+
+  std::string value = "[";
+  bool first = true;
+  for (const auto &part : entry.multi_volume_parts().values) {
+    if (!first) {
+      value.push_back('|');
     }
-    value.push_back(']');
-    return value;
+    value += part;
+    first = false;
   }
-  return {};
+  value.push_back(']');
+  return value;
 }
 
 std::string hierarchy_display(const PathHierarchy &hierarchy) {

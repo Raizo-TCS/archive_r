@@ -64,8 +64,6 @@ private:
   void open_single_part(const PathHierarchy &single_part) override;
   void close_single_part() override;
   ssize_t read_from_single_part(void *buffer, size_t size) override;
-  int64_t seek_within_single_part(int64_t offset, int whence) override;
-  int64_t size_of_single_part(const PathHierarchy &single_part) override;
 };
 
 // ============================================================================
