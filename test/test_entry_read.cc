@@ -261,10 +261,10 @@ int main() {
       }
 
       std::string actual(buffer.data(), buffer.data() + bytes_read);
-      
+
       // Normalize line endings (remove CR) for cross-platform comparison
       actual.erase(std::remove(actual.begin(), actual.end(), '\r'), actual.end());
-      
+
       if (actual != expected_content) {
         std::cerr << "  ✗ Filesystem entry content mismatch" << std::endl;
         std::cerr << "    Expected: " << expected_content.size() << " bytes" << std::endl;

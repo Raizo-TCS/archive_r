@@ -2,8 +2,8 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/entry.h"
-#include "archive_r/traverser.h"
 #include "archive_r/path_hierarchy_utils.h"
+#include "archive_r/traverser.h"
 #include <iostream>
 #include <string>
 #include <variant>

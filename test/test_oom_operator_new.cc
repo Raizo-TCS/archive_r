@@ -26,8 +26,8 @@ struct OomControl {
 
 thread_local OomControl g_oom;
 
-std::atomic<std::size_t> g_alloc_calls_total{0};
-std::atomic<std::size_t> g_alloc_throw_total{0};
+std::atomic<std::size_t> g_alloc_calls_total{ 0 };
+std::atomic<std::size_t> g_alloc_throw_total{ 0 };
 
 struct ScopedAllocStats {
   std::size_t start_calls;
@@ -57,7 +57,8 @@ struct ScopedOom {
   std::size_t prev_remaining;
 
   explicit ScopedOom(std::size_t fail_on_nth_allocation)
-      : prev_enabled(g_oom.enabled), prev_remaining(g_oom.remaining_allocations_until_throw) {
+      : prev_enabled(g_oom.enabled)
+      , prev_remaining(g_oom.remaining_allocations_until_throw) {
     g_oom.enabled = true;
     g_oom.remaining_allocations_until_throw = fail_on_nth_allocation;
   }
@@ -263,12 +264,8 @@ void operator delete(void *p, std::size_t) noexcept { std::free(p); }
 void operator delete[](void *p, std::size_t) noexcept { std::free(p); }
 
 // aligned new/delete (C++17)
-void *operator new(std::size_t size, std::align_val_t alignment) {
-  return alloc_aligned(static_cast<std::size_t>(alignment), size);
-}
-void *operator new[](std::size_t size, std::align_val_t alignment) {
-  return alloc_aligned(static_cast<std::size_t>(alignment), size);
-}
+void *operator new(std::size_t size, std::align_val_t alignment) { return alloc_aligned(static_cast<std::size_t>(alignment), size); }
+void *operator new[](std::size_t size, std::align_val_t alignment) { return alloc_aligned(static_cast<std::size_t>(alignment), size); }
 
 void operator delete(void *p, std::align_val_t) noexcept {
 #if defined(_WIN32)

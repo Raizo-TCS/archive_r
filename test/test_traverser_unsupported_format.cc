@@ -36,9 +36,9 @@ int main() {
 
   try {
     TraverserOptions opts;
-    opts.formats = {"__archive_r_unsupported_format__"};
+    opts.formats = { "__archive_r_unsupported_format__" };
 
-    Traverser t({make_single_path("test_data/deeply_nested.tar.gz")}, opts);
+    Traverser t({ make_single_path("test_data/deeply_nested.tar.gz") }, opts);
 
     size_t entries = 0;
     for (Entry &e : t) {
@@ -55,9 +55,7 @@ int main() {
   ok = expect(!faults.empty(), "Expected a fault to be dispatched for unsupported format") && ok;
   if (!faults.empty()) {
     const std::string &msg = faults.front().message;
-    ok = expect(msg.find("Unsupported archive format specified") != std::string::npos,
-                "Fault message did not contain expected substring for unsupported format") &&
-         ok;
+    ok = expect(msg.find("Unsupported archive format specified") != std::string::npos, "Fault message did not contain expected substring for unsupported format") && ok;
   }
 
   return ok ? 0 : 1;

@@ -32,9 +32,7 @@ public:
 
   ~ImmediateFaultStream() override { active_instances().fetch_sub(1); }
 
-  ssize_t read(void * /*buffer*/, size_t /*size*/) override {
-    return -1;
-  }
+  ssize_t read(void * /*buffer*/, size_t /*size*/) override { return -1; }
 
   void rewind() override {}
 
@@ -54,9 +52,7 @@ private:
   }
 };
 
-void report_result(const std::string &name, bool success) {
-  std::cout << "[" << (success ? "PASS" : "FAIL") << "] " << name << std::endl;
-}
+void report_result(const std::string &name, bool success) { std::cout << "[" << (success ? "PASS" : "FAIL") << "] " << name << std::endl; }
 
 bool test_broken_nested_archive() {
   const std::string archive_path = "test_data/broken_nested.tar";
@@ -90,10 +86,7 @@ bool test_broken_nested_archive() {
 
 bool test_missing_multi_volume_part() {
   PathHierarchy multi_root;
-  append_multi_volume(multi_root,
-                      { "test_data/multi_volume_missing_part.tar.part001",
-                        "test_data/multi_volume_missing_part.tar.part002",
-                        "test_data/multi_volume_missing_part.tar.part003" });
+  append_multi_volume(multi_root, { "test_data/multi_volume_missing_part.tar.part001", "test_data/multi_volume_missing_part.tar.part002", "test_data/multi_volume_missing_part.tar.part003" });
 
   try {
     Traverser traverser({ multi_root });
@@ -108,8 +101,7 @@ bool test_missing_multi_volume_part() {
       return false;
     }
 
-    std::cout << "missing_multi_volume: enumerated " << enumerated_entries
-              << " entries despite missing parts (expected behavior)" << std::endl;
+    std::cout << "missing_multi_volume: enumerated " << enumerated_entries << " entries despite missing parts (expected behavior)" << std::endl;
     return true;
   } catch (const std::exception &ex) {
     std::cerr << "missing_multi_volume: traversal raised unexpected exception: " << ex.what() << std::endl;
@@ -172,9 +164,7 @@ bool test_archive_entry_stream_missing_part_fault() {
   auto archive = std::make_shared<StreamArchive>(root_stream);
 
   PathHierarchy logical = root;
-  append_multi_volume(logical,
-                      { "root.txt",
-                        "root.txt_missing_part" });
+  append_multi_volume(logical, { "root.txt", "root.txt_missing_part" });
 
   EntryPayloadStream entry_stream(archive, logical);
   std::vector<char> buffer(4096);
@@ -199,9 +189,7 @@ bool test_archive_entry_stream_missing_part_fault() {
 
 bool test_nested_fault_callback_propagation() {
   std::vector<EntryFault> captured_faults;
-  register_fault_callback([&](const EntryFault &fault) {
-    captured_faults.push_back(fault);
-  });
+  register_fault_callback([&](const EntryFault &fault) { captured_faults.push_back(fault); });
   struct CallbackReset {
     ~CallbackReset() { register_fault_callback({}); }
   } reset_callback; // Ensure global callback does not leak into other tests

@@ -17,9 +17,9 @@ using namespace archive_r;
 namespace {
 
 struct TraversalStats {
-  size_t entries { 0 };
-  size_t files { 0 };
-  size_t max_depth { 0 };
+  size_t entries{ 0 };
+  size_t files{ 0 };
+  size_t max_depth{ 0 };
 };
 
 TraversalStats collect_stats(const std::string &archive_path) {
@@ -38,7 +38,7 @@ TraversalStats collect_stats(const std::string &archive_path) {
 }
 
 bool verify_parallel_traversers(const std::string &archive_path, size_t thread_count, const TraversalStats &expected) {
-  std::atomic<bool> failure { false };
+  std::atomic<bool> failure{ false };
   std::vector<TraversalStats> per_thread(thread_count);
   std::vector<std::string> errors(thread_count);
   std::vector<std::thread> threads;
@@ -83,11 +83,8 @@ bool verify_parallel_traversers(const std::string &archive_path, size_t thread_c
     return false;
   }
 
-  std::cout << "Parallel traversers completed successfully."
-            << " entries=" << expected.entries
-            << " files=" << expected.files
-            << " max_depth=" << expected.max_depth
-            << " threads=" << thread_count << std::endl;
+  std::cout << "Parallel traversers completed successfully." << " entries=" << expected.entries << " files=" << expected.files << " max_depth=" << expected.max_depth << " threads=" << thread_count
+            << std::endl;
   return true;
 }
 
@@ -118,9 +115,7 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  std::cout << "Baseline: entries=" << baseline.entries
-            << " files=" << baseline.files
-            << " max_depth=" << baseline.max_depth << std::endl;
+  std::cout << "Baseline: entries=" << baseline.entries << " files=" << baseline.files << " max_depth=" << baseline.max_depth << std::endl;
 
   for (int iteration = 1; iteration <= iterations; ++iteration) {
     std::cout << "Iteration " << iteration << "/" << iterations << std::endl;

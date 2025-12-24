@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 archive_r Team
 
-#include "archive_r/traverser.h"
 #include "archive_r/path_hierarchy_utils.h"
+#include "archive_r/traverser.h"
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
           {
               1,
               {
-          { "", 0, false, 0 },
+                  { "", 0, false, 0 },
                   { "archive1.tar.gz", 0, true, 146 },
                   { "archive1.tar.gz/dir_file_a.txt", 1, true, 22 },
                   { "archive1.tar.gz/dir_file_b.txt", 1, true, 22 },

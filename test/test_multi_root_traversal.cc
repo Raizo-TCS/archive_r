@@ -2,13 +2,13 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/entry.h"
-#include "archive_r/traverser.h"
 #include "archive_r/path_hierarchy_utils.h"
+#include "archive_r/traverser.h"
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <filesystem>
 
 using namespace archive_r;
 namespace fs = std::filesystem;
@@ -48,15 +48,15 @@ int main(int argc, char *argv[]) {
         // Normalize both paths to generic format (forward slashes) for comparison
         std::string root_generic = fs::path(root).generic_string();
         std::string first_generic = fs::path(first_component).generic_string();
-        
+
         if (first_generic == root_generic) {
           matched_root = &root;
           break;
         }
-        
+
         // Check prefix with separator
         std::string root_with_sep = root_generic + "/";
-        
+
         if (first_generic.rfind(root_with_sep, 0) == 0) {
           matched_root = &root;
           break;
@@ -81,8 +81,8 @@ int main(int argc, char *argv[]) {
       return 1;
     }
 
-  const size_t expected_archive_entries = 11;
-  const size_t expected_directory_entries = 10;
+    const size_t expected_archive_entries = 11;
+    const size_t expected_directory_entries = 10;
     const size_t expected_total = expected_archive_entries + expected_directory_entries;
 
     if (total_entries != expected_total) {

@@ -29,40 +29,40 @@ bool expect(bool condition, const char *message) {
 
 std::unordered_set<std::string> all_metadata_keys() {
   return {
-      "pathname",
-      "sourcepath",
-      "symlink",
-      "hardlink",
-      "uname",
-      "gname",
-      "uid",
-      "gid",
-      "perm",
-      "mode",
-      "filetype",
-      "size",
-      "dev",
-      "rdev",
-      "ino",
-      "ino64",
-      "nlink",
-      "strmode",
-      "atime",
-      "birthtime",
-      "ctime",
-      "mtime",
-      "fflags",
-      "fflags_text",
-      "is_data_encrypted",
-      "is_metadata_encrypted",
-      "is_encrypted",
-      "symlink_type",
-      "acl_text",
-      "acl_types",
-      "xattr",
-      "sparse",
-      "mac_metadata",
-      "digests",
+    "pathname",
+    "sourcepath",
+    "symlink",
+    "hardlink",
+    "uname",
+    "gname",
+    "uid",
+    "gid",
+    "perm",
+    "mode",
+    "filetype",
+    "size",
+    "dev",
+    "rdev",
+    "ino",
+    "ino64",
+    "nlink",
+    "strmode",
+    "atime",
+    "birthtime",
+    "ctime",
+    "mtime",
+    "fflags",
+    "fflags_text",
+    "is_data_encrypted",
+    "is_metadata_encrypted",
+    "is_encrypted",
+    "symlink_type",
+    "acl_text",
+    "acl_types",
+    "xattr",
+    "sparse",
+    "mac_metadata",
+    "digests",
   };
 }
 
@@ -100,9 +100,7 @@ EntryMetadataMap get_metadata(struct archive_entry *e, const std::unordered_set<
 void set_acl_simple(struct archive_entry *e) {
   // Basic user::rwx ACL entry to ensure acl_to_text() can return something.
   // (Permissions are not important for this test; we just need at least one ACL entry.)
-  (void)archive_entry_acl_add_entry(e, ARCHIVE_ENTRY_ACL_TYPE_ACCESS, ARCHIVE_ENTRY_ACL_USER_OBJ,
-                                   ARCHIVE_ENTRY_ACL_EXECUTE | ARCHIVE_ENTRY_ACL_READ | ARCHIVE_ENTRY_ACL_WRITE,
-                                   -1, nullptr);
+  (void)archive_entry_acl_add_entry(e, ARCHIVE_ENTRY_ACL_TYPE_ACCESS, ARCHIVE_ENTRY_ACL_USER_OBJ, ARCHIVE_ENTRY_ACL_EXECUTE | ARCHIVE_ENTRY_ACL_READ | ARCHIVE_ENTRY_ACL_WRITE, -1, nullptr);
 }
 
 } // namespace
@@ -131,7 +129,7 @@ int main() {
     ok = expect(meta_all.find("pathname") != meta_all.end(), "Expected pathname in metadata (utf8)") && ok;
 
     // 1b) wants false branch for most keys (but function must run)
-    const std::unordered_set<std::string> minimal_keys = {"pathname"};
+    const std::unordered_set<std::string> minimal_keys = { "pathname" };
     auto meta_min = get_metadata(e, minimal_keys);
     ok = expect(meta_min.find("pathname") != meta_min.end(), "Expected pathname in metadata (minimal)") && ok;
     ok = expect(meta_min.find("uid") == meta_min.end(), "Expected uid omitted when not requested") && ok;
@@ -164,7 +162,7 @@ int main() {
     archive_entry_set_pathname_utf8(e, "no_optional_strings");
     // Do not set sourcepath/symlink/hardlink/uname/gname.
 
-    const std::unordered_set<std::string> keys = {"pathname", "sourcepath", "symlink", "hardlink", "uname", "gname"};
+    const std::unordered_set<std::string> keys = { "pathname", "sourcepath", "symlink", "hardlink", "uname", "gname" };
     auto meta = get_metadata(e, keys);
     ok = expect(meta.find("pathname") != meta.end(), "Expected pathname present") && ok;
     ok = expect(meta.find("sourcepath") == meta.end(), "Expected sourcepath absent when unset") && ok;
@@ -186,7 +184,7 @@ int main() {
     archive_entry_set_gid(e, 0);
     // Do not set size/dev/ino/times/fflags.
 
-    const std::unordered_set<std::string> keys = {"pathname", "uid", "gid", "size", "dev", "ino", "ino64", "atime", "birthtime", "ctime", "mtime", "fflags", "fflags_text"};
+    const std::unordered_set<std::string> keys = { "pathname", "uid", "gid", "size", "dev", "ino", "ino64", "atime", "birthtime", "ctime", "mtime", "fflags", "fflags_text" };
     auto meta = get_metadata(e, keys);
     ok = expect(meta.find("pathname") != meta.end(), "Expected pathname present") && ok;
     ok = expect(meta.find("uid") == meta.end(), "Expected uid omitted when not present") && ok;
@@ -202,7 +200,7 @@ int main() {
 
   // Case 5: encryption flags (value <0 / ==0 / !=0)
   {
-    const std::unordered_set<std::string> keys = {"pathname", "is_data_encrypted", "is_metadata_encrypted", "is_encrypted"};
+    const std::unordered_set<std::string> keys = { "pathname", "is_data_encrypted", "is_metadata_encrypted", "is_encrypted" };
 
     // 5a) default (expected to be <0 on some builds): should not store
     {
@@ -246,11 +244,11 @@ int main() {
     archive_entry_xattr_add_entry(e, "user.test", "abc", 3);
     archive_entry_sparse_add_entry(e, 0, 10);
 
-    const std::unordered_set<std::string> keys_all = {"pathname", "acl_text", "acl_types", "xattr", "sparse"};
+    const std::unordered_set<std::string> keys_all = { "pathname", "acl_text", "acl_types", "xattr", "sparse" };
     auto meta_all = get_metadata(e, keys_all);
     ok = expect(meta_all.find("acl_text") != meta_all.end(), "Expected acl_text present when acl exists") && ok;
 
-    const std::unordered_set<std::string> keys_none = {"pathname"};
+    const std::unordered_set<std::string> keys_none = { "pathname" };
     auto meta_none = get_metadata(e, keys_none);
     ok = expect(meta_none.find("acl_text") == meta_none.end(), "Expected acl_text omitted when not requested") && ok;
 
@@ -261,7 +259,7 @@ int main() {
   {
     struct archive_entry *e = archive_entry_new();
     archive_entry_set_pathname_utf8(e, "no_xattr_sparse");
-    const std::unordered_set<std::string> keys = {"pathname", "xattr", "sparse"};
+    const std::unordered_set<std::string> keys = { "pathname", "xattr", "sparse" };
     auto meta = get_metadata(e, keys);
     ok = expect(meta.find("xattr") == meta.end(), "Expected xattr omitted when none exist") && ok;
     ok = expect(meta.find("sparse") == meta.end(), "Expected sparse omitted when none exist") && ok;

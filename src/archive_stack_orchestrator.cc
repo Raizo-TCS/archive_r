@@ -2,8 +2,8 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_stack_orchestrator.h"
-#include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/entry_fault.h"
+#include "archive_r/path_hierarchy_utils.h"
 #include "system_file_stream.h"
 
 #include <algorithm>
@@ -19,8 +19,7 @@
 namespace archive_r {
 
 ArchiveStackOrchestrator::ArchiveStackOrchestrator(const ArchiveOption &options)
-    : _archive_options(options)
-{
+    : _archive_options(options) {
   _head.configure(_archive_options);
 }
 
@@ -140,7 +139,7 @@ bool ArchiveStackOrchestrator::descend_pending_multi_volumes() {
   if (!_multi_volume_manager.pop_multi_volume_group(current_hierarchy, multi_volume_target)) {
     return false;
   }
-  
+
   _head.synchronize_to_hierarchy(multi_volume_target);
   _head.descend();
   return true;

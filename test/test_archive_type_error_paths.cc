@@ -37,9 +37,7 @@ int main() {
   // Use an existing tar.gz test fixture (format=tar, filter=gzip) to avoid custom payload generation.
   try {
     const std::string path = "test_data/deeply_nested.tar.gz";
-    auto ar = new_read_archive_common({}, {"tar", "zip", "raw"}, [&](struct archive *a) {
-      return archive_read_open_filename(a, path.c_str(), 10240);
-    });
+    auto ar = new_read_archive_common({}, { "tar", "zip", "raw" }, [&](struct archive *a) { return archive_read_open_filename(a, path.c_str(), 10240); });
     (void)ar;
   } catch (const std::exception &ex) {
     ok = false;
@@ -49,9 +47,7 @@ int main() {
   // Non-empty passphrases should execute set_passphrases() loop body (even if archive is not encrypted).
   try {
     const std::string path = "test_data/deeply_nested.tar.gz";
-    auto ar = new_read_archive_common({"dummy-passphrase"}, {"tar"}, [&](struct archive *a) {
-      return archive_read_open_filename(a, path.c_str(), 10240);
-    });
+    auto ar = new_read_archive_common({ "dummy-passphrase" }, { "tar" }, [&](struct archive *a) { return archive_read_open_filename(a, path.c_str(), 10240); });
     (void)ar;
   } catch (const std::exception &ex) {
     ok = false;
@@ -60,7 +56,7 @@ int main() {
 
   // Unsupported format should raise an EntryFaultError.
   try {
-    (void)new_read_archive_common({}, {"__archive_r_unsupported_format__"}, [](struct archive *ar) {
+    (void)new_read_archive_common({}, { "__archive_r_unsupported_format__" }, [](struct archive *ar) {
       (void)ar;
       return ARCHIVE_OK;
     });
@@ -78,7 +74,7 @@ int main() {
   {
     bool threw = false;
     try {
-      (void)new_read_archive_common({}, {"rar"}, [](struct archive *ar) {
+      (void)new_read_archive_common({}, { "rar" }, [](struct archive *ar) {
         (void)ar;
         return ARCHIVE_OK;
       });
@@ -96,9 +92,7 @@ int main() {
   // skip_data() before reading any header should raise an EntryFaultError.
   try {
     const std::string path = "test_data/deeply_nested.tar.gz";
-    auto ar = new_read_archive_common({}, {}, [&](struct archive *a) {
-      return archive_read_open_filename(a, path.c_str(), 10240);
-    });
+    auto ar = new_read_archive_common({}, {}, [&](struct archive *a) { return archive_read_open_filename(a, path.c_str(), 10240); });
 
     DummyArchive a;
     a._ar = ar.release();

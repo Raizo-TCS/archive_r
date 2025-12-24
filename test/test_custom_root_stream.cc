@@ -82,9 +82,7 @@ private:
   }
 };
 
-void report_result(const std::string &name, bool success) {
-  std::cout << "[" << (success ? "PASS" : "FAIL") << "] " << name << std::endl;
-}
+void report_result(const std::string &name, bool success) { std::cout << "[" << (success ? "PASS" : "FAIL") << "] " << name << std::endl; }
 
 bool test_custom_factory_registration() {
   RootStreamFactoryGuard guard;
@@ -146,9 +144,7 @@ bool test_thread_safe_factory_registration() {
 
   auto worker = [&failure]() {
     for (int i = 0; i < 200; ++i) {
-      RootStreamFactory factory = [](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
-        return std::make_shared<SystemFileStream>(hierarchy);
-      };
+      RootStreamFactory factory = [](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> { return std::make_shared<SystemFileStream>(hierarchy); };
       set_root_stream_factory(factory);
       RootStreamFactory snapshot = get_root_stream_factory();
       if (!snapshot) {

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 archive_r Team
 
-#include "archive_r/entry_fault.h"
 #include "archive_r/entry.h"
+#include "archive_r/entry_fault.h"
 #include "archive_r/path_hierarchy.h"
 #include "archive_r/traverser.h"
 #include "archive_stack_orchestrator.h"
@@ -159,8 +159,7 @@ int main() {
       if (!expect(faults.count >= 1, "expected at least one fault on empty-hierarchy read")) {
         return 1;
       }
-      if (!expect(faults.last_message.find("Failed to initialize ArchiveStackOrchestrator") != std::string::npos,
-                  "expected read() to emit initialization fault")) {
+      if (!expect(faults.last_message.find("Failed to initialize ArchiveStackOrchestrator") != std::string::npos, "expected read() to emit initialization fault")) {
         return 1;
       }
     }

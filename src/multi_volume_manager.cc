@@ -10,9 +10,7 @@
 
 namespace archive_r {
 
-MultiVolumeManager::MultiVolumeGroup &MultiVolumeManager::get_or_create_multi_volume_group(const PathHierarchy &parent_hierarchy,
-                                                                                           const std::string &base_name,
-                                                                                           PathEntry::Parts::Ordering ordering) {
+MultiVolumeManager::MultiVolumeGroup &MultiVolumeManager::get_or_create_multi_volume_group(const PathHierarchy &parent_hierarchy, const std::string &base_name, PathEntry::Parts::Ordering ordering) {
   GroupList &groups = _multi_volume_groups[parent_hierarchy];
   auto it = std::find_if(groups.begin(), groups.end(), [&](const MultiVolumeGroup &group) { return group.base_name == base_name; });
 
@@ -47,17 +45,14 @@ bool MultiVolumeManager::pop_group_for_parent(const PathHierarchy &parent_hierar
   return true;
 }
 
-void MultiVolumeManager::mark_entry_as_multi_volume(const PathHierarchy &entry_path, const std::string &base_name,
-                                                    PathEntry::Parts::Ordering ordering) {
+void MultiVolumeManager::mark_entry_as_multi_volume(const PathHierarchy &entry_path, const std::string &base_name, PathEntry::Parts::Ordering ordering) {
   if (entry_path.empty() || pathhierarchy_is_multivolume(entry_path)) {
     return;
   }
 
   MultiVolumeGroup &target = get_or_create_multi_volume_group(parent_hierarchy(entry_path), base_name, ordering);
   auto &parts = target.parts;
-  const bool exists = std::any_of(parts.begin(), parts.end(), [&](const PathHierarchy &existing) {
-    return hierarchies_equal(existing, entry_path);
-  });
+  const bool exists = std::any_of(parts.begin(), parts.end(), [&](const PathHierarchy &existing) { return hierarchies_equal(existing, entry_path); });
   if (!exists) {
     parts.push_back(entry_path);
   }

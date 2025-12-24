@@ -11,16 +11,16 @@
 #include <cstdio>
 #include <filesystem>
 #include <stdexcept>
+#include <string_view>
 #include <sys/stat.h>
 #include <system_error>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 #if !defined(_WIN32)
-#  include <grp.h>
-#  include <pwd.h>
-#  include <unistd.h>
+#include <grp.h>
+#include <pwd.h>
+#include <unistd.h>
 #endif
 
 namespace archive_r {
@@ -66,13 +66,10 @@ static bool lookup_groupname(gid_t gid, std::string &name_out) {
 } // namespace
 
 SystemFileStream::SystemFileStream(PathHierarchy logical_path)
-  : MultiVolumeStreamBase(std::move(logical_path), true)
-  , _handle(nullptr) {
-}
+    : MultiVolumeStreamBase(std::move(logical_path), true)
+    , _handle(nullptr) {}
 
-SystemFileStream::~SystemFileStream() {
-  deactivate_active_part();
-}
+SystemFileStream::~SystemFileStream() { deactivate_active_part(); }
 
 void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
   const PathEntry &entry = single_part.back();
@@ -92,7 +89,7 @@ void SystemFileStream::open_single_part(const PathHierarchy &single_part) {
   // Enable larger buffering on Windows to improve performance
   // Use 64KB buffer to match StreamArchive's buffer size
   if (_handle) {
-      std::setvbuf(_handle, nullptr, _IOFBF, 65536);
+    std::setvbuf(_handle, nullptr, _IOFBF, 65536);
   }
 #endif
 }
@@ -219,9 +216,7 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
   info.filetype = filetype;
   EntryMetadataMap metadata;
   if (!allowed_keys.empty()) {
-    const auto wants = [&allowed_keys](std::string_view key) {
-      return allowed_keys.find(std::string(key)) != allowed_keys.end();
-    };
+    const auto wants = [&allowed_keys](std::string_view key) { return allowed_keys.find(std::string(key)) != allowed_keys.end(); };
 
     // Path hierarchy / directory entry derived metadata
     if (wants("pathname")) {
@@ -246,10 +241,10 @@ FilesystemMetadataInfo collect_root_path_metadata(const PathHierarchy &hierarchy
     }
 
     const bool needs_stat = (wants("size") && size == 0)
-  #if !defined(_WIN32)
-      || wants("uid") || wants("gid") || wants("uname") || wants("gname")
-  #endif
-      ;
+#if !defined(_WIN32)
+                            || wants("uid") || wants("gid") || wants("uname") || wants("gname")
+#endif
+        ;
 
     struct stat stat_buffer;
     bool have_stat = false;
