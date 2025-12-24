@@ -959,15 +959,34 @@ int main() {
                   std::string("expected hardlink to be set, got: ") + cstr_debug(hardlink))) {
         return 1;
       }
-      if (!expect(hardlink_utf8 == nullptr || *hardlink_utf8 == '\0',
-                  std::string("expected hardlink_utf8 to be null/empty for invalid bytes, got: ") + cstr_debug(hardlink_utf8))) {
-        return 1;
+
+      // On libarchive, invalid byte sequences may or may not produce a UTF-8 view depending on
+      // platform/build. If a non-empty UTF-8 view exists, Archive::current_entry_metadata()
+      // should prefer it; otherwise it should fall back to hardlink.
+      const char *expected = nullptr;
+      if (hardlink_utf8 && *hardlink_utf8 != '\0') {
+        expected = hardlink_utf8;
+      } else {
+        expected = hardlink;
       }
 
       DummyArchive a;
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(hardlink_only);
-      if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included via non-utf8 fallback")) {
+      if (!expect(metadata.find("hardlink") != metadata.end(), "hardlink should be included")) {
+        return 1;
+      }
+
+      const auto it = metadata.find("hardlink");
+      if (it == metadata.end()) {
+        return 1;
+      }
+      const std::string *hardlink_value = std::get_if<std::string>(&it->second);
+      if (!expect(hardlink_value != nullptr, "hardlink should be a string")) {
+        return 1;
+      }
+      if (!expect(*hardlink_value == expected,
+                  std::string("hardlink mismatch; expected: ") + cstr_debug(expected) + ", got: " + cstr_debug(hardlink_value->c_str()))) {
         return 1;
       }
       a.current_entry = nullptr;
