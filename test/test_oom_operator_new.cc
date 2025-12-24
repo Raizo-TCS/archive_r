@@ -26,6 +26,21 @@ struct OomControl {
 
 thread_local OomControl g_oom;
 
+std::atomic<std::size_t> g_alloc_calls_total{0};
+std::atomic<std::size_t> g_alloc_throw_total{0};
+
+struct ScopedAllocStats {
+  std::size_t start_calls;
+  std::size_t start_throws;
+
+  ScopedAllocStats()
+      : start_calls(g_alloc_calls_total.load())
+      , start_throws(g_alloc_throw_total.load()) {}
+
+  std::size_t calls_delta() const { return g_alloc_calls_total.load() - start_calls; }
+  std::size_t throws_delta() const { return g_alloc_throw_total.load() - start_throws; }
+};
+
 bool should_throw_now() {
   if (!g_oom.enabled) {
     return false;
@@ -57,6 +72,7 @@ struct ScopedOom {
 };
 
 void *alloc_unaligned(std::size_t size) {
+  g_alloc_calls_total.fetch_add(1);
   // operator new(0) must return non-null.
   if (size == 0) {
     size = 1;
@@ -64,6 +80,7 @@ void *alloc_unaligned(std::size_t size) {
 
   while (true) {
     if (should_throw_now()) {
+      g_alloc_throw_total.fetch_add(1);
       throw std::bad_alloc();
     }
 
@@ -80,12 +97,14 @@ void *alloc_unaligned(std::size_t size) {
 }
 
 void *alloc_aligned(std::size_t alignment, std::size_t size) {
+  g_alloc_calls_total.fetch_add(1);
   if (size == 0) {
     size = 1;
   }
 
   while (true) {
     if (should_throw_now()) {
+      g_alloc_throw_total.fetch_add(1);
       throw std::bad_alloc();
     }
 
@@ -127,12 +146,17 @@ bool exercise_entry_make_shared_throw_edge() {
   char buf[16] = {};
   try {
     ScopedOom guard(/*fail_on_nth_allocation=*/1);
+    ScopedAllocStats stats;
     (void)e->read(buf, sizeof(buf));
+
+    // If we reached here, allocation did not fail as expected.
+    std::cerr << "DEBUG: OOM injection did not throw during Entry::read()" << std::endl;
+    std::cerr << "  fail_on_nth_allocation=1" << std::endl;
+    std::cerr << "  alloc_calls_delta=" << stats.calls_delta() << " alloc_throws_delta=" << stats.throws_delta() << std::endl;
+    std::cerr << "  alloc_calls_total=" << g_alloc_calls_total.load() << " alloc_throws_total=" << g_alloc_throw_total.load() << std::endl;
   } catch (const std::bad_alloc &) {
     return true; // expected
   }
-
-  // If we reached here, allocation did not fail as expected.
   return false;
 }
 
@@ -166,8 +190,14 @@ bool exercise_entry_copy_ctor_throw_edge() {
   //  3) then throw during later member copies (e.g., metadata map copy).
   try {
     ScopedOom guard(/*fail_on_nth_allocation=*/3);
+    ScopedAllocStats stats;
     Entry copied(*e);
     (void)copied.depth();
+
+    std::cerr << "DEBUG: OOM injection did not throw during Entry copy construction" << std::endl;
+    std::cerr << "  fail_on_nth_allocation=3" << std::endl;
+    std::cerr << "  alloc_calls_delta=" << stats.calls_delta() << " alloc_throws_delta=" << stats.throws_delta() << std::endl;
+    std::cerr << "  alloc_calls_total=" << g_alloc_calls_total.load() << " alloc_throws_total=" << g_alloc_throw_total.load() << std::endl;
   } catch (const std::bad_alloc &) {
     return true; // expected
   }

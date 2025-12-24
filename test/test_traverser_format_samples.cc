@@ -32,6 +32,8 @@ bool run_format_case(const std::string &path, const std::string &format_name) {
   register_fault_callback([&](const EntryFault &fault) { faults.push_back(fault); });
   CallbackReset reset;
 
+  size_t entries = 0;
+
   try {
     TraverserOptions opts;
     // Use a broader allow-list to match existing coverage tests (and to avoid
@@ -41,15 +43,14 @@ bool run_format_case(const std::string &path, const std::string &format_name) {
 
     Traverser t({make_single_path(path)}, opts);
 
-    size_t entries = 0;
-        for (Entry &e : t) {
-          // Prevent probing non-archive payload entries as nested archives.
-          // (We only want to validate that the root archive opens with the given formats.)
-          if (e.depth() >= 1) {
-            e.set_descent(false);
-          }
-          (void)e;
-          ++entries;
+    for (Entry &e : t) {
+      // Prevent probing non-archive payload entries as nested archives.
+      // (We only want to validate that the root archive opens with the given formats.)
+      if (e.depth() >= 1) {
+        e.set_descent(false);
+      }
+      (void)e;
+      ++entries;
     }
 
     ok = expect(faults.empty(), "Expected no faults for format='" + format_name + "' path='" + path + "'") && ok;
@@ -59,6 +60,19 @@ bool run_format_case(const std::string &path, const std::string &format_name) {
   } catch (const std::exception &ex) {
     std::cerr << "Unexpected exception for format='" << format_name << "': " << ex.what() << std::endl;
     ok = false;
+  }
+
+  if (!ok) {
+    std::cerr << "DEBUG: traverser_format_samples failure details" << std::endl;
+    std::cerr << "  format='" << format_name << "'" << std::endl;
+    std::cerr << "  path='" << path << "'" << std::endl;
+    std::cerr << "  entries=" << entries << std::endl;
+    std::cerr << "  faults.count=" << faults.size() << std::endl;
+    for (size_t i = 0; i < faults.size(); ++i) {
+      const auto &f = faults[i];
+      std::cerr << "  fault[" << i << "]: message='" << f.message << "' errno=" << f.errno_value
+                << " path='" << hierarchy_display(f.hierarchy) << "'" << std::endl;
+    }
   }
 
   return ok;
