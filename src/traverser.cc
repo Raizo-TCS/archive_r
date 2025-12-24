@@ -32,8 +32,7 @@ archive_r::ArchiveOption to_archive_option(const TraverserOptions &options) {
   converted.passphrases = options.passphrases;
   converted.formats = options.formats;
   converted.metadata_keys.insert(options.metadata_keys.begin(), options.metadata_keys.end());
-  return converted;
-}
+  return converted; }
 
 } // namespace
 
@@ -75,10 +74,7 @@ public:
     }
     ensure_shared_orchestrator();
     
-    if (!advance_to_next_root()) {
-      _at_end = true;
-    }
-  }
+      _at_end = !advance_to_next_root(); }
 
   Entry &get_entry() {
     if (!_current_entry) {
@@ -125,10 +121,7 @@ public:
     if (this == other) {
       return true;
     }
-    if (!other) {
-      return false;
-    }
-    return _at_end && other->_at_end;
+      return other && _at_end && other->_at_end;
   }
 
 private:
@@ -240,8 +233,7 @@ private:
     if (fault.hierarchy.empty()) {
       fault.hierarchy = orchestrator.current_entry_hierarchy();
     }
-    return fault;
-  }
+      return fault; }
 
   std::vector<PathHierarchy> _paths;
   size_t _current_path_index = 0;
