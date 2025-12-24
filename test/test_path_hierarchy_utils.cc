@@ -281,6 +281,80 @@ bool test_compare_entries_multivolume_size_mismatch() {
   return true;
 }
 
+bool test_compare_entries_single_ordering_branches() {
+  PathEntry a = PathEntry::single("a");
+  PathEntry b = PathEntry::single("b");
+  PathEntry a2 = PathEntry::single("a");
+
+  if (!expect(compare_entries(a, b) < 0, "compare_entries(a,b) should be < 0")) {
+    return false;
+  }
+  if (!expect(compare_entries(b, a) > 0, "compare_entries(b,a) should be > 0")) {
+    return false;
+  }
+  if (!expect(compare_entries(a, a2) == 0, "compare_entries(a,a) should be == 0")) {
+    return false;
+  }
+
+  return true;
+}
+
+bool test_compare_hierarchies_size_mismatch_branches() {
+  PathHierarchy short_h;
+  short_h.push_back(PathEntry::single("same"));
+
+  PathHierarchy long_h;
+  long_h.push_back(PathEntry::single("same"));
+  long_h.push_back(PathEntry::single("extra"));
+
+  if (!expect(compare_hierarchies(short_h, long_h) < 0, "compare_hierarchies(short,long) should be < 0")) {
+    return false;
+  }
+  if (!expect(compare_hierarchies(long_h, short_h) > 0, "compare_hierarchies(long,short) should be > 0")) {
+    return false;
+  }
+
+  PathHierarchy different_first = make_single_path("a");
+  PathHierarchy different_second = make_single_path("b");
+  if (!expect(compare_hierarchies(different_first, different_second) < 0, "compare_hierarchies(a,b) should be < 0")) {
+    return false;
+  }
+  if (!expect(compare_hierarchies(different_second, different_first) > 0, "compare_hierarchies(b,a) should be > 0")) {
+    return false;
+  }
+
+  return true;
+}
+
+bool test_pathhierarchy_prefix_until_bounds() {
+  // empty input
+  if (!expect(pathhierarchy_prefix_until({}, 0).empty(), "prefix_until(empty,0) should be empty")) {
+    return false;
+  }
+
+  PathHierarchy h;
+  h.push_back(PathEntry::single("a"));
+  h.push_back(PathEntry::single("b"));
+
+  // inclusive_index out of range
+  if (!expect(pathhierarchy_prefix_until(h, h.size()).empty(), "prefix_until(out of range) should be empty")) {
+    return false;
+  }
+
+  // inclusive_index in range
+  PathHierarchy p0 = pathhierarchy_prefix_until(h, 0);
+  if (!expect(p0.size() == 1 && p0[0].is_single() && p0[0].single_value() == "a", "prefix_until(h,0) mismatch")) {
+    return false;
+  }
+
+  PathHierarchy p1 = pathhierarchy_prefix_until(h, 1);
+  if (!expect(p1.size() == 2 && p1[1].is_single() && p1[1].single_value() == "b", "prefix_until(h,1) mismatch")) {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace
 
 int main() {
@@ -291,6 +365,9 @@ int main() {
   ok = ok && test_merge_multi_volume_sources();
   ok = ok && test_sort_hierarchies();
   ok = ok && test_compare_entries_multivolume_size_mismatch();
+  ok = ok && test_compare_entries_single_ordering_branches();
+  ok = ok && test_compare_hierarchies_size_mismatch_branches();
+  ok = ok && test_pathhierarchy_prefix_until_bounds();
 
   if (!ok) {
     return 1;
