@@ -135,7 +135,7 @@ void ArchiveStackOrchestrator::mark_entry_as_multi_volume(const PathHierarchy &e
 }
 
 bool ArchiveStackOrchestrator::descend_pending_multi_volumes() {
-  const PathHierarchy current_hierarchy = _head.current_entry_hierarchy();
+  const PathHierarchy current_hierarchy = (depth() == 0) ? PathHierarchy{} : _head.current_entry_hierarchy();
   PathHierarchy multi_volume_target;
   if (!_multi_volume_manager.pop_multi_volume_group(current_hierarchy, multi_volume_target)) {
     return false;

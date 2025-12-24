@@ -30,8 +30,8 @@ protected:
   virtual void open_single_part(const PathHierarchy &single_part) = 0;
   virtual void close_single_part() = 0;
   virtual ssize_t read_from_single_part(void *buffer, size_t size) = 0;
-  virtual int64_t seek_within_single_part(int64_t offset, int whence) = 0;
-  virtual int64_t size_of_single_part(const PathHierarchy &single_part) = 0;
+  virtual int64_t seek_within_single_part(int64_t offset, int whence);
+  virtual int64_t size_of_single_part(const PathHierarchy &single_part);
 
   PathHierarchy _logical_path;
   void deactivate_active_part();

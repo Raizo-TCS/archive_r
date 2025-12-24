@@ -673,6 +673,21 @@ if [ -n "$TEST_EXE" ]; then
     echo ""
 fi
 
+log_info "Running MultiVolumeStreamBase default seek/size regression..."
+TEST_EXE=$(find_executable "test_multi_volume_stream_base_defaults")
+if [ -n "$TEST_EXE" ]; then
+    log_test_header "multi_volume_stream_base_defaults"
+    TESTS_RUN=$((TESTS_RUN + 1))
+    if run_with_timeout_cmd "$TIMEOUT" "$TEST_EXE"; then
+        log_success "Test PASSED: multi_volume_stream_base_defaults"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        log_error "Test FAILED: multi_volume_stream_base_defaults"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+    echo ""
+fi
+
 log_info "Running SystemFileStream IO regression..."
 TEST_EXE=$(find_executable "test_system_file_stream_io")
 if [ -n "$TEST_EXE" ]; then

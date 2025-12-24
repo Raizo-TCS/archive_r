@@ -177,6 +177,9 @@ target_link_libraries(test_path_hierarchy_utils archive_r_core ${LibArchive_LIBR
 add_executable(test_data_stream_defaults test/test_data_stream_defaults.cc)
 target_link_libraries(test_data_stream_defaults archive_r_core ${LibArchive_LIBRARIES})
 
+add_executable(test_multi_volume_stream_base_defaults test/test_multi_volume_stream_base_defaults.cc)
+target_link_libraries(test_multi_volume_stream_base_defaults archive_r_core ${LibArchive_LIBRARIES})
+
 add_executable(test_archive_metadata_keys test/test_archive_metadata_keys.cc)
 target_link_libraries(test_archive_metadata_keys archive_r_core ${LibArchive_LIBRARIES})
 

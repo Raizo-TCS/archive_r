@@ -776,6 +776,57 @@ int main() {
       }
     }
 
+    // Test 13: reset / ascend failure / read(0) / depth0 current_entry_hierarchy
+    {
+      RootStreamFactoryGuard guard;
+
+      const PathHierarchy root = make_single_path("/virtual/root_for_reset.tar");
+      const auto payload = build_tar_payload({ {"a.txt", "A"} });
+
+      set_root_stream_factory([payload, root](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
+        if (hierarchies_equal(hierarchy, root)) {
+          return std::make_shared<MemoryStream>(hierarchy, payload);
+        }
+        return nullptr;
+      });
+
+      ArchiveStackCursor cursor;
+
+      if (!expect(!cursor.ascend(), "cursor.ascend() should return false at depth 0")) {
+        return 1;
+      }
+
+      cursor.synchronize_to_hierarchy(root);
+      if (!expect(cursor.has_stream(), "cursor should have stream after synchronize_to_hierarchy")) {
+        return 1;
+      }
+
+      if (!expect(hierarchies_equal(cursor.current_entry_hierarchy(), root), "depth0 current_entry_hierarchy should be root")) {
+        return 1;
+      }
+
+      char buf[1] = {};
+      const ssize_t r0 = cursor.read(buf, 0);
+      if (!expect(r0 == 0, "cursor.read(len=0) should return 0")) {
+        return 1;
+      }
+
+      ArchiveOption opt;
+      opt.formats.push_back("zip");
+      cursor.configure(opt);
+      cursor.reset();
+
+      if (!expect(cursor.depth() == 0, "cursor depth should be 0 after reset")) {
+        return 1;
+      }
+      if (!expect(!cursor.has_stream(), "cursor should not have stream after reset")) {
+        return 1;
+      }
+      if (!expect(cursor.options_snapshot.formats.empty(), "options_snapshot should be reset to defaults")) {
+        return 1;
+      }
+    }
+
     std::cout << "Archive stack cursor tests exercised" << std::endl;
     return 0;
   } catch (const std::exception &ex) {
