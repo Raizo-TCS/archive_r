@@ -2,6 +2,7 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/entry.h"
+#include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/path_hierarchy.h"
 
 #include "archive_stack_orchestrator.h"
@@ -85,6 +86,15 @@ int main() {
     ok = expect(std::string(direct.what()) == "fault message", "Expected EntryFaultError::what() to use fault message") && ok;
   }
 
+  {
+    EntryFault fault;
+    fault.message = "fault message";
+
+    // Exercise the ternary branch: internal_message.empty() == true
+    EntryFaultError internal_empty(std::move(fault), "");
+    ok = expect(std::string(internal_empty.what()) == "fault message", "Expected empty internal message to fall back to fault message") && ok;
+  }
+
   // ---- multi_volume_manager.cc early-return guard ----
   {
     MultiVolumeManager manager;
@@ -93,6 +103,34 @@ int main() {
 
     PathHierarchy out;
     ok = expect(!manager.pop_multi_volume_group(PathHierarchy{}, out), "Expected no group after marking empty entry_path") && ok;
+  }
+
+  {
+    // Exercise early-return: pathhierarchy_is_multivolume(entry_path) == true
+    MultiVolumeManager manager;
+    PathHierarchy multi_volume_entry;
+    multi_volume_entry.emplace_back(PathEntry::multi_volume({ "a.part001" }));
+    manager.mark_entry_as_multi_volume(multi_volume_entry, "base", PathEntry::Parts::Ordering::Given);
+
+    PathHierarchy out;
+    ok = expect(!manager.pop_multi_volume_group(PathHierarchy{}, out), "Expected no group after marking a multi-volume entry_path") && ok;
+  }
+
+  {
+    // Exercise exists=true path by marking the same entry twice.
+    MultiVolumeManager manager;
+    const std::string part = "test_data/test_input.tar.gz.part00";
+    const std::string base = "test_input.tar.gz";
+    PathHierarchy entry_path = make_single_path(part);
+
+    manager.mark_entry_as_multi_volume(entry_path, base, PathEntry::Parts::Ordering::Given);
+    manager.mark_entry_as_multi_volume(entry_path, base, PathEntry::Parts::Ordering::Given);
+
+    PathHierarchy out;
+    ok = expect(manager.pop_multi_volume_group(PathHierarchy{}, out), "Expected group after marking entry_path") && ok;
+    ok = expect(pathhierarchy_is_multivolume(out), "Expected popped group to be marked as multi-volume") && ok;
+    ok = expect(pathhierarchy_volume_size(out) == 1, "Expected duplicate mark to not create duplicate parts") && ok;
+    ok = expect(pathhierarchy_volume_entry_name(out, 0) == part, "Expected stored part to match the marked entry") && ok;
   }
 
   // ---- path_hierarchy.cc compare_entries multi-volume ordering ----
