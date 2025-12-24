@@ -24,14 +24,12 @@ public:
   using GroupList = std::vector<MultiVolumeGroup>;
   using ParentGroupMap = std::map<PathHierarchy, GroupList, PathHierarchyLess>;
 
-  void mark_entry_as_multi_volume(const PathHierarchy &entry_path, const std::string &base_name,
-                                  PathEntry::Parts::Ordering ordering = PathEntry::Parts::Ordering::Natural);
+  void mark_entry_as_multi_volume(const PathHierarchy &entry_path, const std::string &base_name, PathEntry::Parts::Ordering ordering = PathEntry::Parts::Ordering::Natural);
 
   bool pop_multi_volume_group(const PathHierarchy &current_hierarchy, PathHierarchy &multi_volume_hierarchy);
 
 private:
-  MultiVolumeGroup &get_or_create_multi_volume_group(const PathHierarchy &parent_hierarchy, const std::string &base_name,
-                                                     PathEntry::Parts::Ordering ordering);
+  MultiVolumeGroup &get_or_create_multi_volume_group(const PathHierarchy &parent_hierarchy, const std::string &base_name, PathEntry::Parts::Ordering ordering);
 
   bool pop_group_for_parent(const PathHierarchy &parent_hierarchy, MultiVolumeGroup &out_group);
 

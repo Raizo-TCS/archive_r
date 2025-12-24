@@ -3,9 +3,9 @@
 
 #include "archive_r/traverser.h"
 #include "archive_r/entry.h"
+#include "archive_r/entry_fault.h"
 #include "archive_r/path_hierarchy.h"
 #include "archive_r/path_hierarchy_utils.h"
-#include "archive_r/entry_fault.h"
 #include "archive_stack_orchestrator.h"
 #include "archive_type.h"
 #include "entry_fault_error.h"
@@ -32,7 +32,8 @@ archive_r::ArchiveOption to_archive_option(const TraverserOptions &options) {
   converted.passphrases = options.passphrases;
   converted.formats = options.formats;
   converted.metadata_keys.insert(options.metadata_keys.begin(), options.metadata_keys.end());
-  return converted; }
+  return converted;
+}
 
 } // namespace
 
@@ -47,14 +48,13 @@ Traverser::Traverser(std::vector<PathHierarchy> paths, TraverserOptions options)
       throw std::invalid_argument("path hierarchy cannot be empty");
     }
   }
-
 }
 
 Traverser::Traverser(PathHierarchy path, TraverserOptions options)
-    : Traverser(std::vector<PathHierarchy>{std::move(path)}, std::move(options)) {}
+    : Traverser(std::vector<PathHierarchy>{ std::move(path) }, std::move(options)) {}
 
 Traverser::Traverser(const std::string &path, TraverserOptions options)
-    : Traverser(std::vector<PathHierarchy>{make_single_path(path)}, std::move(options)) {}
+    : Traverser(std::vector<PathHierarchy>{ make_single_path(path) }, std::move(options)) {}
 
 Traverser::~Traverser() = default;
 
@@ -64,7 +64,7 @@ Traverser::~Traverser() = default;
 
 class Traverser::Iterator::Impl {
 public:
-    Impl(std::vector<PathHierarchy> paths, bool at_end, const TraverserOptions &traverser_options)
+  Impl(std::vector<PathHierarchy> paths, bool at_end, const TraverserOptions &traverser_options)
       : _paths(std::move(paths))
       , _at_end(at_end)
       , _archive_options(to_archive_option(traverser_options))
@@ -73,8 +73,9 @@ public:
       return;
     }
     ensure_shared_orchestrator();
-    
-      _at_end = !advance_to_next_root(); }
+
+    _at_end = !advance_to_next_root();
+  }
 
   Entry &get_entry() {
     if (!_current_entry) {
@@ -93,7 +94,7 @@ public:
     if (_current_entry->depth() == 0 && request_descend_into_archive && !_current_entry->is_directory()) {
       request_descend_into_archive = false;
       attempt_descend_into_root(_current_entry->path_hierarchy());
-    } 
+    }
     _current_entry.reset();
 
     if (fetch_from_archive(request_descend_into_archive)) {
@@ -107,13 +108,13 @@ public:
     if (advance_to_next_root()) {
       return;
     }
-    
+
     descend_pending_multi_volumes();
-    
+
     if (fetch_from_archive(false)) {
       return;
     }
-    
+
     _at_end = true;
   }
 
@@ -121,7 +122,7 @@ public:
     if (this == other) {
       return true;
     }
-      return other && _at_end && other->_at_end;
+    return other && _at_end && other->_at_end;
   }
 
 private:
@@ -206,13 +207,9 @@ private:
     }
   }
 
-  void set_current_entry(PathHierarchy hierarchy) {
-    _current_entry = Entry::create(std::move(hierarchy), ensure_shared_orchestrator(), _default_descent);
-  }
+  void set_current_entry(PathHierarchy hierarchy) { _current_entry = Entry::create(std::move(hierarchy), ensure_shared_orchestrator(), _default_descent); }
 
-  void handle_orchestrator_error(const EntryFault &fault) {
-    dispatch_registered_fault(fault);
-  }
+  void handle_orchestrator_error(const EntryFault &fault) { dispatch_registered_fault(fault); }
 
   void reset_source_state() {
     reset_directory_traversal();
@@ -233,7 +230,8 @@ private:
     if (fault.hierarchy.empty()) {
       fault.hierarchy = orchestrator.current_entry_hierarchy();
     }
-      return fault; }
+    return fault;
+  }
 
   std::vector<PathHierarchy> _paths;
   size_t _current_path_index = 0;
@@ -251,7 +249,7 @@ private:
 // ============================================================================
 
 Traverser::Iterator::Iterator(std::unique_ptr<Impl> impl)
-  : _impl(std::move(impl)) {}
+    : _impl(std::move(impl)) {}
 
 Traverser::Iterator::~Iterator() = default;
 

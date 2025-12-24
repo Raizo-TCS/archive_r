@@ -8,7 +8,7 @@
 
 #include <filesystem>
 #if !defined(_WIN32)
-#  include <glob.h>
+#include <glob.h>
 #endif
 #include <iostream>
 #include <map>
@@ -67,9 +67,7 @@ void insert_path(std::set<std::string> &sink, const std::string &path) {
 }
 
 #if defined(_WIN32)
-bool contains_glob_wildcard(const std::string &segment) {
-  return segment.find_first_of("*?[") != std::string::npos;
-}
+bool contains_glob_wildcard(const std::string &segment) { return segment.find_first_of("*?[") != std::string::npos; }
 
 std::string glob_segment_to_regex(const std::string &segment) {
   std::string regex = "^";
@@ -133,7 +131,7 @@ std::vector<std::string> portable_glob(const std::string &pattern) {
   if (segments.empty()) {
     path resolved = root.empty() ? pattern_path : root;
     if (exists(resolved)) {
-      return {resolved.lexically_normal().string()};
+      return { resolved.lexically_normal().string() };
     }
     return {};
   }
@@ -258,12 +256,12 @@ struct RegressionCheck {
 
 const std::vector<std::string> kFormatsExcludingMtree = { "7zip", "ar", "cab", "cpio", "empty", "iso9660", "lha", "rar", "tar", "warc", "xar", "zip" };
 
-RegressionCheck run_regression_check(const std::vector<std::string>& inputs) {
+RegressionCheck run_regression_check(const std::vector<std::string> &inputs) {
   std::vector<std::string> expanded = expand_inputs(inputs);
   std::vector<PathHierarchy> paths;
   paths.reserve(expanded.size());
   for (const auto &p : expanded) {
-    paths.push_back({PathEntry(p)});
+    paths.push_back({ PathEntry(p) });
   }
 
   archive_r::Traverser traverser(paths);

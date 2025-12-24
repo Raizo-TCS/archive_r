@@ -10,10 +10,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "archive_r/multi_volume_stream_base.h"
-#include "archive_r/platform_compat.h"
 #include "archive_r/entry_metadata.h"
+#include "archive_r/multi_volume_stream_base.h"
 #include "archive_r/path_hierarchy.h"
+#include "archive_r/platform_compat.h"
 
 namespace archive_r {
 

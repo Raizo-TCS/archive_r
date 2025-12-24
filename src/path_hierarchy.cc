@@ -107,9 +107,7 @@ PathHierarchy make_single_path(const std::string &root) {
 
 void append_single(PathHierarchy &hierarchy, std::string value) { hierarchy.emplace_back(PathEntry::single(std::move(value))); }
 
-void append_multi_volume(PathHierarchy &hierarchy, std::vector<std::string> parts, PathEntry::Parts::Ordering ordering) {
-  hierarchy.emplace_back(PathEntry::multi_volume(std::move(parts), ordering));
-}
+void append_multi_volume(PathHierarchy &hierarchy, std::vector<std::string> parts, PathEntry::Parts::Ordering ordering) { hierarchy.emplace_back(PathEntry::multi_volume(std::move(parts), ordering)); }
 
 PathHierarchy pathhierarchy_prefix_until(const PathHierarchy &hierarchy, size_t inclusive_index) {
   if (hierarchy.empty() || inclusive_index >= hierarchy.size()) {
@@ -125,6 +123,5 @@ PathHierarchy parent_hierarchy(const PathHierarchy &hierarchy) {
   }
   return pathhierarchy_prefix_until(hierarchy, hierarchy.size() - 2);
 }
-
 
 } // namespace archive_r

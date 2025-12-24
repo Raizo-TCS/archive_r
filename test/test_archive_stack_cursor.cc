@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 archive_r Team
 
-#include "archive_stack_cursor.h"
 #include "archive_r/data_stream.h"
+#include "archive_stack_cursor.h"
 
+#include <algorithm>
 #include <archive.h>
 #include <archive_entry.h>
-#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <fstream>
@@ -36,10 +36,13 @@ private:
   PathHierarchy _hierarchy;
 
 public:
-  MemoryStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data) : _buffer(data), _hierarchy(std::move(hierarchy)) {}
+  MemoryStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data)
+      : _buffer(data)
+      , _hierarchy(std::move(hierarchy)) {}
 
   ssize_t read(void *buf, size_t len) override {
-    if (_pos >= _buffer.size()) return 0;
+    if (_pos >= _buffer.size())
+      return 0;
     const size_t remaining = _buffer.size() - _pos;
     const size_t to_read = (len < remaining) ? len : remaining;
     std::memcpy(buf, _buffer.data() + _pos, to_read);
@@ -80,7 +83,8 @@ private:
   PathHierarchy _hierarchy;
 
 public:
-  explicit ErrorThrowingStream(PathHierarchy hierarchy) : _hierarchy(std::move(hierarchy)) {}
+  explicit ErrorThrowingStream(PathHierarchy hierarchy)
+      : _hierarchy(std::move(hierarchy)) {}
 
   ssize_t read(void *, size_t) override { throw std::runtime_error("Stream read error"); }
 
@@ -106,10 +110,13 @@ private:
   PathHierarchy _hierarchy;
 
 public:
-  TellMinusOneStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data) : _buffer(data), _hierarchy(std::move(hierarchy)) {}
+  TellMinusOneStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data)
+      : _buffer(data)
+      , _hierarchy(std::move(hierarchy)) {}
 
   ssize_t read(void *buf, size_t len) override {
-    if (_pos >= _buffer.size()) return 0;
+    if (_pos >= _buffer.size())
+      return 0;
     const size_t remaining = _buffer.size() - _pos;
     const size_t to_read = (len < remaining) ? len : remaining;
     std::memcpy(buf, _buffer.data() + _pos, to_read);
@@ -155,10 +162,13 @@ private:
   PathHierarchy _hierarchy;
 
 public:
-  TellThrowingStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data) : _buffer(data), _hierarchy(std::move(hierarchy)) {}
+  TellThrowingStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data)
+      : _buffer(data)
+      , _hierarchy(std::move(hierarchy)) {}
 
   ssize_t read(void *buf, size_t len) override {
-    if (_pos >= _buffer.size()) return 0;
+    if (_pos >= _buffer.size())
+      return 0;
     const size_t remaining = _buffer.size() - _pos;
     const size_t to_read = (len < remaining) ? len : remaining;
     std::memcpy(buf, _buffer.data() + _pos, to_read);
@@ -204,14 +214,17 @@ private:
   size_t _seek_calls = 0;
 
 public:
-  ToggleSeekThrowStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data) : _buffer(data), _hierarchy(std::move(hierarchy)) {}
+  ToggleSeekThrowStream(PathHierarchy hierarchy, const std::vector<uint8_t> &data)
+      : _buffer(data)
+      , _hierarchy(std::move(hierarchy)) {}
 
   void set_throw_on_seek(bool enabled) { _throw_on_seek = enabled; }
 
   size_t seek_calls() const { return _seek_calls; }
 
   ssize_t read(void *buf, size_t len) override {
-    if (_pos >= _buffer.size()) return 0;
+    if (_pos >= _buffer.size())
+      return 0;
     const size_t remaining = _buffer.size() - _pos;
     const size_t to_read = (len < remaining) ? len : remaining;
     std::memcpy(buf, _buffer.data() + _pos, to_read);
@@ -287,7 +300,7 @@ std::vector<uint8_t> build_tar_payload(const std::vector<std::pair<std::string, 
   auto write_close_cb = [](struct archive *, void *) -> int { return ARCHIVE_OK; };
 
   std::vector<uint8_t> buffer;
-  BufferCtx ctx{&buffer};
+  BufferCtx ctx{ &buffer };
   if (archive_write_open(a, &ctx, write_open_cb, write_cb, write_close_cb) != ARCHIVE_OK) {
     std::string msg = archive_error_string(a) ? archive_error_string(a) : "(null)";
     archive_write_free(a);
@@ -340,10 +353,7 @@ std::vector<uint8_t> build_tar_payload(const std::vector<std::pair<std::string, 
   return buffer;
 }
 
-
-std::string bytes_to_string(const std::vector<uint8_t> &bytes) {
-  return std::string(reinterpret_cast<const char *>(bytes.data()), bytes.size());
-}
+std::string bytes_to_string(const std::vector<uint8_t> &bytes) { return std::string(reinterpret_cast<const char *>(bytes.data()), bytes.size()); }
 
 std::vector<uint8_t> load_file_bytes(const std::string &path) {
   std::ifstream in(path, std::ios::binary);
@@ -446,10 +456,10 @@ int main() {
     // Test 4b: skip_callback_bridge handles "cannot determine current" path (tell<0 and SEEK_CUR fails)
     {
       const std::string big(2 * 1024 * 1024, 'A');
-      const auto payload = build_tar_payload({ {"big.bin", big} });
+      const auto payload = build_tar_payload({ { "big.bin", big } });
       auto stream = std::make_shared<TellMinusOneStream>(make_single_path("/test/tar"), payload);
       ArchiveOption options;
-      options.formats = {"tar"};
+      options.formats = { "tar" };
       StreamArchive sa(stream, options);
       if (!expect(sa.skip_to_next_header(), "skip_to_next_header should succeed (tar entry)")) {
         return 1;
@@ -461,10 +471,10 @@ int main() {
     // Test 4c: skip_callback_bridge handles exceptions from tell()
     {
       const std::string big(2 * 1024 * 1024, 'A');
-      const auto payload = build_tar_payload({ {"big.bin", big} });
+      const auto payload = build_tar_payload({ { "big.bin", big } });
       auto stream = std::make_shared<TellThrowingStream>(make_single_path("/test/tar"), payload);
       ArchiveOption options;
-      options.formats = {"tar"};
+      options.formats = { "tar" };
       StreamArchive sa(stream, options);
       if (!expect(sa.skip_to_next_header(), "skip_to_next_header should succeed (tar entry)")) {
         return 1;
@@ -479,7 +489,7 @@ int main() {
       const auto zip_bytes = load_file_bytes("test_data/test_perf.zip");
       auto stream = std::make_shared<ToggleSeekThrowStream>(make_single_path("/test/zip"), zip_bytes);
       ArchiveOption options;
-      options.formats = {"zip"};
+      options.formats = { "zip" };
       // Enable throw BEFORE open so that any libarchive seek attempt goes through
       // seek_callback_bridge's exception handling (catch -> return -1).
       stream->set_throw_on_seek(true);
@@ -529,7 +539,7 @@ int main() {
 
     // Test 7: rewind delegates to stream
     {
-      std::vector<uint8_t> data = {0x1f, 0x8b}; // gzip magic number
+      std::vector<uint8_t> data = { 0x1f, 0x8b }; // gzip magic number
       auto stream = std::make_shared<MemoryStream>(make_single_path("/test/stream"), data);
       try {
         StreamArchive sa(stream, {});
@@ -547,7 +557,7 @@ int main() {
       RootStreamFactoryGuard guard;
 
       const PathHierarchy root = make_single_path("/virtual/archive.tar");
-      const auto payload = build_tar_payload({ {"a.txt", "A"}, {"b.txt", "BB"} });
+      const auto payload = build_tar_payload({ { "a.txt", "A" }, { "b.txt", "BB" } });
 
       set_root_stream_factory([payload, root](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
         if (hierarchies_equal(hierarchy, root)) {
@@ -628,8 +638,8 @@ int main() {
       RootStreamFactoryGuard guard;
 
       const PathHierarchy root = make_single_path("/virtual/root.tar");
-      const auto nested_payload = build_tar_payload({ {"x.txt", "X"} });
-      const auto root_payload = build_tar_payload({ {"nested.tar", bytes_to_string(nested_payload)}, {"leaf.txt", "L"} });
+      const auto nested_payload = build_tar_payload({ { "x.txt", "X" } });
+      const auto root_payload = build_tar_payload({ { "nested.tar", bytes_to_string(nested_payload) }, { "leaf.txt", "L" } });
 
       set_root_stream_factory([root_payload, root](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
         if (hierarchies_equal(hierarchy, root)) {
@@ -683,9 +693,9 @@ int main() {
       RootStreamFactoryGuard guard;
 
       const PathHierarchy root = make_single_path("/virtual/root_siblings.tar");
-      const auto a_payload = build_tar_payload({ {"a.txt", "A"} });
-      const auto b_payload = build_tar_payload({ {"b.txt", "BB"} });
-      const auto root_payload = build_tar_payload({ {"a.tar", bytes_to_string(a_payload)}, {"b.tar", bytes_to_string(b_payload)} });
+      const auto a_payload = build_tar_payload({ { "a.txt", "A" } });
+      const auto b_payload = build_tar_payload({ { "b.txt", "BB" } });
+      const auto root_payload = build_tar_payload({ { "a.tar", bytes_to_string(a_payload) }, { "b.tar", bytes_to_string(b_payload) } });
 
       set_root_stream_factory([root_payload, root](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
         if (hierarchies_equal(hierarchy, root)) {
@@ -743,7 +753,7 @@ int main() {
       RootStreamFactoryGuard guard;
 
       const PathHierarchy root = make_single_path("/virtual/raw_bytes");
-      const std::vector<uint8_t> bytes = {'a', 'b', 'c', 'd', 'e', 'f'};
+      const std::vector<uint8_t> bytes = { 'a', 'b', 'c', 'd', 'e', 'f' };
 
       set_root_stream_factory([bytes, root](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
         if (hierarchies_equal(hierarchy, root)) {
@@ -781,7 +791,7 @@ int main() {
       RootStreamFactoryGuard guard;
 
       const PathHierarchy root = make_single_path("/virtual/root_for_reset.tar");
-      const auto payload = build_tar_payload({ {"a.txt", "A"} });
+      const auto payload = build_tar_payload({ { "a.txt", "A" } });
 
       set_root_stream_factory([payload, root](const PathHierarchy &hierarchy) -> std::shared_ptr<IDataStream> {
         if (hierarchies_equal(hierarchy, root)) {

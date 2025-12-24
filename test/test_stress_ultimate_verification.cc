@@ -16,8 +16,8 @@
  * 8. All 10 levels properly nested
  */
 
-#include "archive_r/traverser.h"
 #include "archive_r/path_hierarchy_utils.h"
+#include "archive_r/traverser.h"
 #include <algorithm>
 #include <iostream>
 #include <map>

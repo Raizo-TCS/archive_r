@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "archive_r/platform_compat.h"
 #include "archive_r/path_hierarchy.h"
+#include "archive_r/platform_compat.h"
 
+#include <cstdint>
 #include <functional>
 #include <memory>
-#include <cstdint>
 
 namespace archive_r {
 

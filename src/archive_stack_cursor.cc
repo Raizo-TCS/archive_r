@@ -125,9 +125,7 @@ EntryPayloadStream::EntryPayloadStream(std::shared_ptr<StreamArchive> parent_arc
   }
 }
 
-EntryPayloadStream::~EntryPayloadStream() {
-  deactivate_active_part();
-}
+EntryPayloadStream::~EntryPayloadStream() { deactivate_active_part(); }
 
 std::shared_ptr<StreamArchive> EntryPayloadStream::parent_archive() const { return _parent_archive; }
 
@@ -154,9 +152,7 @@ void EntryPayloadStream::close_single_part() {
   // so explicit skipping here is unnecessary and avoids potential exceptions in destructor.
 }
 
-ssize_t EntryPayloadStream::read_from_single_part(void *buffer, size_t size) {
-  return _parent_archive->read_current(buffer, size);
-}
+ssize_t EntryPayloadStream::read_from_single_part(void *buffer, size_t size) { return _parent_archive->read_current(buffer, size); }
 
 // ============================================================================
 // ArchiveStackCursor Implementation
@@ -167,9 +163,7 @@ ArchiveStackCursor::ArchiveStackCursor()
     , _current_stream(nullptr)
     , _current_archive(nullptr) {}
 
-void ArchiveStackCursor::configure(const ArchiveOption &options) {
-  options_snapshot = options;
-}
+void ArchiveStackCursor::configure(const ArchiveOption &options) { options_snapshot = options; }
 
 void ArchiveStackCursor::reset() {
   options_snapshot = ArchiveOption{};
@@ -235,8 +229,7 @@ bool ArchiveStackCursor::synchronize_to_hierarchy(const PathHierarchy &target_hi
   // 1. Ascend until we find a common ancestor
   while (depth() > 0) {
     auto current_h = _current_archive->source_hierarchy();
-    if (current_h.size() <= target_hierarchy.size() &&
-        hierarchies_equal(current_h, pathhierarchy_prefix_until(target_hierarchy, current_h.size() - 1))) {
+    if (current_h.size() <= target_hierarchy.size() && hierarchies_equal(current_h, pathhierarchy_prefix_until(target_hierarchy, current_h.size() - 1))) {
       break;
     }
     ascend();
@@ -274,9 +267,7 @@ ssize_t ArchiveStackCursor::read(void *buff, size_t len) {
   return 0;
 }
 
-StreamArchive *ArchiveStackCursor::current_archive() {
-  return _current_archive.get();
-}
+StreamArchive *ArchiveStackCursor::current_archive() { return _current_archive.get(); }
 
 PathHierarchy ArchiveStackCursor::current_entry_hierarchy() {
   if (!_current_stream && !_current_archive) {

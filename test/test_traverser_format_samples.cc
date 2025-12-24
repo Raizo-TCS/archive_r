@@ -41,7 +41,7 @@ bool run_format_case(const std::string &path, const std::string &format_name) {
     // to recognize certain archives even when libarchive can parse them).
     opts.formats = { "7zip", "ar", "cab", "cpio", "empty", "iso9660", "lha", "mtree", "rar", "tar", "warc", "xar", "zip" };
 
-    Traverser t({make_single_path(path)}, opts);
+    Traverser t({ make_single_path(path) }, opts);
 
     for (Entry &e : t) {
       // Prevent probing non-archive payload entries as nested archives.
@@ -53,17 +53,14 @@ bool run_format_case(const std::string &path, const std::string &format_name) {
       ++entries;
     }
 
-    if (format_name == "ar" && faults.size() == 1 &&
-        faults[0].message.find("Unrecognized archive format") != std::string::npos) {
+    if (format_name == "ar" && faults.size() == 1 && faults[0].message.find("Unrecognized archive format") != std::string::npos) {
       // Some Windows libarchive builds may not include ar support.
       std::cout << "[SKIP] ar format not supported by libarchive in this environment: " << faults[0].message << std::endl;
       return true;
     }
 
     ok = expect(faults.empty(), "Expected no faults for format='" + format_name + "' path='" + path + "'") && ok;
-    ok = expect(entries >= 2,
-                "Expected at least 2 entries (root + >=1 inner) for format='" + format_name + "' path='" + path + "'") &&
-         ok;
+    ok = expect(entries >= 2, "Expected at least 2 entries (root + >=1 inner) for format='" + format_name + "' path='" + path + "'") && ok;
   } catch (const std::exception &ex) {
     std::cerr << "Unexpected exception for format='" << format_name << "': " << ex.what() << std::endl;
     ok = false;
@@ -77,8 +74,7 @@ bool run_format_case(const std::string &path, const std::string &format_name) {
     std::cerr << "  faults.count=" << faults.size() << std::endl;
     for (size_t i = 0; i < faults.size(); ++i) {
       const auto &f = faults[i];
-      std::cerr << "  fault[" << i << "]: message='" << f.message << "' errno=" << f.errno_value
-                << " path='" << hierarchy_display(f.hierarchy) << "'" << std::endl;
+      std::cerr << "  fault[" << i << "]: message='" << f.message << "' errno=" << f.errno_value << " path='" << hierarchy_display(f.hierarchy) << "'" << std::endl;
     }
   }
 

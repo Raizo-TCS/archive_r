@@ -18,7 +18,7 @@ bool expect(bool condition, const char *message) {
 int main() {
   // Test simple_traverse with a directory
   // Use the test directory or something that exists
-  std::string test_path = ".";  // current directory
+  std::string test_path = "."; // current directory
 
   try {
     Traverser traverser({ make_single_path(test_path) });
@@ -27,7 +27,7 @@ int main() {
     for (auto &entry : traverser) {
       // Just iterate to exercise the code
       count++;
-      if (count > 10) {  // limit to avoid too much output
+      if (count > 10) { // limit to avoid too much output
         break;
       }
     }

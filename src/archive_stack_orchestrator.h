@@ -5,8 +5,8 @@
 
 #include "archive_r/path_hierarchy.h"
 #include "archive_r/platform_compat.h"
-#include "archive_type.h"
 #include "archive_stack_cursor.h"
+#include "archive_type.h"
 #include "entry_fault_error.h"
 #include "multi_volume_manager.h"
 #include <limits>
