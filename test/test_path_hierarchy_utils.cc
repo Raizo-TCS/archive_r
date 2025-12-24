@@ -62,6 +62,15 @@ bool test_volume_helpers() {
   if (!expect(pathhierarchy_volume_size({}) == 0, "volume_size(empty) should be 0")) {
     return false;
   }
+  if (!expect(pathhierarchy_is_multivolume({}) == false, "is_multivolume(empty) should be false")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_select_single_part({}, 0).empty(), "select_single_part(empty) should be empty")) {
+    return false;
+  }
+  if (!expect(pathhierarchy_volume_entry_name({}, 0).empty(), "volume_entry_name(empty,0) should be empty")) {
+    return false;
+  }
 
   PathHierarchy single_h = make_single_path("root.zip");
   if (!expect(pathhierarchy_volume_size(single_h) == 1, "volume_size(single) should be 1")) {
@@ -139,6 +148,15 @@ bool test_flatten_and_display() {
   if (!expect(entry_name_from_component(mv, out) && out == "a", "entry_name_from_component(mv) should be first part")) {
     return false;
   }
+
+  // Defensive path: allow callers to mutate multi-volume parts into empty.
+  PathEntry mv_empty = PathEntry::multi_volume({"only"});
+  mv_empty.multi_volume_parts_mut().values.clear();
+  out.clear();
+  if (!expect(!entry_name_from_component(mv_empty, out), "entry_name_from_component(empty mv parts) should be false")) {
+    return false;
+  }
+
   if (!expect(path_entry_display(mv) == "[a|b]", "path_entry_display(mv) mismatch")) {
     return false;
   }
