@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <pybind11/pybind11.h>
@@ -19,7 +20,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <limits>
 
 #ifndef ARCHIVE_R_VERSION
 #define ARCHIVE_R_VERSION "0.0.0"
@@ -185,27 +185,27 @@ public:
       , io_tellable_(false)
       , io_closeable_(false)
       , self_reference_(nullptr) {}
-  
-    ~PyUserStream() override {
-      py::gil_scoped_acquire gil;
-      release_active_io();
-      if (self_reference_ != nullptr) {
-        Py_DECREF(self_reference_);
-        self_reference_ = nullptr;
-      }
-    }
 
-    void retain_python_owner(const py::object &owner) {
-      PyObject *new_owner = owner.ptr();
-      if (new_owner == self_reference_) {
-        return;
-      }
-      Py_XINCREF(new_owner);
-      if (self_reference_ != nullptr) {
-        Py_DECREF(self_reference_);
-      }
-      self_reference_ = new_owner;
+  ~PyUserStream() override {
+    py::gil_scoped_acquire gil;
+    release_active_io();
+    if (self_reference_ != nullptr) {
+      Py_DECREF(self_reference_);
+      self_reference_ = nullptr;
     }
+  }
+
+  void retain_python_owner(const py::object &owner) {
+    PyObject *new_owner = owner.ptr();
+    if (new_owner == self_reference_) {
+      return;
+    }
+    Py_XINCREF(new_owner);
+    if (self_reference_ != nullptr) {
+      Py_DECREF(self_reference_);
+    }
+    self_reference_ = new_owner;
+  }
 
 protected:
   void open_single_part(const PathHierarchy &single_part) override {
@@ -646,8 +646,7 @@ public:
       : traverser_options_(build_options(passphrases, formats, metadata_keys, descend_archives))
       , archive_options_snapshot_(to_archive_option(traverser_options_))
       , traverser(python_normalize_paths(paths), traverser_options_)
-      , it(traverser.end()) {
-  }
+      , it(traverser.end()) {}
 
   // Iterator protocol
   PyTraverser &iter() {
@@ -744,7 +743,6 @@ private:
       reset_iterator();
     }
   }
-
 };
 
 } // namespace
@@ -760,12 +758,12 @@ PYBIND11_MODULE(archive_r, m) {
   m.attr("STANDARD_FORMATS") = formats_tuple;
   m.attr("SAFE_FORMATS") = formats_tuple;
 
-    m.def("register_stream_factory", &register_python_stream_factory, py::arg("factory") = py::none(),
-      "Register a callable returning archive_r.Stream instances for custom root streams. Pass None to reset.");
+  m.def("register_stream_factory", &register_python_stream_factory, py::arg("factory") = py::none(),
+        "Register a callable returning archive_r.Stream instances for custom root streams. Pass None to reset.");
 
-  m.def("on_fault",
-        [](const py::object &callback) { register_fault_callback(make_python_fault_callback(callback)); }, py::arg("callback") = py::none(),
-        "Register or clear the global EntryFault callback (None clears)");
+  m.def(
+      "on_fault", [](const py::object &callback) { register_fault_callback(make_python_fault_callback(callback)); }, py::arg("callback") = py::none(),
+      "Register or clear the global EntryFault callback (None clears)");
 
   py::class_<PyUserStream, std::shared_ptr<PyUserStream>>(m, "Stream")
       .def(py::init([](py::object hierarchy, py::object supports_seek_obj) {
@@ -773,8 +771,7 @@ PYBIND11_MODULE(archive_r, m) {
              bool supports_seek = supports_seek_obj.is_none() ? true : supports_seek_obj.cast<bool>();
              return std::make_shared<PyUserStream>(std::move(path), supports_seek);
            }),
-           py::arg("hierarchy"), py::arg("supports_seek") = py::none(),
-           "Base class for custom multi-volume streams returned from register_stream_factory.");
+           py::arg("hierarchy"), py::arg("supports_seek") = py::none(), "Base class for custom multi-volume streams returned from register_stream_factory.");
 
   // Entry class
   py::class_<PyEntry, std::shared_ptr<PyEntry>>(m, "Entry")
@@ -790,27 +787,23 @@ PYBIND11_MODULE(archive_r, m) {
       .def("set_multi_volume_group", &PyEntry::set_multi_volume_group, py::arg("base_name"), py::arg("order") = py::none(),
            "Mark this entry as part of a multi-volume archive group.\n"
            "Pass order='given' to preserve user-provided part order.")
-       .def("read", &PyEntry::read, py::arg("size") = py::none(),
-         "Read up to size bytes from the entry (default: read until EOF)")
+      .def("read", &PyEntry::read, py::arg("size") = py::none(), "Read up to size bytes from the entry (default: read until EOF)")
       .def_property_readonly("metadata", &PyEntry::metadata, "Get captured metadata as a dictionary")
       .def("metadata_value", &PyEntry::metadata_value, py::arg("key"), "Get a metadata value by key or None if unavailable")
       .def("__repr__", &PyEntry::repr);
 
   // Traverser class
   py::class_<PyTraverser>(m, "Traverser")
-      .def(py::init<py::object, std::optional<std::vector<std::string>>, std::optional<std::vector<std::string>>, std::optional<std::vector<std::string>>,
-                std::optional<bool>>(),
-          py::arg("paths"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(),
-          py::arg("descend_archives") = py::none(),
-          "Create a traverser for the given archive paths with optional passphrases, format filters, metadata key selection, and default descent control")
+      .def(py::init<py::object, std::optional<std::vector<std::string>>, std::optional<std::vector<std::string>>, std::optional<std::vector<std::string>>, std::optional<bool>>(), py::arg("paths"),
+           py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(), py::arg("descend_archives") = py::none(),
+           "Create a traverser for the given archive paths with optional passphrases, format filters, metadata key selection, and default descent control")
       .def(py::init([](py::list path_hierarchy, std::optional<std::vector<std::string>> passphrases, std::optional<std::vector<std::string>> formats,
                        std::optional<std::vector<std::string>> metadata_keys, std::optional<bool> descend_archives) {
              py::list paths;
              paths.append(path_hierarchy);
              return std::unique_ptr<PyTraverser>(new PyTraverser(paths, std::move(passphrases), std::move(formats), std::move(metadata_keys), descend_archives));
            }),
-           py::arg("path_hierarchy"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(),
-           py::arg("descend_archives") = py::none(),
+           py::arg("path_hierarchy"), py::arg("passphrases") = py::none(), py::arg("formats") = py::none(), py::arg("metadata_keys") = py::none(), py::arg("descend_archives") = py::none(),
            "Create a traverser for a single PathHierarchy (pass as a list describing the hierarchy).")
       .def("__iter__", &PyTraverser::iter, py::return_value_policy::reference_internal)
       .def("__next__", &PyTraverser::next)

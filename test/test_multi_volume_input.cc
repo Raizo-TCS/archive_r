@@ -142,7 +142,8 @@ int main(int argc, char *argv[]) {
       const std::string &inner_path = relative_paths[1];
       if (inner_path != inner_suffix) {
         const std::string decorated_suffix = "/" + inner_suffix;
-        if (inner_path.size() <= decorated_suffix.size() || inner_path.compare(inner_path.size() - decorated_suffix.size(), decorated_suffix.size(), decorated_suffix) != 0 || inner_path.front() != '[') {
+        if (inner_path.size() <= decorated_suffix.size() || inner_path.compare(inner_path.size() - decorated_suffix.size(), decorated_suffix.size(), decorated_suffix) != 0
+            || inner_path.front() != '[') {
           report_paths();
           std::cerr << "Traversal order mismatch for " << filename << std::endl;
           return 1;

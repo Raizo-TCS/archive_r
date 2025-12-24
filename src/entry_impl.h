@@ -44,7 +44,7 @@ private:
   EntryMetadataMap _metadata;
   bool _descend_enabled = true; // Flag to control automatic descent
 
-  std::shared_ptr<ArchiveStackOrchestrator> _orchestrator;               ///< Active orchestrator (shared with traverser or detached copy)
+  std::shared_ptr<ArchiveStackOrchestrator> _orchestrator; ///< Active orchestrator (shared with traverser or detached copy)
   bool _shares_traverser_orchestrator = false;
 
   mutable std::optional<ArchiveOption> _archive_options;

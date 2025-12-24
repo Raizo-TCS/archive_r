@@ -33,9 +33,9 @@ struct MultiVolumeStreamBase::Impl {
 };
 
 MultiVolumeStreamBase::MultiVolumeStreamBase(PathHierarchy logical_path, bool supports_seek)
-  : _logical_path(std::move(logical_path))
-  , _supports_seek(supports_seek)
-  , _impl(std::make_unique<Impl>(*this)) {
+    : _logical_path(std::move(logical_path))
+    , _supports_seek(supports_seek)
+    , _impl(std::make_unique<Impl>(*this)) {
   _impl->total_parts = pathhierarchy_volume_size(_logical_path);
   if (_impl->total_parts == 0) {
     throw std::invalid_argument("MultiVolumeStreamBase requires at least one volume component");
@@ -84,9 +84,7 @@ void MultiVolumeStreamBase::rewind() {
   _impl->logical_offset = 0;
 }
 
-bool MultiVolumeStreamBase::at_end() const {
-  return _impl->active_part_index >= _impl->total_parts;
-}
+bool MultiVolumeStreamBase::at_end() const { return _impl->active_part_index >= _impl->total_parts; }
 
 int64_t MultiVolumeStreamBase::seek(int64_t offset, int whence) {
   if (!_supports_seek) {
@@ -184,14 +182,14 @@ bool MultiVolumeStreamBase::Impl::ensure_size_metadata() {
 
 int64_t MultiVolumeStreamBase::Impl::compute_target_offset(int64_t offset, int whence) const {
   switch (whence) {
-    case SEEK_SET:
-      return offset;
-    case SEEK_CUR:
-      return logical_offset + offset;
-    case SEEK_END:
-      return total_size + offset;
-    default:
-      return -1;
+  case SEEK_SET:
+    return offset;
+  case SEEK_CUR:
+    return logical_offset + offset;
+  case SEEK_END:
+    return total_size + offset;
+  default:
+    return -1;
   }
 }
 

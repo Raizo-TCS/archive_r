@@ -12,10 +12,10 @@
 #include <vector>
 
 #if !defined(_WIN32)
-#  include <sys/stat.h>
-#  include <unistd.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #else
-#  include <process.h>
+#include <process.h>
 #endif
 
 using namespace archive_r;
@@ -50,7 +50,8 @@ std::filesystem::path unique_temp_dir() {
 
 struct TempDir {
   std::filesystem::path path;
-  TempDir() : path(unique_temp_dir()) {}
+  TempDir()
+      : path(unique_temp_dir()) {}
   ~TempDir() {
     std::error_code ec;
     std::filesystem::remove_all(path, ec);

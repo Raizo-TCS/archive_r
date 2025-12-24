@@ -75,8 +75,8 @@ public:
    * Provide one or more paths to traverse. Single-path traversal can be
    * achieved by passing a container with one element:
    *   Traverser traverser({make_single_path("archive.tar.gz")});
-  *
-  * @throws std::invalid_argument if paths is empty or contains an empty hierarchy
+   *
+   * @throws std::invalid_argument if paths is empty or contains an empty hierarchy
    */
   explicit Traverser(std::vector<PathHierarchy> paths, TraverserOptions options = {});
 

@@ -5,8 +5,8 @@
 
 #include <archive_entry.h>
 
-#include <cstring>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -25,9 +25,7 @@ bool expect(bool condition, const char *message) {
   return true;
 }
 
-bool expect(bool condition, const std::string &message) {
-  return expect(condition, message.c_str());
-}
+bool expect(bool condition, const std::string &message) { return expect(condition, message.c_str()); }
 
 std::string cstr_debug(const char *s) {
   if (!s) {
@@ -554,20 +552,7 @@ int main() {
     // 4b) Optional metadata not set: exercises wants(key)==true but missing/unknown values.
     {
       const std::unordered_set<std::string> optional_keys = {
-        "pathname",
-        "atime",
-        "size",
-        "dev",
-        "mtime",
-        "birthtime",
-        "ctime",
-        "fflags",
-        "xattr",
-        "sparse",
-        "mac_metadata",
-        "is_data_encrypted",
-        "is_metadata_encrypted",
-        "is_encrypted",
+        "pathname", "atime", "size", "dev", "mtime", "birthtime", "ctime", "fflags", "xattr", "sparse", "mac_metadata", "is_data_encrypted", "is_metadata_encrypted", "is_encrypted",
       };
 
       EntryHolder h(archive_entry_new());
@@ -771,7 +756,7 @@ int main() {
 
     // 7c) pathname_utf8 preferred when present: exercises the (pathname_utf8 && *pathname_utf8 && wants("pathname")) true path.
     {
-      const std::unordered_set<std::string> pathname_only = {"pathname"};
+      const std::unordered_set<std::string> pathname_only = { "pathname" };
 
       EntryHolder h(archive_entry_new());
       struct archive_entry *e = h.entry;
@@ -811,7 +796,7 @@ int main() {
 
     // 7b) pathname_utf8 is null but pathname exists: exercises the fallback assignment branch.
     {
-      const std::unordered_set<std::string> pathname_only = {"pathname"};
+      const std::unordered_set<std::string> pathname_only = { "pathname" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
 
@@ -877,7 +862,7 @@ int main() {
 
     // Test case: pathname is null (should not include pathname in metadata).
     {
-      const std::unordered_set<std::string> pathname_only = {"pathname"};
+      const std::unordered_set<std::string> pathname_only = { "pathname" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
@@ -897,7 +882,7 @@ int main() {
 
     // Test case: uid/gid conditions (has_uid/gid false paths).
     {
-      const std::unordered_set<std::string> uid_gid_only = {"uid", "gid"};
+      const std::unordered_set<std::string> uid_gid_only = { "uid", "gid" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
@@ -923,7 +908,7 @@ int main() {
 
     // Test case: hardlink present.
     {
-      const std::unordered_set<std::string> hardlink_only = {"hardlink"};
+      const std::unordered_set<std::string> hardlink_only = { "hardlink" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
@@ -933,11 +918,8 @@ int main() {
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(hardlink_only);
 
-      if (!expect(metadata.find("hardlink") != metadata.end(),
-                 std::string("hardlink should be included") +
-                   " | keys=" + list_keys(metadata) +
-                   " | hardlink_utf8=" + cstr_debug(archive_entry_hardlink_utf8(e)) +
-                   " | hardlink=" + cstr_debug(archive_entry_hardlink(e)))) {
+      if (!expect(metadata.find("hardlink") != metadata.end(), std::string("hardlink should be included") + " | keys=" + list_keys(metadata)
+                                                                   + " | hardlink_utf8=" + cstr_debug(archive_entry_hardlink_utf8(e)) + " | hardlink=" + cstr_debug(archive_entry_hardlink(e)))) {
         return 1;
       }
 
@@ -946,7 +928,7 @@ int main() {
 
     // Test case: hardlink fallback branch (hardlink_utf8 is null but hardlink exists).
     {
-      const std::unordered_set<std::string> hardlink_only = {"hardlink"};
+      const std::unordered_set<std::string> hardlink_only = { "hardlink" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
 
@@ -955,8 +937,7 @@ int main() {
 
       const char *hardlink_utf8 = archive_entry_hardlink_utf8(e);
       const char *hardlink = archive_entry_hardlink(e);
-      if (!expect(hardlink != nullptr && *hardlink != '\0',
-                  std::string("expected hardlink to be set, got: ") + cstr_debug(hardlink))) {
+      if (!expect(hardlink != nullptr && *hardlink != '\0', std::string("expected hardlink to be set, got: ") + cstr_debug(hardlink))) {
         return 1;
       }
 
@@ -985,8 +966,7 @@ int main() {
       if (!expect(hardlink_value != nullptr, "hardlink should be a string")) {
         return 1;
       }
-      if (!expect(*hardlink_value == expected,
-                  std::string("hardlink mismatch; expected: ") + cstr_debug(expected) + ", got: " + cstr_debug(hardlink_value->c_str()))) {
+      if (!expect(*hardlink_value == expected, std::string("hardlink mismatch; expected: ") + cstr_debug(expected) + ", got: " + cstr_debug(hardlink_value->c_str()))) {
         return 1;
       }
       a.current_entry = nullptr;
@@ -996,7 +976,7 @@ int main() {
     // Some libarchive builds may return non-empty *_utf8 even for invalid bytes;
     // the implementation prefers *_utf8 when available and otherwise falls back to non-utf8.
     {
-      const std::unordered_set<std::string> user_group_only = {"uname", "gname"};
+      const std::unordered_set<std::string> user_group_only = { "uname", "gname" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
 
@@ -1043,14 +1023,10 @@ int main() {
       if (!expect(gname_value != nullptr, "gname should be a string")) {
         return 1;
       }
-      if (!expect(*uname_value == expected_uname,
-                  std::string("uname mismatch; expected: ") + cstr_debug(expected_uname) + ", got: " +
-                      cstr_debug(uname_value->c_str()))) {
+      if (!expect(*uname_value == expected_uname, std::string("uname mismatch; expected: ") + cstr_debug(expected_uname) + ", got: " + cstr_debug(uname_value->c_str()))) {
         return 1;
       }
-      if (!expect(*gname_value == expected_gname,
-                  std::string("gname mismatch; expected: ") + cstr_debug(expected_gname) + ", got: " +
-                      cstr_debug(gname_value->c_str()))) {
+      if (!expect(*gname_value == expected_gname, std::string("gname mismatch; expected: ") + cstr_debug(expected_gname) + ", got: " + cstr_debug(gname_value->c_str()))) {
         return 1;
       }
 
@@ -1059,7 +1035,7 @@ int main() {
 
     // Test case: symlink present.
     {
-      const std::unordered_set<std::string> symlink_only = {"symlink"};
+      const std::unordered_set<std::string> symlink_only = { "symlink" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
@@ -1075,11 +1051,8 @@ int main() {
       a.current_entry = e;
       const auto metadata = a.current_entry_metadata(symlink_only);
 
-      if (!expect(metadata.find("symlink") != metadata.end(),
-                 std::string("symlink should be included") +
-                   " | keys=" + list_keys(metadata) +
-                   " | symlink_utf8=" + cstr_debug(archive_entry_symlink_utf8(e)) +
-                   " | symlink=" + cstr_debug(archive_entry_symlink(e)))) {
+      if (!expect(metadata.find("symlink") != metadata.end(), std::string("symlink should be included") + " | keys=" + list_keys(metadata)
+                                                                  + " | symlink_utf8=" + cstr_debug(archive_entry_symlink_utf8(e)) + " | symlink=" + cstr_debug(archive_entry_symlink(e)))) {
         return 1;
       }
 
@@ -1088,7 +1061,7 @@ int main() {
 
     // Test case: xattr present (xattr_count > 0).
     {
-      const std::unordered_set<std::string> xattr_only = {"xattr"};
+      const std::unordered_set<std::string> xattr_only = { "xattr" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
@@ -1107,7 +1080,7 @@ int main() {
 
     // Test case: digests present.
     {
-      const std::unordered_set<std::string> digests_only = {"digests"};
+      const std::unordered_set<std::string> digests_only = { "digests" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);
@@ -1126,7 +1099,7 @@ int main() {
 
     // Test case: null current_entry.
     {
-      const std::unordered_set<std::string> some_keys = {"pathname"};
+      const std::unordered_set<std::string> some_keys = { "pathname" };
       DummyArchive a;
       a.current_entry = nullptr;
       const auto metadata = a.current_entry_metadata(some_keys);
@@ -1138,7 +1111,7 @@ int main() {
 
     // Test case: specific keys requested.
     {
-      const std::unordered_set<std::string> specific_keys = {"pathname", "size", "mode"};
+      const std::unordered_set<std::string> specific_keys = { "pathname", "size", "mode" };
       EntryHolder eh(archive_entry_new());
       struct archive_entry *e = eh.entry;
       seed_common_fields(e);

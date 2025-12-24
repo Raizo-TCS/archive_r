@@ -26,8 +26,8 @@ using archive_ptr = std::unique_ptr<struct archive, archive_deleter>;
 using open_delegate = std::function<int(struct archive *ar)>;
 
 struct ArchiveOption {
-  std::vector<std::string> passphrases;   ///< Passphrases for encrypted archives
-  std::vector<std::string> formats;       ///< Specific format names to enable (empty = all)
+  std::vector<std::string> passphrases;          ///< Passphrases for encrypted archives
+  std::vector<std::string> formats;              ///< Specific format names to enable (empty = all)
   std::unordered_set<std::string> metadata_keys; ///< Metadata keys to capture (empty = none)
 };
 

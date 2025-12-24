@@ -32,8 +32,7 @@ Entry::Impl::Impl(const Impl &other)
     , _descend_enabled(other._descend_enabled)
     , _orchestrator(nullptr)
     , _shares_traverser_orchestrator(false)
-    , _archive_options(other._archive_options) {
-}
+    , _archive_options(other._archive_options) {}
 
 // Copy assignment operator
 Entry::Impl::Impl(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent)
@@ -185,7 +184,7 @@ ssize_t Entry::Impl::read(void *buffer, size_t length) {
 // ============================================================================
 
 Entry::Entry(const PathHierarchy &hierarchy, std::shared_ptr<ArchiveStackOrchestrator> data_source_orchestrator, bool default_descent)
-  : _impl(std::make_unique<Impl>(hierarchy, std::move(data_source_orchestrator), default_descent)) {}
+    : _impl(std::make_unique<Impl>(hierarchy, std::move(data_source_orchestrator), default_descent)) {}
 
 Entry::Entry(Impl *impl)
     : _impl(impl) {}

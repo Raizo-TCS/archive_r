@@ -15,13 +15,13 @@
 #ifdef memcpy
 #undef memcpy
 #endif
+#include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
 #include <vector>
-#include <limits>
-#include <optional>
 
 using namespace archive_r;
 
@@ -295,16 +295,14 @@ static void stream_wrapper_free(void *ptr) {
   delete wrapper;
 }
 
-static size_t stream_wrapper_memsize(const void *ptr) {
-  return sizeof(RubyStreamWrapper);
-}
+static size_t stream_wrapper_memsize(const void *ptr) { return sizeof(RubyStreamWrapper); }
 
 static const rb_data_type_t stream_wrapper_type = {
   "ArchiveR::Stream",
   {
-    nullptr,
-    stream_wrapper_free,
-    stream_wrapper_memsize,
+      nullptr,
+      stream_wrapper_free,
+      stream_wrapper_memsize,
   },
   nullptr,
   nullptr,

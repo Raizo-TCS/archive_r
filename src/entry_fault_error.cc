@@ -18,35 +18,35 @@ EntryFaultError::EntryFaultError(EntryFault fault, const std::string &internal_m
     , _fault(std::move(fault)) {}
 
 EntryFaultError make_entry_fault_error(const std::string &message, PathHierarchy hierarchy, int errno_value) {
-    EntryFault fault;
-    fault.hierarchy = std::move(hierarchy);
-    fault.message = message;
-    fault.errno_value = errno_value;
-    return EntryFaultError(std::move(fault));
+  EntryFault fault;
+  fault.hierarchy = std::move(hierarchy);
+  fault.message = message;
+  fault.errno_value = errno_value;
+  return EntryFaultError(std::move(fault));
 }
 
 std::string format_errno_error(const std::string &prefix, int err) {
-    if (err == 0) {
-        return prefix;
-    }
+  if (err == 0) {
+    return prefix;
+  }
 
-    std::string message = prefix;
-    message.append(": ");
-    message.append(std::strerror(err));
-    message.append(" (posix errno=");
-    message.append(std::to_string(err));
-    message.push_back(')');
-    return message;
+  std::string message = prefix;
+  message.append(": ");
+  message.append(std::strerror(err));
+  message.append(" (posix errno=");
+  message.append(std::to_string(err));
+  message.push_back(')');
+  return message;
 }
 
 std::string format_path_errno_error(const std::string &action, const std::string &path, int err) {
-    std::string prefix = action;
-    if (!path.empty()) {
-        prefix.append(" '");
-        prefix.append(path);
-        prefix.push_back('\'');
-    }
-    return format_errno_error(prefix, err);
+  std::string prefix = action;
+  if (!path.empty()) {
+    prefix.append(" '");
+    prefix.append(path);
+    prefix.push_back('\'');
+  }
+  return format_errno_error(prefix, err);
 }
 
 std::string prefer_error_detail(const std::string &detail, const std::string &fallback) { return detail.empty() ? fallback : detail; }

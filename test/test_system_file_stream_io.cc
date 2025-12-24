@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 archive_r Team
 
-#include "system_file_stream.h"
 #include "entry_fault_error.h"
+#include "system_file_stream.h"
 
 #include <cerrno>
 #include <cstring>
@@ -14,9 +14,9 @@
 #include <vector>
 
 #if !defined(_WIN32)
-#  include <unistd.h>
+#include <unistd.h>
 #else
-#  include <process.h>
+#include <process.h>
 #endif
 
 using namespace archive_r;
@@ -110,7 +110,7 @@ int main() {
   try {
     auto stream = std::make_shared<SystemFileStream>(make_single_path(path));
 
-    char buf[6] = {0};
+    char buf[6] = { 0 };
     const ssize_t n1 = stream->read(buf, 5);
     ok = ok && expect(n1 == 5, "read should return 5 bytes");
     ok = ok && expect(std::string(buf, 5) == "01234", "read content mismatch");
@@ -127,7 +127,7 @@ int main() {
     ok = ok && expect(std::string(buf, 5) == "01234", "second read content mismatch");
 
     // Read to EOF
-    char eof_buf[20] = {0};
+    char eof_buf[20] = { 0 };
     const ssize_t n3 = stream->read(eof_buf, sizeof(eof_buf));
     ok = ok && expect(n3 == 11, "read to EOF should return remaining bytes"); // "0123456789ABCDEF" is 16 bytes, already read 5, remaining 11
     ok = ok && expect(std::string(eof_buf, 11) == "56789ABCDEF", "EOF read content mismatch");
@@ -172,10 +172,10 @@ int main() {
     const std::string part2 = write_temp_file("mv_part002.bin", "DEF");
 
     PathHierarchy h;
-    h.emplace_back(PathEntry::multi_volume({part1, part2}));
+    h.emplace_back(PathEntry::multi_volume({ part1, part2 }));
     auto stream = std::make_shared<SystemFileStream>(h);
 
-    char buf[8] = {0};
+    char buf[8] = { 0 };
     const ssize_t n = stream->read(buf, 6);
     ok = ok && expect(n == 6, "multi-volume read should return 6 bytes");
     ok = ok && expect(std::string(buf, 6) == "ABCDEF", "multi-volume read content mismatch");
@@ -207,12 +207,12 @@ int main() {
     const std::string missing_part2 = std::filesystem::path(part1).parent_path().append("mv_missing_part002.bin").string();
 
     PathHierarchy h;
-    h.emplace_back(PathEntry::multi_volume({part1, missing_part2}));
+    h.emplace_back(PathEntry::multi_volume({ part1, missing_part2 }));
     auto stream = std::make_shared<SystemFileStream>(h);
 
     ok = ok && expect(stream->seek(0, SEEK_END) == -1, "seek(SEEK_END) should fail when a part is missing");
 
-    char buf[8] = {0};
+    char buf[8] = { 0 };
     const ssize_t n1 = stream->read(buf, 3);
     ok = ok && expect(n1 == 3, "first part should read successfully");
 
@@ -233,7 +233,7 @@ int main() {
   try {
     const std::string dir = make_temp_dir("dir_as_file");
     auto stream = std::make_shared<SystemFileStream>(make_single_path(dir));
-    char buf[1] = {0};
+    char buf[1] = { 0 };
     bool threw = false;
     try {
       (void)stream->read(buf, sizeof(buf));

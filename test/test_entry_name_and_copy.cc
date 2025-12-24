@@ -38,14 +38,14 @@ int main() {
 
   {
     PathHierarchy h;
-    h.emplace_back(PathEntry::multi_volume({"", "x"}));
+    h.emplace_back(PathEntry::multi_volume({ "", "x" }));
     auto e = Entry::create(h, nullptr, true);
     ok = expect(e->name() == "[|x]", "Expected multi-volume display when first part is empty") && ok;
   }
 
   {
     PathHierarchy h;
-    h.emplace_back(PathEntry::multi_volume({"part1", "part2"}));
+    h.emplace_back(PathEntry::multi_volume({ "part1", "part2" }));
     auto e = Entry::create(h, nullptr, true);
     ok = expect(e->name() == "part1", "Expected multi-volume name to be first part") && ok;
   }

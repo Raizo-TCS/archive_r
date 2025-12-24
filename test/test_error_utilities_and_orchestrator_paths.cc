@@ -2,8 +2,8 @@
 // Copyright (c) 2025 archive_r Team
 
 #include "archive_r/entry.h"
-#include "archive_r/path_hierarchy_utils.h"
 #include "archive_r/path_hierarchy.h"
+#include "archive_r/path_hierarchy_utils.h"
 
 #include "archive_stack_orchestrator.h"
 #include "entry_fault_error.h"
@@ -17,9 +17,9 @@
 #include <string>
 
 #if !defined(_WIN32)
-#  include <unistd.h>
+#include <unistd.h>
 #else
-#  include <process.h>
+#include <process.h>
 #endif
 
 using namespace archive_r;
@@ -54,7 +54,8 @@ std::filesystem::path unique_temp_dir() {
 
 struct TempDir {
   std::filesystem::path path;
-  TempDir() : path(unique_temp_dir()) {}
+  TempDir()
+      : path(unique_temp_dir()) {}
   ~TempDir() {
     std::error_code ec;
     std::filesystem::remove_all(path, ec);
@@ -135,8 +136,8 @@ int main() {
 
   // ---- path_hierarchy.cc compare_entries multi-volume ordering ----
   {
-    PathEntry natural = PathEntry::multi_volume({"a.part001"}, PathEntry::Parts::Ordering::Natural);
-    PathEntry given = PathEntry::multi_volume({"a.part001"}, PathEntry::Parts::Ordering::Given);
+    PathEntry natural = PathEntry::multi_volume({ "a.part001" }, PathEntry::Parts::Ordering::Natural);
+    PathEntry given = PathEntry::multi_volume({ "a.part001" }, PathEntry::Parts::Ordering::Given);
     ok = expect(compare_entries(natural, given) != 0, "Expected compare_entries() to detect ordering difference") && ok;
   }
 
@@ -183,7 +184,7 @@ int main() {
 
     ok = expect(!orch.synchronize_to_hierarchy(PathHierarchy{}), "Expected synchronize_to_hierarchy(empty) to fail") && ok;
 
-    char buf[8] = {0};
+    char buf[8] = { 0 };
     const ssize_t n = orch.read_head(buf, sizeof(buf));
     ok = expect(n <= 0, "Expected read_head() to return <=0 before open_root_hierarchy") && ok;
   }
@@ -218,7 +219,7 @@ int main() {
     auto shared_orch = std::make_shared<ArchiveStackOrchestrator>();
     auto e = Entry::create(h, shared_orch, true);
 
-    char buffer[16] = {0};
+    char buffer[16] = { 0 };
     const ssize_t n = e->read(buffer, sizeof(buffer));
     ok = expect(n == static_cast<ssize_t>(content.size()), "Expected Entry::read() to read full filesystem file") && ok;
 

@@ -15,7 +15,7 @@ namespace {
 class MinimalStream final : public IDataStream {
 public:
   explicit MinimalStream(PathHierarchy source)
-    : _source(std::move(source)) {}
+      : _source(std::move(source)) {}
 
   ssize_t read(void *buffer, size_t size) override {
     (void)buffer;

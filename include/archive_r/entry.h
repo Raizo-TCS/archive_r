@@ -97,8 +97,8 @@ public:
   /**
    * @brief Read data from the entry
    *
-    * Each call uses an internal ArchiveStackOrchestrator so reads remain valid even
-    * if the owning iterator advances.
+   * Each call uses an internal ArchiveStackOrchestrator so reads remain valid even
+   * if the owning iterator advances.
    *
    * @param buffer Buffer to read data into
    * @param length Maximum number of bytes to read
@@ -109,9 +109,9 @@ public:
   /**
    * @brief Enable or disable automatic descent into this entry
    * @param enabled true to descend (default), false to keep traversal at current level
-    *
-    * This control is only available for entries that are managed by a Traverser.
-    * Calling this on an Entry that is not traverser-managed reports a fault.
+   *
+   * This control is only available for entries that are managed by a Traverser.
+   * Calling this on an Entry that is not traverser-managed reports a fault.
    */
   void set_descent(bool enabled);
 
@@ -139,9 +139,9 @@ public:
    *     }
    * }
    * @endcode
-  *
-  * This control is only available for entries that are managed by a Traverser.
-  * Calling this on an Entry that is not traverser-managed reports a fault.
+   *
+   * This control is only available for entries that are managed by a Traverser.
+   * Calling this on an Entry that is not traverser-managed reports a fault.
    */
   void set_multi_volume_group(const std::string &base_name, const MultiVolumeGroupOptions &options = {});
 

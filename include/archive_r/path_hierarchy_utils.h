@@ -33,5 +33,4 @@ bool entry_name_from_component(const PathEntry &entry, std::string &output);
 std::string path_entry_display(const PathEntry &entry);
 std::string hierarchy_display(const PathHierarchy &hierarchy);
 
-
 } // namespace archive_r
