@@ -12,3 +12,7 @@ build/
 *.swp
 *~
 draft_docs/
+
+# Generated during packaging/build (derived from root VERSION)
+bindings/ruby/VERSION
+bindings/python/VERSION

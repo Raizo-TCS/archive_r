@@ -6,6 +6,8 @@ license_source = File.join(project_root, 'LICENSE')
 license_target = File.join(binding_root, 'LICENSE')
 notice_source = File.join(project_root, 'NOTICE')
 notice_target = File.join(binding_root, 'NOTICE')
+version_source = File.join(project_root, 'VERSION')
+version_target = File.join(binding_root, 'VERSION')
 
 if File.exist?(license_source)
   # Ensure the gem bundles the root LICENSE verbatim to keep notices in sync
@@ -25,9 +27,18 @@ else
   warn "[archive_r] WARNING: NOTICE not found at #{notice_source}"
 end
 
+if File.exist?(version_source)
+  # Ensure the gem bundles the root VERSION verbatim to keep version metadata in sync
+  unless File.exist?(version_target) && FileUtils.identical?(version_source, version_target)
+    FileUtils.cp(version_source, version_target)
+  end
+else
+  warn "[archive_r] WARNING: VERSION not found at #{version_source}"
+end
+
 Gem::Specification.new do |spec|
   spec.name          = "archive_r_ruby"
-  spec.version       = "0.1.8"
+  spec.version       = File.read(version_source).strip
   spec.authors       = ["raizo.tcs"]
   spec.email         = ["raizo.tcs@users.noreply.github.com"]
   
@@ -38,7 +49,7 @@ Gem::Specification.new do |spec|
   
   spec.required_ruby_version = ">= 2.7.0"
   
-  spec.files         = Dir["lib/**/*", "ext/**/*", "README.md", "LICENSE", "NOTICE"]
+  spec.files         = Dir["lib/**/*", "ext/**/*", "README.md", "LICENSE", "NOTICE", "VERSION"]
   spec.require_paths = ["lib"]
   spec.extensions    = ["ext/archive_r/extconf.rb"]
   

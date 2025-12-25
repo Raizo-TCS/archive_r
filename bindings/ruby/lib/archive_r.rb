@@ -35,7 +35,11 @@ rescue LoadError
 end
 
 module Archive_r
-  VERSION = "0.1.8"
+  version_path = File.expand_path('../VERSION', __dir__)
+  unless File.exist?(version_path)
+    version_path = File.expand_path('../../../VERSION', __dir__)
+  end
+  VERSION = File.read(version_path).strip
   # Common archive formats excluding libarchive's mtree/raw pseudo formats
   STANDARD_FORMATS = %w[
     7zip ar cab cpio empty iso9660 lha rar tar warc xar zip
