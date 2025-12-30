@@ -9,6 +9,20 @@ Push-Location $repoRoot
 try {
   python -m pip install --upgrade pip setuptools wheel pybind11 build delvewheel
 
+  # Ensure licensing materials are present inside bindings/python before building.
+  $pyRoot = Join-Path $repoRoot 'bindings\python'
+  $srcLicenses = Join-Path $repoRoot 'LICENSES'
+  $dstLicenses = Join-Path $pyRoot 'LICENSES'
+  if (Test-Path $dstLicenses) { Remove-Item -Recurse -Force $dstLicenses }
+  New-Item -ItemType Directory -Force -Path $dstLicenses | Out-Null
+  if (Test-Path $srcLicenses) {
+    Copy-Item -Recurse -Force (Join-Path $srcLicenses '*') $dstLicenses
+  }
+  $rootLicense = Join-Path $repoRoot 'LICENSE'
+  if (Test-Path $rootLicense) { Copy-Item -Force $rootLicense (Join-Path $pyRoot 'LICENSE') }
+  $rootNotice = Join-Path $repoRoot 'NOTICE'
+  if (Test-Path $rootNotice) { Copy-Item -Force $rootNotice (Join-Path $pyRoot 'NOTICE') }
+
   $platTag = if ($Arch -eq 'arm64') { 'win_arm64' } else { 'win_amd64' }
   $targetDir = "bindings/python/dist/${platTag}-${PythonVersion}"
   $tempDir = Join-Path $targetDir "unrepaired"

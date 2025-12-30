@@ -19,6 +19,20 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 cd bindings/python
+
+# Ensure licensing materials are present inside bindings/python before building.
+rm -rf LICENSES
+mkdir -p LICENSES
+if [[ -d "${REPO_ROOT}/LICENSES" ]]; then
+	cp -R "${REPO_ROOT}/LICENSES/." LICENSES/
+fi
+if [[ -f "${REPO_ROOT}/LICENSE" ]]; then
+	cp "${REPO_ROOT}/LICENSE" LICENSE || true
+fi
+if [[ -f "${REPO_ROOT}/NOTICE" ]]; then
+	cp "${REPO_ROOT}/NOTICE" NOTICE || true
+fi
+
 python -m pip install --break-system-packages --require-hashes -r tools/requirements-wheel-macos.txt
 
 deployment_tag="${MACOSX_DEPLOYMENT_TARGET//./_}"

@@ -794,6 +794,20 @@ package_python_binding() {
 
     pushd "$python_root" >/dev/null
     rm -rf dist/ build/ *.egg-info
+
+    # Ensure licensing materials are present inside bindings/python before
+    # metadata generation (PEP 517 build isolation may not execute setup.py).
+    rm -rf LICENSES
+    mkdir -p LICENSES
+    if [ -d "$ROOT_DIR/LICENSES" ]; then
+        cp -R "$ROOT_DIR/LICENSES/." LICENSES/
+    fi
+    if [ -f "$ROOT_DIR/LICENSE" ]; then
+        cp "$ROOT_DIR/LICENSE" LICENSE || true
+    fi
+    if [ -f "$ROOT_DIR/NOTICE" ]; then
+        cp "$ROOT_DIR/NOTICE" NOTICE || true
+    fi
     
     local build_args=("--sdist" "--wheel" "--outdir" "$dist_dir")
     if [ "${ARCHIVE_R_BUILD_NO_ISOLATION:-0}" -eq 1 ]; then

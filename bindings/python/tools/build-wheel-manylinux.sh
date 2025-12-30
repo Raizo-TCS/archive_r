@@ -50,6 +50,17 @@ build_python_bindings() {
 	./build.sh --rebuild-all --python-only
 
 	cd "${PYTHON_BINDINGS_DIR}"
+	rm -rf LICENSES
+	mkdir -p LICENSES
+	if [[ -d "${WORKSPACE_DIR}/LICENSES" ]]; then
+		cp -R "${WORKSPACE_DIR}/LICENSES/." LICENSES/
+	fi
+	if [[ -f "${WORKSPACE_DIR}/LICENSE" ]]; then
+		cp "${WORKSPACE_DIR}/LICENSE" LICENSE || true
+	fi
+	if [[ -f "${WORKSPACE_DIR}/NOTICE" ]]; then
+		cp "${WORKSPACE_DIR}/NOTICE" NOTICE || true
+	fi
 	rm -rf dist_temp
 	mkdir -p dist dist_temp
 	rm -rf "${TARGET_PATH}"

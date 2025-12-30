@@ -2,6 +2,7 @@
 # Copyright (c) 2025 archive_r Team
 
 import atexit
+import filecmp
 import os
 import platform
 import shutil
@@ -23,16 +24,57 @@ libs_dir = binding_root / '.libs'
 local_readme = binding_root / 'README.md'
 local_license = binding_root / 'LICENSE'
 local_notice = binding_root / 'NOTICE'
+local_licenses_dir = binding_root / 'LICENSES'
 
-# Ensure LICENSE is present in the binding directory. Skip overwrite when a copy already exists
-# to avoid permission issues from prior root-owned builds.
-if (archive_r_root / 'LICENSE').exists() and not local_license.exists():
-    shutil.copy(archive_r_root / 'LICENSE', local_license)
 
-# Ensure NOTICE is present in the binding directory. Skip overwrite when a copy already exists
-# to avoid permission issues from prior root-owned builds.
-if (archive_r_root / 'NOTICE').exists() and not local_notice.exists():
-    shutil.copy(archive_r_root / 'NOTICE', local_notice)
+def _ensure_file_copy(source: Path, target: Path) -> None:
+    if not source.exists():
+        return
+    try:
+        if target.exists() and filecmp.cmp(source, target, shallow=False):
+            return
+    except Exception:
+        # If comparison fails for any reason, attempt copy.
+        pass
+
+    try:
+        shutil.copy2(source, target)
+    except PermissionError as exc:
+        print(f"Warning: failed to copy {source} -> {target}: {exc}", file=sys.stderr)
+
+
+def _ensure_tree_copy(source_dir: Path, target_dir: Path) -> None:
+    if not source_dir.exists():
+        return
+
+    if target_dir.exists():
+        try:
+            shutil.rmtree(target_dir)
+        except PermissionError as exc:
+            # If we cannot remove, fall back to best-effort merge copy.
+            print(f"Warning: failed to remove {target_dir} before copy: {exc}", file=sys.stderr)
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for source_path in source_dir.rglob('*'):
+        if not source_path.is_file():
+            continue
+        rel = source_path.relative_to(source_dir)
+        target_path = target_dir / rel
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            if target_path.exists() and filecmp.cmp(source_path, target_path, shallow=False):
+                continue
+        except Exception:
+            pass
+        try:
+            shutil.copy2(source_path, target_path)
+        except PermissionError as exc:
+            print(f"Warning: failed to copy {source_path} -> {target_path}: {exc}", file=sys.stderr)
+
+# Keep licensing materials in sync with the repository root (SSOT).
+_ensure_file_copy(archive_r_root / 'LICENSE', local_license)
+_ensure_file_copy(archive_r_root / 'NOTICE', local_notice)
+_ensure_tree_copy(archive_r_root / 'LICENSES', local_licenses_dir)
 
 local_version = binding_root / 'VERSION'
 system_name = platform.system().lower()

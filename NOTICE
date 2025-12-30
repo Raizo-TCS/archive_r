@@ -3,48 +3,67 @@ archive_r Notices
 This file contains third-party notices and licensing information for bundled or
 linked components. It does not replace the project license.
 
+For full license texts, see the files under the LICENSES/ directory in this
+repository. Python wheels include these texts under the *.dist-info/licenses/
+directory.
+
 ----------------------------------------
 Third-Party Notices
 ----------------------------------------
 
-This distribution bundles or links against the following third-party
-components. Their respective license terms apply in addition to the MIT
-License.
+This distribution (notably the Python wheels) bundles and/or dynamically links
+against the following third-party components. Their respective license terms
+apply in addition to the MIT License.
 
 1. libarchive
 	- Purpose: core archive reading and writing functionality for the C++
 	  library and language bindings.
+	- Version (manylinux wheels): 3.7.5
 	- License: New BSD License (https://www.libarchive.org/)
+	- Full license text and notices: LICENSES/libarchive-COPYING
 
 2. pybind11
 	- Purpose: header-only binding generator for the Python extension module.
 	- License: BSD-style License (https://github.com/pybind/pybind11)
+	- Notes: used at build time; not redistributed as a runtime library.
 
-The following components are redistributed only because libarchive (bundled with archive_r) depends on them at runtime:
+The following components are redistributed only because libarchive (bundled in
+some artifacts such as Python wheels) depends on them at runtime:
 
 3. zlib
-	- Purpose: libarchive dependency providing DEFLATE compression; bundled inside archive_r binaries and wheels because libarchive requires it.
+	- Purpose: libarchive dependency providing DEFLATE compression.
 	- License: zlib License (https://zlib.net/zlib_license.html)
+	- Notes: typically provided by the platform runtime (not bundled in wheels).
 
 4. bzip2
 	- Purpose: libarchive dependency providing bzip2 compression support; distributed with archive_r artifacts.
+	- Version (manylinux wheels): 1.0.8
 	- License: BSD-style license (https://sourceware.org/bzip2/)
+	- Full license text and notices: LICENSES/bzip2-LICENSE
 
 5. liblzma (XZ Utils)
 	- Purpose: libarchive dependency providing LZMA/XZ compression; included with archive_r packages.
-	- License: Public Domain + GNU LGPLv2.1+ (https://tukaani.org/xz/)
+	- Version (manylinux wheels): 5.6.2
+	- License: BSD Zero Clause License (0BSD) for liblzma (https://tukaani.org/xz/)
+	- Full license texts and notices: LICENSES/xz-COPYING, LICENSES/xz-COPYING.0BSD
 
 6. libxml2
 	- Purpose: libarchive dependency used for archive formats such as xar; distributed alongside archive_r.
+	- Version (manylinux wheels): 2.13.4
 	- License: MIT-style License (http://xmlsoft.org/)
+	- Full license text and notices: LICENSES/libxml2-Copyright
 
 7. zstd
 	- Purpose: libarchive dependency providing Zstandard compression; shipped within archive_r binaries.
+	- Version (manylinux wheels): 1.5.5
 	- License: BSD License (https://github.com/facebook/zstd)
+	- Full license text and notices: LICENSES/zstd-LICENSE
 
 8. Nettle
 	- Purpose: libarchive dependency providing cryptographic support (macOS/Linux); bundled with archive_r binaries.
+	- Version (manylinux wheels): 3.9.1
 	- License: GNU LGPLv3+ or GNU GPLv2+ (https://www.lysator.liu.se/~nisse/nettle/)
+	- Full license texts and notices: LICENSES/nettle-COPYING.LESSERv3, LICENSES/nettle-COPYINGv2
 
 9. mini-gmp
 	- Purpose: Nettle dependency for arithmetic operations (macOS/Linux); bundled with archive_r binaries.
@@ -56,16 +75,42 @@ The following components are redistributed only because libarchive (bundled with
 
 11. lz4
 	- Purpose: libarchive dependency providing LZ4 compression; shipped with archive_r artifacts when required.
+	- Version (manylinux wheels): 1.10.0
 	- License: BSD 2-Clause (https://github.com/lz4/lz4)
+	- Full license text and notices: LICENSES/lz4-LICENSE
 
 12. libb2 (BLAKE2)
 	- Purpose: libarchive dependency providing BLAKE2 hashing; bundled when archive formats require it.
+	- Version (manylinux wheels): 0.98.1
 	- License: CC0 1.0 Universal (https://github.com/BLAKE2/libb2)
+	- Full license text and notices: LICENSES/libb2-COPYING
 
 13. libattr
 	- Purpose: libarchive dependency providing extended attribute support on POSIX platforms; included in POSIX builds only.
+	- Version (manylinux wheels): 2.5.2
 	- License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/attr)
+	- Full license text and notices: LICENSES/attr-COPYING.LGPL
 
 14. libacl
 	- Purpose: libarchive dependency providing POSIX ACL support; included in POSIX builds only.
+	- Version (manylinux wheels): 2.3.2
 	- License: LGPL-2.1-or-later for the library (https://savannah.nongnu.org/projects/acl)
+	- Full license text and notices: LICENSES/acl-COPYING.LGPL
+
+15. LLVM OpenMP runtime (libomp)
+	- Purpose: runtime dependency that can be bundled into Linux wheels depending on toolchain and binary dependencies.
+	- License: Apache License 2.0 with LLVM Exceptions (https://llvm.org/)
+	- Full license text and notices: LICENSES/libomp-LICENSE.TXT
+
+----------------------------------------
+Source Availability
+----------------------------------------
+
+For the components redistributed in binary form, the corresponding source code
+can be obtained from the upstream project release pages listed above.
+
+For the manylinux wheel build, exact dependency versions are recorded in:
+	- bindings/python/tools/build-deps-manylinux.sh
+
+Full license texts copied from upstream release archives are stored under:
+	- LICENSES/
