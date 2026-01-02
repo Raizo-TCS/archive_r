@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM quay.io/pypa/manylinux_2_28_aarch64:latest@sha256:1c428544d9db0567ae2d99ce72f3f754d12c0a60702064fd8ed5f12c50c4d19e
+FROM quay.io/pypa/manylinux_2_28_aarch64:latest@sha256:eed90f5453063780db25d09786d4f23556120f8a96e21146ed0cf0f11f3cbee4
 
 ARG LIBARCHIVE_VERSION=3.7.5
 ENV LIBARCHIVE_VERSION=${LIBARCHIVE_VERSION} \
