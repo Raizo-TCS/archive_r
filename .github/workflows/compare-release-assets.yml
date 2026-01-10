@@ -1,0 +1,156 @@
+name: Compare Release Assets
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_tag:
+        description: 'Base release tag to compare against (default: latest release)'
+        required: false
+        type: string
+      commit_sha:
+        description: 'Commit SHA to compare (used to locate successful CI/Build Wheels runs if run IDs are omitted)'
+        required: false
+        type: string
+      ci_run_id:
+        description: 'CI Run ID to download artifacts from (optional)'
+        required: false
+        type: string
+      wheels_run_id:
+        description: 'Build Wheels Run ID to download artifacts from (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  compare:
+    name: Compare artifacts vs release
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+
+      - name: Resolve inputs
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          COMMIT_SHA="${{ inputs.commit_sha }}"
+          CI_RUN_ID="${{ inputs.ci_run_id }}"
+          WHEELS_RUN_ID="${{ inputs.wheels_run_id }}"
+          BASE_TAG_INPUT="${{ inputs.base_tag }}"
+
+          if [[ -z "$COMMIT_SHA" && -z "$CI_RUN_ID" && -z "$WHEELS_RUN_ID" ]]; then
+            echo "::error::Provide at least one of commit_sha, ci_run_id, or wheels_run_id"
+            exit 1
+          fi
+
+          if [[ -z "$BASE_TAG_INPUT" ]]; then
+            BASE_TAG=$(gh release view --json tagName --jq '.tagName')
+          else
+            BASE_TAG="$BASE_TAG_INPUT"
+          fi
+
+          if [[ -z "$COMMIT_SHA" ]]; then
+            COMMIT_SHA="(not provided)"
+          fi
+
+          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          echo "base_tag=$BASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "ci_run_id=$CI_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "wheels_run_id=$WHEELS_RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve run IDs (if not provided)
+        id: runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT_SHA="${{ inputs.commit_sha }}"
+
+          CI_RUN_ID="${{ steps.resolve.outputs.ci_run_id }}"
+          if [[ -z "$CI_RUN_ID" ]]; then
+            if [[ -z "$COMMIT_SHA" ]]; then
+              echo "::error::ci_run_id is required when commit_sha is not provided"
+              exit 1
+            fi
+            CI_RUN_ID=$(gh run list --workflow ci.yml --commit "$COMMIT_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
+          fi
+
+          WHEELS_RUN_ID="${{ steps.resolve.outputs.wheels_run_id }}"
+          if [[ -z "$WHEELS_RUN_ID" ]]; then
+            if [[ -z "$COMMIT_SHA" ]]; then
+              echo "::error::wheels_run_id is required when commit_sha is not provided"
+              exit 1
+            fi
+            WHEELS_RUN_ID=$(gh run list --workflow build-wheels.yml --commit "$COMMIT_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
+          fi
+
+          if [[ -z "$CI_RUN_ID" && -z "$WHEELS_RUN_ID" ]]; then
+            echo "::error::No successful CI/Build Wheels runs found. Provide run IDs explicitly or ensure runs exist for commit_sha."
+            exit 1
+          fi
+
+          echo "ci_run_id=$CI_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "wheels_run_id=$WHEELS_RUN_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Download base release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_TAG="${{ steps.resolve.outputs.base_tag }}"
+          echo "Base tag: $BASE_TAG"
+          mkdir -p base_release
+          gh release download "$BASE_TAG" --dir base_release
+
+      - name: Download new artifacts (CI)
+        shell: bash
+        run: |
+          set -euo pipefail
+          CI_RUN_ID="${{ steps.runs.outputs.ci_run_id }}"
+          if [[ -z "$CI_RUN_ID" ]]; then
+            echo "::notice::No CI artifacts will be included (ci_run_id not available)."
+            exit 0
+          fi
+          mkdir -p new_artifacts
+          gh run download "$CI_RUN_ID" --dir new_artifacts
+
+      - name: Download new artifacts (Build Wheels)
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEELS_RUN_ID="${{ steps.runs.outputs.wheels_run_id }}"
+          if [[ -z "$WHEELS_RUN_ID" ]]; then
+            echo "::notice::No Build Wheels artifacts will be included (wheels_run_id not available)."
+            exit 0
+          fi
+          mkdir -p new_artifacts
+          gh run download "$WHEELS_RUN_ID" --dir new_artifacts
+
+      - name: Compare assets (content-based, metadata ignored)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/compare_release_assets.py \
+            --base-dir base_release \
+            --new-dir new_artifacts \
+            --base-tag "${{ steps.resolve.outputs.base_tag }}" \
+            --commit-sha "${{ steps.resolve.outputs.commit_sha }}" \
+            --out-json compare_report.json \
+            --out-md compare_report.md
+          cat compare_report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload comparison report
+        if: ${{ always() && env.ACT != 'true' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: compare-release-assets-${{ steps.resolve.outputs.commit_sha }}
+          path: |
+            compare_report.json
+            compare_report.md
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,462 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import io
+import os
+import re
+import tarfile
+import gzip
+import zipfile
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Tuple
+
+
+IGNORED_PATH_PATTERNS = [
+    re.compile(r"(^|/)\.DS_Store$"),
+]
+
+
+def _is_ignored_member(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    return any(p.search(normalized) for p in IGNORED_PATH_PATTERNS)
+
+
+def _sha256_bytes(data: bytes) -> str:
+    h = hashlib.sha256()
+    h.update(data)
+    return h.hexdigest()
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _is_zip(path: Path) -> bool:
+    return path.suffix.lower() in {".whl", ".zip"}
+
+
+def _is_tar(path: Path) -> bool:
+    name = path.name.lower()
+    return name.endswith(".tar.gz") or name.endswith(".tgz") or name.endswith(".gem")
+
+
+def _is_gem(path: Path) -> bool:
+    return path.name.lower().endswith(".gem")
+
+
+@dataclass(frozen=True)
+class CompareResult:
+    status: str  # same|changed|error
+    details: Dict[str, object]
+
+
+def _zip_manifest(path: Path) -> Tuple[Dict[str, str], List[str]]:
+    hashes: Dict[str, str] = {}
+    errors: List[str] = []
+    try:
+        with zipfile.ZipFile(path, "r") as zf:
+            for info in zf.infolist():
+                name = info.filename
+                if name.endswith("/"):
+                    continue
+                if _is_ignored_member(name):
+                    continue
+                try:
+                    data = zf.read(info)
+                except Exception as e:  # noqa: BLE001
+                    errors.append(f"read failed: {name}: {e}")
+                    continue
+                hashes[name] = _sha256_bytes(data)
+    except Exception as e:  # noqa: BLE001
+        errors.append(str(e))
+    return hashes, errors
+
+
+def _tar_manifest(path: Path) -> Tuple[Dict[str, str], Dict[str, str], List[str]]:
+    file_hashes: Dict[str, str] = {}
+    link_targets: Dict[str, str] = {}
+    errors: List[str] = []
+    try:
+        with tarfile.open(path, "r:*") as tf:
+            for member in tf.getmembers():
+                name = member.name
+                if name in {"pax_global_header"}:
+                    continue
+                if _is_ignored_member(name):
+                    continue
+                if member.isdir():
+                    continue
+                if member.issym() or member.islnk():
+                    link_targets[name] = member.linkname or ""
+                    continue
+                if member.isfile():
+                    try:
+                        f = tf.extractfile(member)
+                        if f is None:
+                            errors.append(f"extractfile returned None: {name}")
+                            continue
+                        data = f.read()
+                    except Exception as e:  # noqa: BLE001
+                        errors.append(f"read failed: {name}: {e}")
+                        continue
+                    file_hashes[name] = _sha256_bytes(data)
+                    continue
+                errors.append(f"unsupported member type: {name}")
+    except Exception as e:  # noqa: BLE001
+        errors.append(str(e))
+    return file_hashes, link_targets, errors
+
+
+def _gem_manifest(path: Path) -> Tuple[Dict[str, str], List[str]]:
+    """Compute a content manifest for .gem, ignoring nested archive container metadata.
+
+    Ruby gems are tar files containing (at least) data.tar.gz and metadata.gz.
+    Comparing raw bytes of data.tar.gz is sensitive to tar metadata timestamps.
+    Instead, we expand data.tar.gz and hash the extracted file contents.
+    """
+    hashes: Dict[str, str] = {}
+    errors: List[str] = []
+    try:
+        with tarfile.open(path, "r:*") as gem_tf:
+            data_tgz: Optional[bytes] = None
+            metadata_gz: Optional[bytes] = None
+
+            for member in gem_tf.getmembers():
+                name = member.name
+                if member.isdir() or name in {"pax_global_header"}:
+                    continue
+                if _is_ignored_member(name):
+                    continue
+                if not member.isfile():
+                    continue
+                try:
+                    f = gem_tf.extractfile(member)
+                    if f is None:
+                        errors.append(f"extractfile returned None: {name}")
+                        continue
+                    payload = f.read()
+                except Exception as e:  # noqa: BLE001
+                    errors.append(f"read failed: {name}: {e}")
+                    continue
+
+                if name == "data.tar.gz":
+                    data_tgz = payload
+                elif name == "metadata.gz":
+                    metadata_gz = payload
+                else:
+                    # Other files are typically small metadata; hash raw bytes.
+                    hashes[f"gem/{name}"] = _sha256_bytes(payload)
+
+            if metadata_gz is not None:
+                try:
+                    metadata = gzip.decompress(metadata_gz)
+                    hashes["gem/metadata"] = _sha256_bytes(metadata)
+                except Exception as e:  # noqa: BLE001
+                    errors.append(f"metadata.gz decompress failed: {e}")
+
+            if data_tgz is None:
+                errors.append("data.tar.gz not found in gem")
+            else:
+                try:
+                    with tarfile.open(fileobj=io.BytesIO(data_tgz), mode="r:gz") as data_tf:
+                        for member in data_tf.getmembers():
+                            name = member.name
+                            if name in {"pax_global_header"}:
+                                continue
+                            if _is_ignored_member(name):
+                                continue
+                            if member.isdir():
+                                continue
+                            if member.issym() or member.islnk():
+                                hashes[f"data/{name}"] = _sha256_bytes((member.linkname or "").encode("utf-8"))
+                                continue
+                            if member.isfile():
+                                try:
+                                    f = data_tf.extractfile(member)
+                                    if f is None:
+                                        errors.append(f"data extractfile returned None: {name}")
+                                        continue
+                                    payload = f.read()
+                                except Exception as e:  # noqa: BLE001
+                                    errors.append(f"data read failed: {name}: {e}")
+                                    continue
+                                hashes[f"data/{name}"] = _sha256_bytes(payload)
+                except Exception as e:  # noqa: BLE001
+                    errors.append(f"data.tar.gz parse failed: {e}")
+    except Exception as e:  # noqa: BLE001
+        errors.append(str(e))
+
+    return hashes, errors
+
+
+def compare_files(base_path: Path, new_path: Path) -> CompareResult:
+    if _is_gem(base_path) and _is_gem(new_path):
+        base_hashes, base_errors = _gem_manifest(base_path)
+        new_hashes, new_errors = _gem_manifest(new_path)
+        errors = base_errors + new_errors
+        if errors:
+            return CompareResult(status="error", details={"errors": errors})
+        if base_hashes == new_hashes:
+            return CompareResult(status="same", details={"members": len(base_hashes)})
+
+        missing = sorted(set(base_hashes) - set(new_hashes))
+        extra = sorted(set(new_hashes) - set(base_hashes))
+        changed = sorted(
+            name for name in set(base_hashes) & set(new_hashes) if base_hashes[name] != new_hashes[name]
+        )
+        return CompareResult(
+            status="changed",
+            details={
+                "members_base": len(base_hashes),
+                "members_new": len(new_hashes),
+                "missing_members": missing[:50],
+                "extra_members": extra[:50],
+                "changed_members": changed[:50],
+                "missing_members_count": len(missing),
+                "extra_members_count": len(extra),
+                "changed_members_count": len(changed),
+            },
+        )
+
+    if _is_zip(base_path) and _is_zip(new_path):
+        base_hashes, base_errors = _zip_manifest(base_path)
+        new_hashes, new_errors = _zip_manifest(new_path)
+        errors = base_errors + new_errors
+        if errors:
+            return CompareResult(status="error", details={"errors": errors})
+        if base_hashes == new_hashes:
+            return CompareResult(status="same", details={"members": len(base_hashes)})
+        missing = sorted(set(base_hashes) - set(new_hashes))
+        extra = sorted(set(new_hashes) - set(base_hashes))
+        changed = sorted(
+            name for name in set(base_hashes) & set(new_hashes) if base_hashes[name] != new_hashes[name]
+        )
+        return CompareResult(
+            status="changed",
+            details={
+                "members_base": len(base_hashes),
+                "members_new": len(new_hashes),
+                "missing_members": missing[:50],
+                "extra_members": extra[:50],
+                "changed_members": changed[:50],
+                "missing_members_count": len(missing),
+                "extra_members_count": len(extra),
+                "changed_members_count": len(changed),
+            },
+        )
+
+    if _is_tar(base_path) and _is_tar(new_path):
+        base_files, base_links, base_errors = _tar_manifest(base_path)
+        new_files, new_links, new_errors = _tar_manifest(new_path)
+        errors = base_errors + new_errors
+        if errors:
+            return CompareResult(status="error", details={"errors": errors})
+
+        if base_files == new_files and base_links == new_links:
+            return CompareResult(
+                status="same",
+                details={"files": len(base_files), "links": len(base_links)},
+            )
+
+        missing_files = sorted(set(base_files) - set(new_files))
+        extra_files = sorted(set(new_files) - set(base_files))
+        changed_files = sorted(
+            name for name in set(base_files) & set(new_files) if base_files[name] != new_files[name]
+        )
+
+        missing_links = sorted(set(base_links) - set(new_links))
+        extra_links = sorted(set(new_links) - set(base_links))
+        changed_links = sorted(
+            name for name in set(base_links) & set(new_links) if base_links[name] != new_links[name]
+        )
+
+        return CompareResult(
+            status="changed",
+            details={
+                "files_base": len(base_files),
+                "files_new": len(new_files),
+                "links_base": len(base_links),
+                "links_new": len(new_links),
+                "missing_files": missing_files[:50],
+                "extra_files": extra_files[:50],
+                "changed_files": changed_files[:50],
+                "missing_links": missing_links[:50],
+                "extra_links": extra_links[:50],
+                "changed_links": changed_links[:50],
+                "missing_files_count": len(missing_files),
+                "extra_files_count": len(extra_files),
+                "changed_files_count": len(changed_files),
+                "missing_links_count": len(missing_links),
+                "extra_links_count": len(extra_links),
+                "changed_links_count": len(changed_links),
+            },
+        )
+
+    # Fallback: byte-level comparison
+    base_hash = _sha256_file(base_path)
+    new_hash = _sha256_file(new_path)
+    if base_hash == new_hash:
+        return CompareResult(status="same", details={"sha256": base_hash})
+    return CompareResult(status="changed", details={"base_sha256": base_hash, "new_sha256": new_hash})
+
+
+def _collect_files(root: Path) -> List[Path]:
+    if not root.exists():
+        return []
+    files: List[Path] = []
+    for p in root.rglob("*"):
+        if p.is_file():
+            files.append(p)
+    return files
+
+
+def _basename_map(files: Iterable[Path]) -> Tuple[Dict[str, Path], List[str]]:
+    groups: Dict[str, List[Path]] = {}
+    for p in files:
+        groups.setdefault(p.name, []).append(p)
+
+    chosen: Dict[str, Path] = {}
+    issues: List[str] = []
+
+    for name, paths in groups.items():
+        if len(paths) == 1:
+            chosen[name] = paths[0]
+            continue
+
+        # If multiple files share the same basename (e.g., artifacts from multiple jobs),
+        # ensure they are byte-identical; otherwise surface as an issue.
+        digests = {}
+        for p in paths:
+            try:
+                digests[str(p)] = _sha256_file(p)
+            except Exception as e:  # noqa: BLE001
+                issues.append(f"duplicate basename read failed: {name}: {p}: {e}")
+        unique_digests = sorted(set(digests.values()))
+        if len(unique_digests) == 1:
+            # Deterministically pick the shortest path (more stable across artifact layouts)
+            chosen[name] = sorted(paths, key=lambda x: (len(str(x)), str(x)))[0]
+            issues.append(f"duplicate basename (identical content): {name} ({len(paths)} copies)")
+        else:
+            chosen[name] = sorted(paths, key=lambda x: (len(str(x)), str(x)))[0]
+            issues.append(f"duplicate basename (different content): {name} ({len(paths)} copies)")
+
+    return chosen, issues
+
+
+def _render_markdown(report: Dict[str, object]) -> str:
+    base_tag = report.get("base_tag", "")
+    commit_sha = report.get("commit_sha", "")
+    counts = report.get("counts", {})
+    rows: List[Dict[str, object]] = report.get("results", [])  # type: ignore[assignment]
+
+    md: List[str] = []
+    md.append(f"## Release asset comparison\n")
+    md.append(f"- Base tag: `{base_tag}`\n")
+    md.append(f"- Commit: `{commit_sha}`\n")
+    md.append(
+        "- Summary: "
+        + ", ".join(
+            f"{k}={v}" for k, v in counts.items()  # type: ignore[union-attr]
+        )
+        + "\n"
+    )
+    md.append("\n")
+    md.append("| File | Status | Notes |\n")
+    md.append("|---|---:|---|\n")
+    for r in rows:
+        name = str(r.get("name"))
+        status = str(r.get("status"))
+        notes = ""
+        details = r.get("details")
+        if isinstance(details, dict):
+            if status == "changed":
+                parts: List[str] = []
+                for key in (
+                    "changed_members_count",
+                    "missing_members_count",
+                    "extra_members_count",
+                    "changed_files_count",
+                    "missing_files_count",
+                    "extra_files_count",
+                ):
+                    if key in details and isinstance(details[key], int):
+                        parts.append(f"{key}={details[key]}")
+                notes = "; ".join(parts)
+            elif status in {"missing", "new"}:
+                notes = ""
+            elif status == "error":
+                errs = details.get("errors")
+                if isinstance(errs, list) and errs:
+                    notes = str(errs[0])
+        md.append(f"| {name} | {status} | {notes} |\n")
+    md.append("\n")
+    return "".join(md)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--base-dir", required=True)
+    ap.add_argument("--new-dir", required=True)
+    ap.add_argument("--base-tag", required=True)
+    ap.add_argument("--commit-sha", required=True)
+    ap.add_argument("--out-json", required=True)
+    ap.add_argument("--out-md", required=True)
+    args = ap.parse_args()
+
+    base_dir = Path(args.base_dir)
+    new_dir = Path(args.new_dir)
+
+    base_files = _collect_files(base_dir)
+    new_files = _collect_files(new_dir)
+
+    base_map, base_errors = _basename_map(base_files)
+    new_map, new_errors = _basename_map(new_files)
+
+    results: List[Dict[str, object]] = []
+    counts = {"same": 0, "changed": 0, "missing": 0, "new": 0, "error": 0}
+    errors: List[str] = base_errors + new_errors
+
+    all_names = sorted(set(base_map) | set(new_map))
+    for name in all_names:
+        if name not in base_map:
+            results.append({"name": name, "status": "new", "details": {}})
+            counts["new"] += 1
+            continue
+        if name not in new_map:
+            results.append({"name": name, "status": "missing", "details": {}})
+            counts["missing"] += 1
+            continue
+        try:
+            cr = compare_files(base_map[name], new_map[name])
+            results.append({"name": name, "status": cr.status, "details": cr.details})
+            counts[cr.status] = counts.get(cr.status, 0) + 1
+        except Exception as e:  # noqa: BLE001
+            results.append({"name": name, "status": "error", "details": {"errors": [str(e)]}})
+            counts["error"] += 1
+
+    report = {
+        "base_tag": args.base_tag,
+        "commit_sha": args.commit_sha,
+        "counts": counts,
+        "errors": errors,
+        "results": results,
+    }
+
+    Path(args.out_json).write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
+    Path(args.out_md).write_text(_render_markdown(report), encoding="utf-8")
+
+    # Always succeed: this workflow is for decision support.
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
