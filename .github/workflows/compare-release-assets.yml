@@ -107,6 +107,41 @@ jobs:
           mkdir -p base_release
           gh release download "$BASE_TAG" --dir base_release
 
+      - name: Stage baseline packages (release-intended only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p base_packages/python base_packages/ruby
+
+          # Core source archive
+          while IFS= read -r f; do
+            cp "$f" base_packages/
+          done < <(find base_release -type f -name "archive_r-core-*.tar.gz" | sort || true)
+
+          # Python sdist (exclude core tarball)
+          while IFS= read -r f; do
+            cp "$f" base_packages/python/
+          done < <(
+            find base_release -type f -name "*.tar.gz" ! -name "archive_r-core-*.tar.gz" \
+              | sort || true
+          )
+
+          # Official wheels
+          while IFS= read -r f; do
+            cp "$f" base_packages/python/
+          done < <(
+            find base_release -type f -name "*.whl" \
+              | grep -E "(manylinux|macos|macosx|universal2|win_amd64)" \
+              | sort || true
+          )
+
+          # Ruby gem
+          while IFS= read -r f; do
+            cp "$f" base_packages/ruby/
+          done < <(find base_release -type f -name "*.gem" | sort || true)
+
+          echo "Baseline staged packages:" && ls -R base_packages
+
       - name: Download new artifacts (CI)
         shell: bash
         run: |
@@ -131,13 +166,48 @@ jobs:
           mkdir -p new_artifacts
           gh run download "$WHEELS_RUN_ID" --dir new_artifacts
 
+      - name: Stage candidate packages (release-intended only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p new_packages/python new_packages/ruby
+
+          # Core source archive
+          while IFS= read -r f; do
+            cp "$f" new_packages/
+          done < <(find new_artifacts -type f -name "archive_r-core-*.tar.gz" | sort || true)
+
+          # Python sdist (exclude core tarball)
+          while IFS= read -r f; do
+            cp "$f" new_packages/python/
+          done < <(
+            find new_artifacts -type f -name "*.tar.gz" ! -name "archive_r-core-*.tar.gz" \
+              | sort || true
+          )
+
+          # Official wheels
+          while IFS= read -r f; do
+            cp "$f" new_packages/python/
+          done < <(
+            find new_artifacts -type f -name "*.whl" \
+              | grep -E "(manylinux|macos|macosx|universal2|win_amd64)" \
+              | sort || true
+          )
+
+          # Ruby gem
+          while IFS= read -r f; do
+            cp "$f" new_packages/ruby/
+          done < <(find new_artifacts -type f -name "*.gem" | sort || true)
+
+          echo "Candidate staged packages:" && ls -R new_packages
+
       - name: Compare assets (content-based, metadata ignored)
         shell: bash
         run: |
           set -euo pipefail
           python3 .github/scripts/compare_release_assets.py \
-            --base-dir base_release \
-            --new-dir new_artifacts \
+            --base-dir base_packages \
+            --new-dir new_packages \
             --base-tag "${{ steps.resolve.outputs.base_tag }}" \
             --commit-sha "${{ steps.resolve.outputs.commit_sha }}" \
             --out-json compare_report.json \
