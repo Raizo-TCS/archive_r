@@ -21,6 +21,40 @@ IGNORED_PATH_PATTERNS = [
 ]
 
 
+# The compare workflow is decision-support: we want to detect *release-meaningful*
+# content updates, not toolchain/packaging metadata noise.
+WHEEL_IGNORED_MEMBERS = {
+    # Wheel RECORD files change whenever packaging/layout changes and often include
+    # hashes and sizes (and can vary even when code is effectively the same).
+    # For release decision support we treat it as noise.
+    "RECORD",
+}
+
+
+def _is_wheel_ignored_member(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    if normalized.endswith(".dist-info/RECORD"):
+        return True
+    return False
+
+
+def _is_python_sdist_ignored_member(path: str) -> bool:
+    normalized = path.replace("\\", "/")
+    # Generated packaging metadata (PEP 517 / setuptools) that is not a source-of-truth
+    # for code changes and may vary across toolchain versions.
+    if normalized.endswith("/PKG-INFO"):
+        return True
+    if normalized.endswith(".egg-info/PKG-INFO"):
+        return True
+    if normalized.endswith(".egg-info/SOURCES.txt"):
+        return True
+    if normalized.endswith(".egg-info/dependency_links.txt"):
+        return True
+    if normalized.endswith(".egg-info/top_level.txt"):
+        return True
+    return False
+
+
 def _is_ignored_member(path: str) -> bool:
     normalized = path.replace("\\", "/")
     return any(p.search(normalized) for p in IGNORED_PATH_PATTERNS)
@@ -70,6 +104,8 @@ def _zip_manifest(path: Path) -> Tuple[Dict[str, str], List[str]]:
                     continue
                 if _is_ignored_member(name):
                     continue
+                if _is_wheel_ignored_member(name):
+                    continue
                 try:
                     data = zf.read(info)
                 except Exception as e:  # noqa: BLE001
@@ -92,6 +128,8 @@ def _tar_manifest(path: Path) -> Tuple[Dict[str, str], Dict[str, str], List[str]
                 if name in {"pax_global_header"}:
                     continue
                 if _is_ignored_member(name):
+                    continue
+                if _is_python_sdist_ignored_member(name):
                     continue
                 if member.isdir():
                     continue
@@ -153,15 +191,18 @@ def _gem_manifest(path: Path) -> Tuple[Dict[str, str], List[str]]:
                 elif name == "metadata.gz":
                     metadata_gz = payload
                 else:
+                    if name == "checksums.yaml.gz":
+                        # Checksums are derived packaging metadata and can vary
+                        # across RubyGems versions.
+                        continue
                     # Other files are typically small metadata; hash raw bytes.
                     hashes[f"gem/{name}"] = _sha256_bytes(payload)
 
-            if metadata_gz is not None:
-                try:
-                    metadata = gzip.decompress(metadata_gz)
-                    hashes["gem/metadata"] = _sha256_bytes(metadata)
-                except Exception as e:  # noqa: BLE001
-                    errors.append(f"metadata.gz decompress failed: {e}")
+            # Note: we intentionally do NOT compare gem metadata.gz contents here.
+            # It often embeds RubyGems/toolchain version and other non-functional
+            # build metadata, which is not release-meaningful for this repository's
+            # decision-support comparison.
+            _ = metadata_gz
 
             if data_tgz is None:
                 errors.append("data.tar.gz not found in gem")
@@ -218,9 +259,9 @@ def compare_files(base_path: Path, new_path: Path) -> CompareResult:
             details={
                 "members_base": len(base_hashes),
                 "members_new": len(new_hashes),
-                "missing_members": missing[:50],
-                "extra_members": extra[:50],
-                "changed_members": changed[:50],
+                "missing_members": missing,
+                "extra_members": extra,
+                "changed_members": changed,
                 "missing_members_count": len(missing),
                 "extra_members_count": len(extra),
                 "changed_members_count": len(changed),
@@ -245,9 +286,9 @@ def compare_files(base_path: Path, new_path: Path) -> CompareResult:
             details={
                 "members_base": len(base_hashes),
                 "members_new": len(new_hashes),
-                "missing_members": missing[:50],
-                "extra_members": extra[:50],
-                "changed_members": changed[:50],
+                "missing_members": missing,
+                "extra_members": extra,
+                "changed_members": changed,
                 "missing_members_count": len(missing),
                 "extra_members_count": len(extra),
                 "changed_members_count": len(changed),
@@ -286,12 +327,12 @@ def compare_files(base_path: Path, new_path: Path) -> CompareResult:
                 "files_new": len(new_files),
                 "links_base": len(base_links),
                 "links_new": len(new_links),
-                "missing_files": missing_files[:50],
-                "extra_files": extra_files[:50],
-                "changed_files": changed_files[:50],
-                "missing_links": missing_links[:50],
-                "extra_links": extra_links[:50],
-                "changed_links": changed_links[:50],
+                "missing_files": missing_files,
+                "extra_files": extra_files,
+                "changed_files": changed_files,
+                "missing_links": missing_links,
+                "extra_links": extra_links,
+                "changed_links": changed_links,
                 "missing_files_count": len(missing_files),
                 "extra_files_count": len(extra_files),
                 "changed_files_count": len(changed_files),
@@ -399,6 +440,97 @@ def _render_markdown(report: Dict[str, object]) -> str:
                     notes = str(errs[0])
         md.append(f"| {name} | {status} | {notes} |\n")
     md.append("\n")
+
+    def _render_lines_block(lines: List[str]) -> str:
+        if not lines:
+            return "*(none)*\n"
+        safe_lines = [str(x) for x in lines]
+        return "```text\n" + "\n".join(safe_lines) + "\n```\n"
+
+    def _render_kv_block(details: Dict[str, object]) -> str:
+        pairs: List[str] = []
+        for k in (
+            "members_base",
+            "members_new",
+            "files_base",
+            "files_new",
+            "links_base",
+            "links_new",
+            "missing_members_count",
+            "extra_members_count",
+            "changed_members_count",
+            "missing_files_count",
+            "extra_files_count",
+            "changed_files_count",
+            "missing_links_count",
+            "extra_links_count",
+            "changed_links_count",
+        ):
+            v = details.get(k)
+            if isinstance(v, int):
+                pairs.append(f"- {k}: {v}\n")
+        if not pairs:
+            return ""
+        return "".join(pairs) + "\n"
+
+    md.append("## Details\n\n")
+    any_details = False
+    for r in rows:
+        name = str(r.get("name"))
+        status = str(r.get("status"))
+        details = r.get("details")
+        if status not in {"changed", "error"}:
+            continue
+        if not isinstance(details, dict):
+            continue
+        any_details = True
+        md.append("<details>\n")
+        md.append(f"<summary>{name} ({status})</summary>\n\n")
+
+        if status == "error":
+            errs = details.get("errors")
+            if isinstance(errs, list):
+                md.append("### errors\n\n")
+                md.append(_render_lines_block([str(e) for e in errs]))
+            md.append("</details>\n\n")
+            continue
+
+        md.append(_render_kv_block(details))
+
+        # Zip/Gem member diffs
+        for key in ("missing_members", "extra_members", "changed_members"):
+            v = details.get(key)
+            if isinstance(v, list):
+                md.append(f"### {key}\n\n")
+                md.append(_render_lines_block([str(x) for x in v]))
+
+        # Tar file/link diffs
+        for key in (
+            "missing_files",
+            "extra_files",
+            "changed_files",
+            "missing_links",
+            "extra_links",
+            "changed_links",
+        ):
+            v = details.get(key)
+            if isinstance(v, list):
+                md.append(f"### {key}\n\n")
+                md.append(_render_lines_block([str(x) for x in v]))
+
+        # Fallback byte-level hash comparison
+        base_sha = details.get("base_sha256")
+        new_sha = details.get("new_sha256")
+        if isinstance(base_sha, str) and isinstance(new_sha, str):
+            md.append("### sha256\n\n")
+            md.append(f"- base_sha256: `{base_sha}`\n")
+            md.append(f"- new_sha256: `{new_sha}`\n\n")
+
+        md.append("</details>\n\n")
+
+    if not any_details:
+        md.append("(no changed/error files)\n")
+
     return "".join(md)
 
 
