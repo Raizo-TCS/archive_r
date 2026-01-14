@@ -7,10 +7,6 @@ on:
         description: 'Base release tag to compare against (default: latest release)'
         required: false
         type: string
-      commit_sha:
-        description: 'Commit SHA to compare (used to locate successful CI/Build Wheels runs if run IDs are omitted)'
-        required: false
-        type: string
       ci_run_id:
         description: 'CI Run ID to download artifacts from (optional)'
         required: false
@@ -33,6 +29,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          fetch-depth: 0
 
       - name: Resolve inputs
         id: resolve
@@ -40,13 +38,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          COMMIT_SHA="${{ inputs.commit_sha }}"
           CI_RUN_ID="${{ inputs.ci_run_id }}"
           WHEELS_RUN_ID="${{ inputs.wheels_run_id }}"
           BASE_TAG_INPUT="${{ inputs.base_tag }}"
 
-          if [[ -z "$COMMIT_SHA" && -z "$CI_RUN_ID" && -z "$WHEELS_RUN_ID" ]]; then
-            echo "::error::Provide at least one of commit_sha, ci_run_id, or wheels_run_id"
+          if [[ -z "$CI_RUN_ID" || -z "$WHEELS_RUN_ID" ]]; then
+            echo "::error::Provide both ci_run_id and wheels_run_id"
             exit 1
           fi
 
@@ -56,47 +53,45 @@ jobs:
             BASE_TAG="$BASE_TAG_INPUT"
           fi
 
-          if [[ -z "$COMMIT_SHA" ]]; then
-            COMMIT_SHA="(not provided)"
-          fi
-
-          echo "commit_sha=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
           echo "base_tag=$BASE_TAG" >> "$GITHUB_OUTPUT"
           echo "ci_run_id=$CI_RUN_ID" >> "$GITHUB_OUTPUT"
           echo "wheels_run_id=$WHEELS_RUN_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Resolve run IDs (if not provided)
-        id: runs
+      - name: Validate run IDs match base tag commit
+        id: validate
         shell: bash
         run: |
           set -euo pipefail
-          COMMIT_SHA="${{ inputs.commit_sha }}"
 
+          BASE_TAG="${{ steps.resolve.outputs.base_tag }}"
           CI_RUN_ID="${{ steps.resolve.outputs.ci_run_id }}"
-          if [[ -z "$CI_RUN_ID" ]]; then
-            if [[ -z "$COMMIT_SHA" ]]; then
-              echo "::error::ci_run_id is required when commit_sha is not provided"
-              exit 1
-            fi
-            CI_RUN_ID=$(gh run list --workflow ci.yml --commit "$COMMIT_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
-          fi
-
           WHEELS_RUN_ID="${{ steps.resolve.outputs.wheels_run_id }}"
-          if [[ -z "$WHEELS_RUN_ID" ]]; then
-            if [[ -z "$COMMIT_SHA" ]]; then
-              echo "::error::wheels_run_id is required when commit_sha is not provided"
-              exit 1
-            fi
-            WHEELS_RUN_ID=$(gh run list --workflow build-wheels.yml --commit "$COMMIT_SHA" --status success --limit 1 --json databaseId --jq '.[0].databaseId' || true)
-          fi
 
-          if [[ -z "$CI_RUN_ID" && -z "$WHEELS_RUN_ID" ]]; then
-            echo "::error::No successful CI/Build Wheels runs found. Provide run IDs explicitly or ensure runs exist for commit_sha."
+          git fetch --tags --force origin
+          TAG_SHA=$(git rev-list -n 1 "$BASE_TAG")
+
+          CI_SHA=$(gh run view "$CI_RUN_ID" --json headSha --jq '.headSha')
+          WHEELS_SHA=$(gh run view "$WHEELS_RUN_ID" --json headSha --jq '.headSha')
+
+          echo "Base tag: $BASE_TAG"
+          echo "Tag commit: $TAG_SHA"
+          echo "CI run: $CI_RUN_ID (headSha=$CI_SHA)"
+          echo "Build Wheels run: $WHEELS_RUN_ID (headSha=$WHEELS_SHA)"
+
+          if [[ -z "$CI_SHA" || -z "$WHEELS_SHA" ]]; then
+            echo "::error::Failed to resolve headSha from the provided run IDs"
+            exit 1
+          fi
+          if [[ "$CI_SHA" != "$WHEELS_SHA" ]]; then
+            echo "::error::ci_run_id and wheels_run_id are from different commits. Provide run IDs from the same commit."
+            exit 1
+          fi
+          if [[ "$CI_SHA" != "$TAG_SHA" ]]; then
+            echo "::error::Run IDs do not match the base tag commit. Select CI/Build Wheels runs for $BASE_TAG (commit $TAG_SHA)."
             exit 1
           fi
 
-          echo "ci_run_id=$CI_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "wheels_run_id=$WHEELS_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "commit_sha=$CI_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Download base release assets
         shell: bash
@@ -146,11 +141,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          CI_RUN_ID="${{ steps.runs.outputs.ci_run_id }}"
-          if [[ -z "$CI_RUN_ID" ]]; then
-            echo "::notice::No CI artifacts will be included (ci_run_id not available)."
-            exit 0
-          fi
+          CI_RUN_ID="${{ steps.resolve.outputs.ci_run_id }}"
           mkdir -p new_artifacts
           gh run download "$CI_RUN_ID" --dir new_artifacts
 
@@ -158,11 +149,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          WHEELS_RUN_ID="${{ steps.runs.outputs.wheels_run_id }}"
-          if [[ -z "$WHEELS_RUN_ID" ]]; then
-            echo "::notice::No Build Wheels artifacts will be included (wheels_run_id not available)."
-            exit 0
-          fi
+          WHEELS_RUN_ID="${{ steps.resolve.outputs.wheels_run_id }}"
           mkdir -p new_artifacts
           gh run download "$WHEELS_RUN_ID" --dir new_artifacts
 
@@ -209,7 +196,7 @@ jobs:
             --base-dir base_packages \
             --new-dir new_packages \
             --base-tag "${{ steps.resolve.outputs.base_tag }}" \
-            --commit-sha "${{ steps.resolve.outputs.commit_sha }}" \
+            --commit-sha "${{ steps.validate.outputs.commit_sha }}" \
             --out-json compare_report.json \
             --out-md compare_report.md
           cat compare_report.md >> "$GITHUB_STEP_SUMMARY"
@@ -218,7 +205,7 @@ jobs:
         if: ${{ always() && env.ACT != 'true' }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: compare-release-assets-${{ steps.resolve.outputs.commit_sha }}
+          name: compare-release-assets-${{ steps.validate.outputs.commit_sha }}
           path: |
             compare_report.json
             compare_report.md
