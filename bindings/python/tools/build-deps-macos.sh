@@ -21,6 +21,32 @@ BASE_TMP="${TMPDIR:-/tmp}"
 WORKDIR="$(mktemp -d "${BASE_TMP%/}/archive_r_deps.XXXXXX")"
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# Reproducibility: debug info often embeds absolute build paths (e.g., mktemp dirs).
+# Default to a release-oriented build without debug symbols.
+ARCHIVE_R_DEPS_DEBUG="${ARCHIVE_R_DEPS_DEBUG:-0}"
+ARCHIVE_R_DEPS_STRIP_DEBUG="${ARCHIVE_R_DEPS_STRIP_DEBUG:-1}"
+
+append_debug_flags() {
+  local flags="$1"
+  if [[ "$ARCHIVE_R_DEPS_DEBUG" == "1" ]]; then
+    flags+=" -g"
+  fi
+  echo "$flags"
+}
+
+strip_debug_symbols() {
+  if [[ "$ARCHIVE_R_DEPS_STRIP_DEBUG" != "1" ]]; then
+    return 0
+  fi
+  if ! command -v strip >/dev/null 2>&1; then
+    return 0
+  fi
+  # strip -S: strip debug symbols (keeps global symbols)
+  find "$PREFIX/lib" "$PREFIX/lib64" -type f -name '*.dylib' 2>/dev/null | while read -r f; do
+    strip -S "$f" >/dev/null 2>&1 || true
+  done
+}
+
 usage() {
   cat <<'EOF'
 Usage: build-deps-macos.sh --prefix <path>
@@ -88,7 +114,7 @@ build_zlib() {
   fetch "https://github.com/madler/zlib/releases/download/v${ZLIB_VERSION}/$name.tar.gz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
-  cflags_safe=${CFLAGS:-"-O2 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_safe=$(append_debug_flags "${CFLAGS:-"-O2 -pipe -fno-lto -fno-tree-vectorize"}")
   (cd "$src" && CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --shared && make -j"$PARALLEL" && make install)
   rm -f "$PREFIX/lib/libz.a"
 }
@@ -100,13 +126,13 @@ build_bzip2() {
   
   # Build shared library manually for macOS (upstream Makefile-libbz2_so is Linux-specific)
   (cd "$src" && \
-   cc -c -O2 -g -pipe -fPIC -D_FILE_OFFSET_BITS=64 blocksort.c huffman.c crctable.c randtable.c compress.c decompress.c bzlib.c && \
+    cc -c -O2 -pipe -fPIC -D_FILE_OFFSET_BITS=64 $(append_debug_flags "") blocksort.c huffman.c crctable.c randtable.c compress.c decompress.c bzlib.c && \
    cc -shared -Wl,-install_name -Wl,"$PREFIX/lib/libbz2.1.0.dylib" -o "libbz2.${BZIP2_VERSION}.dylib" \
       blocksort.o huffman.o crctable.o randtable.o compress.o decompress.o bzlib.o && \
    rm -f libbz2.dylib libbz2.1.0.dylib && \
    ln -s "libbz2.${BZIP2_VERSION}.dylib" libbz2.1.0.dylib && \
    ln -s "libbz2.${BZIP2_VERSION}.dylib" libbz2.dylib && \
-   make -j"$PARALLEL" CC=cc CFLAGS="-O2 -g -pipe -fPIC" bzip2 bzip2recover)
+    make -j"$PARALLEL" CC=cc CFLAGS="$(append_debug_flags "-O2 -pipe -fPIC")" bzip2 bzip2recover)
 
   install -d "$PREFIX/lib" "$PREFIX/include" "$PREFIX/share/man/man1" "$PREFIX/bin"
   install -m 755 "$src/libbz2.${BZIP2_VERSION}.dylib" "$PREFIX/lib/"
@@ -122,7 +148,7 @@ build_xz() {
   fetch "https://tukaani.org/xz/$name.tar.gz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
-  cflags_safe=${CFLAGS:-"-O0 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_safe=$(append_debug_flags "${CFLAGS:-"-O0 -pipe -fno-lto -fno-tree-vectorize"}")
   (cd "$src" && CC=cc CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --enable-shared --disable-static --disable-lzma-links --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts && make -j1 && make install)
 }
 
@@ -152,7 +178,7 @@ build_libxml2() {
   fetch "https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION%.*}/$name.tar.xz" "$tarball"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
-  cflags_safe=${CFLAGS:-"-O1 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_safe=$(append_debug_flags "${CFLAGS:-"-O1 -pipe -fno-lto -fno-tree-vectorize"}")
   (cd "$src" && CC=cc CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --without-python --with-zlib --with-lzma --with-threads --enable-shared --disable-static && make -j1 && make install)
 }
 
@@ -201,6 +227,8 @@ build_libb2
 build_libxml2
 build_nettle
 build_libarchive
+
+strip_debug_symbols
 
 if [[ -n "${GITHUB_ENV:-}" ]]; then
   {

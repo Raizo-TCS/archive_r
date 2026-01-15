@@ -31,6 +31,32 @@ WORKDIR="${TMPDIR:-}"
 [[ -z "$WORKDIR" ]] && WORKDIR=$(mktemp -d)
 trap 'rm -rf "$WORKDIR"' EXIT
 
+# Reproducibility: debug info often embeds absolute build paths (e.g., mktemp dirs).
+# Default to a release-oriented build without debug symbols.
+ARCHIVE_R_DEPS_DEBUG="${ARCHIVE_R_DEPS_DEBUG:-0}"
+ARCHIVE_R_DEPS_STRIP_DEBUG="${ARCHIVE_R_DEPS_STRIP_DEBUG:-1}"
+
+append_debug_flags() {
+  local flags="$1"
+  if [[ "$ARCHIVE_R_DEPS_DEBUG" == "1" ]]; then
+    flags+=" -g"
+  fi
+  echo "$flags"
+}
+
+strip_debug_symbols() {
+  if [[ "$ARCHIVE_R_DEPS_STRIP_DEBUG" != "1" ]]; then
+    return 0
+  fi
+  if ! command -v strip >/dev/null 2>&1; then
+    return 0
+  fi
+  # Strip debug sections only (safer than --strip-unneeded for shared libs).
+  find "$PREFIX/lib" "$PREFIX/lib64" -type f -name '*.so*' 2>/dev/null | while read -r f; do
+    strip --strip-debug "$f" >/dev/null 2>&1 || true
+  done
+}
+
 usage() {
   cat <<'EOF'
 Usage: build-deps-manylinux.sh --prefix <path> [--host <triple>]
@@ -124,7 +150,7 @@ build_zlib() {
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
   local jobs="$PARALLEL"
-  cflags_safe=${CFLAGS:-"-O2 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_safe=$(append_debug_flags "${CFLAGS:-"-O2 -pipe -fno-lto -fno-tree-vectorize"}")
   if [[ -n "$HOST" ]]; then
     # Avoid compiling under qemu to sidestep cc1 segfaults; copy system zlib instead
     if command -v yum >/dev/null 2>&1; then
@@ -158,7 +184,7 @@ build_bzip2() {
     "https://sourceware.org/pub/bzip2/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_pic
-  cflags_pic=${CFLAGS:-"-O2 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_pic=$(append_debug_flags "${CFLAGS:-"-O2 -pipe -fno-lto -fno-tree-vectorize"}")
   cflags_pic+=" -fPIC"
   (cd "$src" && make -f Makefile-libbz2_so CC="$CC" AR="$AR" RANLIB="$RANLIB" CFLAGS="$cflags_pic")
   install -d "$PREFIX/lib" "$PREFIX/include" "$PREFIX/share/man/man1" "$PREFIX/bin"
@@ -180,7 +206,7 @@ build_xz() {
     "https://tukaani.org/xz/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
-  cflags_safe=${CFLAGS:-"-O0 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_safe=$(append_debug_flags "${CFLAGS:-"-O0 -pipe -fno-lto -fno-tree-vectorize"}")
   local cache_vars=()
   if [[ -n "$HOST" ]]; then
     cache_vars+=(
@@ -239,7 +265,7 @@ build_libxml2() {
     "https://download.gnome.org/sources/libxml2/${LIBXML2_VERSION%.*}/$name.tar.xz"
   local src; src=$(extract "$tarball" "$name")
   local cflags_safe
-  cflags_safe=${CFLAGS:-"-O1 -g -pipe -fno-lto -fno-tree-vectorize"}
+  cflags_safe=$(append_debug_flags "${CFLAGS:-"-O1 -pipe -fno-lto -fno-tree-vectorize"}")
   (cd "$src" && CC="$CC" CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --without-python --with-zlib --with-lzma --with-threads --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j1 && make install)
 }
 
@@ -281,7 +307,6 @@ build_libarchive() {
     --with-xml2 --with-lzma --with-zlib --with-bz2 --with-zstd --with-lz4 --with-libb2 \
     --without-iconv --with-expat=no --without-lzo2 --without-cng && make -j"$PARALLEL" && make install)
 }
-
 build_zlib
 build_bzip2
 build_xz
@@ -293,5 +318,7 @@ build_nettle
 build_attr
 build_acl
 build_libarchive
+
+strip_debug_symbols
 
 echo "[build-deps-manylinux] done: $PREFIX"
