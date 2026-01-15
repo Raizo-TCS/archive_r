@@ -42,7 +42,13 @@ strip_debug_symbols() {
     return 0
   fi
   # strip -S: strip debug symbols (keeps global symbols)
-  find "$PREFIX/lib" "$PREFIX/lib64" -type f -name '*.dylib' 2>/dev/null | while read -r f; do
+  local dirs=()
+  [[ -d "$PREFIX/lib" ]] && dirs+=("$PREFIX/lib")
+  [[ -d "$PREFIX/lib64" ]] && dirs+=("$PREFIX/lib64")
+  if (( ${#dirs[@]} == 0 )); then
+    return 0
+  fi
+  find "${dirs[@]}" -type f -name '*.dylib' 2>/dev/null | while read -r f; do
     strip -S "$f" >/dev/null 2>&1 || true
   done
 }
