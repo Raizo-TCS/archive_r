@@ -27,7 +27,7 @@ jobs:
           set -euo pipefail
           TAG="${{ inputs.tag }}"
           mkdir -p release_assets
-          gh release download "$TAG" --dir release_assets
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir release_assets
           echo "Downloaded assets:" && ls -la release_assets
 
       - name: Generate provenance attestations
@@ -55,4 +55,4 @@ jobs:
           done
 
           echo "Uploading signature artifacts to release $TAG"
-          gh release upload "$TAG" release_assets/*.sig release_assets/*.crt --clobber
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" release_assets/*.sig release_assets/*.crt --clobber
