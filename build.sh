@@ -60,9 +60,11 @@ pip_install_with_retry() {
     local attempts=${1:-3}
     shift
 
+    local pip_python_exec="${PIP_PYTHON_EXEC:-$PYTHON_EXEC}"
+
     local n=1
     while true; do
-        if "$PYTHON_EXEC" -m pip install "${PIP_INSTALL_EXTRA[@]}" "$@"; then
+        if "$pip_python_exec" -m pip install "${PIP_INSTALL_EXTRA[@]}" "$@"; then
             return 0
         fi
 
@@ -765,6 +767,29 @@ package_python_binding() {
         return 1
     fi
 
+    local packaging_python_exec="$PYTHON_EXEC"
+    local use_packaging_venv="${ARCHIVE_R_PY_PACKAGING_VENV:-}"
+    if [ -z "$use_packaging_venv" ] && [[ "$(uname -s)" == "Darwin" ]]; then
+        use_packaging_venv=1
+    fi
+
+    if [ "${use_packaging_venv:-0}" -eq 1 ]; then
+        local venv_dir="$BUILD_DIR/bindings/python/packaging_env"
+        log_info "Preparing Python packaging virtual environment: $venv_dir"
+        if ! create_python_virtualenv "$venv_dir"; then
+            return 1
+        fi
+
+        if [ -x "$venv_dir/bin/python" ]; then
+            packaging_python_exec="$venv_dir/bin/python"
+        elif [ -x "$venv_dir/Scripts/python.exe" ]; then
+            packaging_python_exec="$venv_dir/Scripts/python.exe"
+        else
+            log_error "Could not locate python executable in packaging venv"
+            return 1
+        fi
+    fi
+
     # Ensure build toolchain is available in manylinux images
     local pkg_deps=("pip" "setuptools" "wheel" "build")
     log_info "ARCHIVE_R_SKIP_TWINE_CHECK is set to: '${ARCHIVE_R_SKIP_TWINE_CHECK:-}'"
@@ -781,7 +806,7 @@ package_python_binding() {
     # The issue is that 'pip install --upgrade pip setuptools wheel build' might trigger upgrades that pull in heavy deps.
     # We will try to install them, but if ARCHIVE_R_SKIP_TWINE_CHECK is set, we definitely don't want twine.
     
-    if ! pip_install_with_retry 3 --upgrade "${pkg_deps[@]}"; then
+    if ! PIP_PYTHON_EXEC="$packaging_python_exec" pip_install_with_retry 3 --upgrade "${pkg_deps[@]}"; then
         log_error "Failed to prepare Python packaging dependencies via pip"
         return 1
     fi
@@ -816,7 +841,7 @@ package_python_binding() {
     fi
     
     log_info "Running python -m build with args: ${build_args[*]}"
-    "$PYTHON_EXEC" -m build "${build_args[@]}"
+    "$packaging_python_exec" -m build "${build_args[@]}"
     popd >/dev/null
 
     dist_artifacts=()
@@ -832,7 +857,7 @@ package_python_binding() {
         log_info "Skipping twine check (ARCHIVE_R_SKIP_TWINE_CHECK=1)"
     else
         log_info "Running twine check on built artifacts..."
-        "$PYTHON_EXEC" -m twine check "${dist_artifacts[@]}"
+        "$packaging_python_exec" -m twine check "${dist_artifacts[@]}"
     fi
 
     verify_python_package_installation "$dist_dir" || return 1
