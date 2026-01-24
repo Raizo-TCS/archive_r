@@ -57,7 +57,7 @@ jobs:
           echo "ci_run_id=$CI_RUN_ID" >> "$GITHUB_OUTPUT"
           echo "wheels_run_id=$WHEELS_RUN_ID" >> "$GITHUB_OUTPUT"
 
-      - name: Validate run IDs match base tag commit
+      - name: Validate run IDs
         id: validate
         shell: bash
         run: |
@@ -86,12 +86,13 @@ jobs:
             echo "::error::ci_run_id and wheels_run_id are from different commits. Provide run IDs from the same commit."
             exit 1
           fi
+
           if [[ "$CI_SHA" != "$TAG_SHA" ]]; then
-            echo "::error::Run IDs do not match the base tag commit. Select CI/Build Wheels runs for $BASE_TAG (commit $TAG_SHA)."
-            exit 1
+            echo "::warning::Run IDs do not match the base tag commit. Proceeding with cross-commit comparison: base_tag=$BASE_TAG (commit $TAG_SHA) vs artifacts from commit $CI_SHA."
           fi
 
           echo "commit_sha=$CI_SHA" >> "$GITHUB_OUTPUT"
+          echo "base_tag_sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Download base release assets
         shell: bash
