@@ -109,19 +109,6 @@ jobs:
           set -euo pipefail
           mkdir -p base_packages/python base_packages/ruby
 
-          # Core source archive
-          while IFS= read -r f; do
-            cp "$f" base_packages/
-          done < <(find base_release -type f -name "archive_r-core-*.tar.gz" | sort || true)
-
-          # Python sdist (exclude core tarball)
-          while IFS= read -r f; do
-            cp "$f" base_packages/python/
-          done < <(
-            find base_release -type f -name "*.tar.gz" ! -name "archive_r-core-*.tar.gz" \
-              | sort || true
-          )
-
           # Official wheels
           while IFS= read -r f; do
             cp "$f" base_packages/python/
@@ -159,19 +146,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p new_packages/python new_packages/ruby
-
-          # Core source archive
-          while IFS= read -r f; do
-            cp "$f" new_packages/
-          done < <(find new_artifacts -type f -name "archive_r-core-*.tar.gz" | sort || true)
-
-          # Python sdist (exclude core tarball)
-          while IFS= read -r f; do
-            cp "$f" new_packages/python/
-          done < <(
-            find new_artifacts -type f -name "*.tar.gz" ! -name "archive_r-core-*.tar.gz" \
-              | sort || true
-          )
 
           # Official wheels
           while IFS= read -r f; do
