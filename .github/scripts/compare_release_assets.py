@@ -8,11 +8,14 @@ import json
 import io
 import os
 import re
+import shutil
+import subprocess
 import tarfile
 import gzip
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Dict, Iterable, List, Optional, Tuple
 
 
@@ -35,7 +38,65 @@ def _is_wheel_ignored_member(path: str) -> bool:
     normalized = path.replace("\\", "/")
     if normalized.endswith(".dist-info/RECORD"):
         return True
+    # delvewheel adds this file to record the repair operation (toolchain metadata).
+    if normalized.endswith(".dist-info/DELVEWHEEL"):
+        return True
     return False
+
+
+_PE_IMPORT_DLL_RE = re.compile(r"^\s*DLL Name:\s*(?P<name>.+?)\s*$")
+
+
+def _wheel_imports(path: Path) -> Optional[List[str]]:
+    """Return imported DLL names from .pyd files inside a wheel, if supported.
+
+    This runs on Linux in CI and relies on binutils 'objdump' to parse the PE import table.
+    If objdump is unavailable, returns None (caller should skip wheel-specific heuristics).
+    """
+
+    objdump = shutil.which("objdump")
+    if objdump is None:
+        return None
+
+    imports: set[str] = set()
+    try:
+        with zipfile.ZipFile(path, "r") as zf:
+            pyd_members = [n for n in zf.namelist() if n.lower().endswith(".pyd")]
+            if not pyd_members:
+                return []
+
+            with TemporaryDirectory() as td:
+                td_path = Path(td)
+                for member in pyd_members:
+                    try:
+                        out_path = td_path / Path(member).name
+                        out_path.write_bytes(zf.read(member))
+                    except Exception:
+                        continue
+
+                    try:
+                        proc = subprocess.run(
+                            [objdump, "-p", str(out_path)],
+                            check=False,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                        )
+                        out = proc.stdout
+                    except Exception:
+                        continue
+
+                    for line in out.splitlines():
+                        m = _PE_IMPORT_DLL_RE.match(line)
+                        if not m:
+                            continue
+                        dll = m.group("name").strip().lower()
+                        if dll:
+                            imports.add(dll)
+    except Exception:
+        return None
+
+    return sorted(imports)
 
 
 def _is_python_sdist_ignored_member(path: str) -> bool:
@@ -106,6 +167,7 @@ def _zip_manifest(path: Path) -> Tuple[Dict[str, str], List[str]]:
                     continue
                 if _is_wheel_ignored_member(name):
                     continue
+
                 try:
                     data = zf.read(info)
                 except Exception as e:  # noqa: BLE001
@@ -254,6 +316,7 @@ def compare_files(base_path: Path, new_path: Path) -> CompareResult:
         changed = sorted(
             name for name in set(base_hashes) & set(new_hashes) if base_hashes[name] != new_hashes[name]
         )
+
         return CompareResult(
             status="changed",
             details={
@@ -281,6 +344,45 @@ def compare_files(base_path: Path, new_path: Path) -> CompareResult:
         changed = sorted(
             name for name in set(base_hashes) & set(new_hashes) if base_hashes[name] != new_hashes[name]
         )
+
+        # Content-aware rename/move detection (e.g., delvewheel mangled DLL names).
+        # If a base-only member has the same content hash as a new-only member,
+        # treat it as moved instead of missing/extra.
+        moved_members: List[str] = []
+        extra_by_hash: Dict[str, List[str]] = {}
+        for n in extra:
+            extra_by_hash.setdefault(new_hashes[n], []).append(n)
+        for h in extra_by_hash.values():
+            h.sort()
+
+        missing_remaining: List[str] = []
+        used_extra: set[str] = set()
+        for n in missing:
+            h = base_hashes[n]
+            candidates = extra_by_hash.get(h)
+            if not candidates:
+                missing_remaining.append(n)
+                continue
+            moved_to = candidates.pop(0)
+            used_extra.add(moved_to)
+            moved_members.append(f"{n} -> {moved_to}")
+
+        extra_remaining = [n for n in extra if n not in used_extra]
+        missing = missing_remaining
+        extra = extra_remaining
+
+        # Wheel-specific insights: surface meaningful dependency shifts.
+        wheel_imports_added: List[str] = []
+        wheel_imports_removed: List[str] = []
+        if base_path.suffix.lower() == ".whl" and new_path.suffix.lower() == ".whl":
+            base_imports = _wheel_imports(base_path)
+            new_imports = _wheel_imports(new_path)
+            if base_imports is not None and new_imports is not None:
+                base_set = set(base_imports)
+                new_set = set(new_imports)
+                wheel_imports_added = sorted(new_set - base_set)
+                wheel_imports_removed = sorted(base_set - new_set)
+
         return CompareResult(
             status="changed",
             details={
@@ -292,6 +394,12 @@ def compare_files(base_path: Path, new_path: Path) -> CompareResult:
                 "missing_members_count": len(missing),
                 "extra_members_count": len(extra),
                 "changed_members_count": len(changed),
+                "moved_members": moved_members,
+                "moved_members_count": len(moved_members),
+                "wheel_imports_added": wheel_imports_added,
+                "wheel_imports_added_count": len(wheel_imports_added),
+                "wheel_imports_removed": wheel_imports_removed,
+                "wheel_imports_removed_count": len(wheel_imports_removed),
             },
         )
 
@@ -459,6 +567,9 @@ def _render_markdown(report: Dict[str, object]) -> str:
             "missing_members_count",
             "extra_members_count",
             "changed_members_count",
+            "moved_members_count",
+            "wheel_imports_added_count",
+            "wheel_imports_removed_count",
             "missing_files_count",
             "extra_files_count",
             "changed_files_count",
@@ -498,7 +609,14 @@ def _render_markdown(report: Dict[str, object]) -> str:
         md.append(_render_kv_block(details))
 
         # Zip/Gem member diffs
-        for key in ("missing_members", "extra_members", "changed_members"):
+        for key in (
+            "missing_members",
+            "extra_members",
+            "changed_members",
+            "moved_members",
+            "wheel_imports_added",
+            "wheel_imports_removed",
+        ):
             v = details.get(key)
             if isinstance(v, list):
                 md.append(f"### {key}\n\n")
