@@ -131,7 +131,8 @@ jobs:
           set -euo pipefail
           CI_RUN_ID="${{ steps.resolve.outputs.ci_run_id }}"
           mkdir -p new_artifacts
-          gh run download "$CI_RUN_ID" --dir new_artifacts
+          # Use pattern to skip non-release artifacts (e.g. .dockerbuild)
+          gh run download "$CI_RUN_ID" --dir new_artifacts -p "archive-r-*"
 
       - name: Download new artifacts (Build Wheels)
         shell: bash
