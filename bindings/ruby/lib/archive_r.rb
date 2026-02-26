@@ -17,20 +17,27 @@ begin
     end
   end
 
-  # Prefer the packaged gem layout (lib/archive_r/archive_r.so)
-  require_relative 'archive_r/archive_r'
-rescue LoadError
-  begin
-    # Fallback to the local development layout (bindings/ruby/archive_r.so)
-    require_relative '../archive_r'
-  rescue LoadError
+  load_errors = []
+  extension_candidates = [
+    ['require_relative', 'archive_r/archive_r'],
+    ['require_relative', '../archive_r'],
+    ['require', 'archive_r/archive_r']
+  ]
+
+  loaded = false
+  extension_candidates.each do |method_name, target|
     begin
-      # Fallback for Windows/MinGW where extension might be directly in lib/ or current dir
-      require 'archive_r/archive_r'
-    rescue LoadError
-      # Last resort: try requiring without directory prefix (common in some Windows setups)
-      require 'archive_r'
+      __send__(method_name, target)
+      loaded = true
+      break
+    rescue LoadError => e
+      load_errors << [method_name, target, e.message]
     end
+  end
+
+  unless loaded
+    details = load_errors.map { |method_name, target, message| "#{method_name}(#{target}): #{message}" }.join(' | ')
+    raise LoadError, "Failed to load archive_r native extension. #{details}"
   end
 end
 

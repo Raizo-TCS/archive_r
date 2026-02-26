@@ -3,6 +3,8 @@
 
 require 'minitest/autorun'
 require 'stringio'
+require 'open3'
+require 'rbconfig'
 require 'archive_r'
 
 class TestTraverser < Minitest::Test
@@ -498,6 +500,61 @@ class TestTraverser < Minitest::Test
       assert_match(/size=/, inspect_str)
       assert_match(/depth=/, inspect_str)
     end
+  end
+
+  def test_archive_r_loader_raises_detailed_load_error_when_extension_missing
+    loader_path = File.expand_path('../lib/archive_r.rb', __dir__)
+    script = <<~'RUBY'
+      loader_path = ARGV.fetch(0)
+
+      module Kernel
+        alias_method :__archive_r_test_require, :require
+        alias_method :__archive_r_test_require_relative, :require_relative
+
+        def require(name)
+          if name == 'archive_r/archive_r'
+            raise LoadError, "mock require failure: #{name}"
+          end
+          __archive_r_test_require(name)
+        end
+
+        def require_relative(name)
+          if name == 'archive_r/archive_r' || name == '../archive_r'
+            raise LoadError, "mock require_relative failure: #{name}"
+          end
+          __archive_r_test_require_relative(name)
+        end
+      end
+
+      begin
+        load loader_path
+        warn 'expected LoadError'
+        exit 2
+      rescue LoadError => e
+        message = e.message
+        unless message.include?('Failed to load archive_r native extension')
+          warn "missing summary: #{message}"
+          exit 3
+        end
+
+        required_details = [
+          'require_relative(archive_r/archive_r)',
+          'require_relative(../archive_r)',
+          'require(archive_r/archive_r)'
+        ]
+        unless required_details.all? { |detail| message.include?(detail) }
+          warn "missing candidate details: #{message}"
+          exit 4
+        end
+
+        puts 'ok'
+      end
+    RUBY
+
+    stdout, stderr, status = Open3.capture3(RbConfig.ruby, '-e', script, loader_path)
+
+    assert status.success?, "loader check failed (status=#{status.exitstatus}): stdout=#{stdout.inspect} stderr=#{stderr.inspect}"
+    assert_includes stdout, 'ok'
   end
 
   private
