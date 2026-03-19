@@ -175,6 +175,15 @@ jobs:
           name: archive_r ${{ inputs.tag }}
           draft: false
           prerelease: ${{ contains(inputs.tag, '-rc') }}
+          generate_release_notes: true
+          body: |
+            Release details and notable changes are available in this release note.
+
+            Python package page:
+            - https://pypi.org/project/archive-r-python/
+
+            For bug reports and feedback:
+            - https://github.com/Raizo-TCS/archive_r/issues
           files: |
             release/archive_r-core-*.tar.gz
             release/python/*

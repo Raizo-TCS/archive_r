@@ -5,6 +5,45 @@ set -euo pipefail
 : "${ARCH:?ARCH must be set (x86_64|arm64|universal2)}"
 export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
 
+# Keep wheels compatible with the declared deployment target by using
+# Apple-provided toolchain/runtime instead of Homebrew LLVM runtime.
+if [[ -x /usr/bin/clang ]]; then
+	export CC=/usr/bin/clang
+fi
+if [[ -x /usr/bin/clang++ ]]; then
+	export CXX=/usr/bin/clang++
+fi
+if command -v xcrun >/dev/null 2>&1; then
+	export SDKROOT="$(xcrun --sdk macosx --show-sdk-path)"
+fi
+
+drop_llvm_runtime_paths() {
+	local value="$1"
+	local out=""
+	local item
+	IFS=':' read -r -a parts <<< "$value"
+	for item in "${parts[@]}"; do
+		[[ -z "$item" ]] && continue
+		case "$item" in
+			*/opt/llvm@*/lib*|*/Cellar/llvm@*/*)
+				continue
+				;;
+		esac
+		if [[ -n "$out" ]]; then
+			out+=":"
+		fi
+		out+="$item"
+	done
+	printf '%s' "$out"
+}
+
+if [[ -n "${DYLD_LIBRARY_PATH:-}" ]]; then
+	export DYLD_LIBRARY_PATH="$(drop_llvm_runtime_paths "$DYLD_LIBRARY_PATH")"
+fi
+if [[ -n "${LIBRARY_PATH:-}" ]]; then
+	export LIBRARY_PATH="$(drop_llvm_runtime_paths "$LIBRARY_PATH")"
+fi
+
 if [[ -n "${ARCHIVE_R_DEPS_PREFIX:-}" ]]; then
 	export LIBARCHIVE_ROOT="${LIBARCHIVE_ROOT:-$ARCHIVE_R_DEPS_PREFIX}"
 	export LIBARCHIVE_INCLUDE_DIRS="${LIBARCHIVE_INCLUDE_DIRS:-$ARCHIVE_R_DEPS_PREFIX/include}"
