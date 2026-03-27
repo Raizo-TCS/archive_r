@@ -72,6 +72,7 @@ if [[ -f "${REPO_ROOT}/NOTICE" ]]; then
 	cp "${REPO_ROOT}/NOTICE" NOTICE || true
 fi
 
+python -m pip install --break-system-packages "pip==26.0.1"
 python -m pip install --break-system-packages --require-hashes -r tools/requirements-wheel-macos.txt
 
 deployment_tag="${MACOSX_DEPLOYMENT_TARGET//./_}"
