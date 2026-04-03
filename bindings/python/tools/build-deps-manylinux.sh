@@ -208,6 +208,7 @@ build_bzip2() {
 build_xz() {
   local name="xz-${XZ_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
+    "https://github.com/tukaani-project/xz/releases/download/v${XZ_VERSION}/$name.tar.gz" \
     "https://distfiles.macports.org/xz/$name.tar.gz" \
     "https://tukaani.org/xz/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
