@@ -12,6 +12,15 @@ permissions:
   packages: read
 
 jobs:
+  validate-manylinux-dep-metadata:
+    name: Validate manylinux dependency metadata
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      - name: Validate build-deps-manylinux metadata format
+        run: python3 bindings/python/tools/validate_manylinux_dep_metadata.py
+
   detect-container-changes:
     name: Detect CI container-related changes
     runs-on: ubuntu-24.04
@@ -45,9 +54,10 @@ jobs:
 
   pf1-linux-x86_64:
     name: PF1.0 Linux x86_64 Build & Test
-    needs: [detect-container-changes, build-ci-containers-if-needed]
+    needs: [validate-manylinux-dep-metadata, detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
+          needs.validate-manylinux-dep-metadata.result == 'success' &&
           needs.detect-container-changes.result == 'success' &&
           (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
@@ -84,9 +94,10 @@ jobs:
 
   ruby-2-7-linux-x86_64:
     name: Ruby 2.7 Linux x86_64 Binding Build & Test
-    needs: [detect-container-changes, build-ci-containers-if-needed]
+    needs: [validate-manylinux-dep-metadata, detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
+          needs.validate-manylinux-dep-metadata.result == 'success' &&
           needs.detect-container-changes.result == 'success' &&
           (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-22.04
@@ -126,9 +137,10 @@ jobs:
 
   pf1-linux-arm64:
     name: PF1.1 Linux arm64 Build & Test (Hybrid)
-    needs: [detect-container-changes, build-ci-containers-if-needed]
+    needs: [validate-manylinux-dep-metadata, detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
+          needs.validate-manylinux-dep-metadata.result == 'success' &&
           needs.detect-container-changes.result == 'success' &&
           (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ubuntu-24.04
@@ -208,9 +220,10 @@ jobs:
 
   pf2-macos:
     name: ${{ matrix.label }} macOS Build & Test
-    needs: [detect-container-changes, build-ci-containers-if-needed]
+    needs: [validate-manylinux-dep-metadata, detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
+          needs.validate-manylinux-dep-metadata.result == 'success' &&
           needs.detect-container-changes.result == 'success' &&
           (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: ${{ matrix.runner }}
@@ -259,9 +272,10 @@ jobs:
 
   pf3-msvc:
     name: PF3.0 Windows MSVC Build & Test
-    needs: [detect-container-changes, build-ci-containers-if-needed]
+    needs: [validate-manylinux-dep-metadata, detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
+          needs.validate-manylinux-dep-metadata.result == 'success' &&
           needs.detect-container-changes.result == 'success' &&
           (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
@@ -304,9 +318,10 @@ jobs:
 
   pf4-mingw:
     name: PF4.0 Windows MinGW Build & Test
-    needs: [detect-container-changes, build-ci-containers-if-needed]
+    needs: [validate-manylinux-dep-metadata, detect-container-changes, build-ci-containers-if-needed]
     if: >-
       ${{ always() &&
+          needs.validate-manylinux-dep-metadata.result == 'success' &&
           needs.detect-container-changes.result == 'success' &&
           (needs.build-ci-containers-if-needed.result == 'success' || needs.build-ci-containers-if-needed.result == 'skipped') }}
     runs-on: windows-2022
