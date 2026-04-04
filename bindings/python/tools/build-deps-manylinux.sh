@@ -288,6 +288,7 @@ build_nettle() {
 build_attr() {
   local name="attr-${ATTR_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
+    "https://download-mirror.savannah.gnu.org/releases/attr/$name.tar.gz" \
     "https://mirrors.kernel.org/savannah/attr/$name.tar.gz" \
     "https://download.savannah.gnu.org/releases/attr/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
@@ -297,6 +298,7 @@ build_attr() {
 build_acl() {
   local name="acl-${ACL_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
+    "https://download-mirror.savannah.gnu.org/releases/acl/$name.tar.gz" \
     "https://mirrors.kernel.org/savannah/acl/$name.tar.gz" \
     "https://download.savannah.gnu.org/releases/acl/$name.tar.gz"
   local src; src=$(extract "$tarball" "$name")
