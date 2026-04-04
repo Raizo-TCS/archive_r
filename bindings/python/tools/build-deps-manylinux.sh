@@ -4,6 +4,18 @@ set -euo pipefail
 # Build shared dependencies for archive_r on Linux/manylinux, with optional --host
 # for cross targets. OpenSSL/GMP are intentionally omitted; libarchive is linked
 # against nettle built with mini-gmp.
+#
+# Dependency metadata specification (validated by validate_manylinux_dep_metadata.py):
+#   - Place exactly one '@dep' line immediately before each build_<name>() function.
+#   - Format: '# @dep key=value key=value ...' (space-separated key/value pairs).
+#   - Required keys:
+#       name        : unique dependency name.
+#       version_env : env var name used in this script (e.g. LIBXML2_VERSION).
+#       cpe_vendor  : CPE vendor used by vulcheck scanner.
+#       cpe_product : CPE product used by vulcheck scanner.
+#       build_fn    : function name (e.g. build_libxml2), must exist and be called.
+#   - Values must not contain spaces (parser is token-based).
+#   - Keep metadata and build function in sync when renaming/reordering dependencies.
 
 ZLIB_VERSION="${ZLIB_VERSION:-1.3.2}"
 BZIP2_VERSION="${BZIP2_VERSION:-1.0.8}"
@@ -148,6 +160,7 @@ extract() {
   echo "$WORKDIR/$sub"
 }
 
+# @dep name=zlib version_env=ZLIB_VERSION cpe_vendor=zlib cpe_product=zlib build_fn=build_zlib
 build_zlib() {
   local name="zlib-${ZLIB_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -183,6 +196,7 @@ build_zlib() {
   rm -f "$PREFIX/lib/libz.a" "$PREFIX/lib64/libz.a"
 }
 
+# @dep name=bzip2 version_env=BZIP2_VERSION cpe_vendor=bzip2_project cpe_product=bzip2 build_fn=build_bzip2
 build_bzip2() {
   local name="bzip2-${BZIP2_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -205,6 +219,7 @@ build_bzip2() {
   install -m 644 "$src"/bzip2.1 "$PREFIX/share/man/man1/" 2>/dev/null || true
 }
 
+# @dep name=xz version_env=XZ_VERSION cpe_vendor=tukaani cpe_product=xz_utils build_fn=build_xz
 build_xz() {
   local name="xz-${XZ_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -229,6 +244,7 @@ build_xz() {
   (cd "$src" && env ${cache_vars[@]:-} CC="$CC" CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} --disable-lzma-links --disable-xz --disable-xzdec --disable-lzmadec --disable-scripts && make -j1 && make install)
 }
 
+# @dep name=lz4 version_env=LZ4_VERSION cpe_vendor=lz4_project cpe_product=lz4 build_fn=build_lz4
 build_lz4() {
   local name="lz4-${LZ4_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -242,6 +258,7 @@ build_lz4() {
   (cd "$src" && make -j"$jobs" CC="$CC" AR="$AR" RANLIB="$RANLIB" BUILD_SHARED=yes BUILD_STATIC=no PREFIX="$PREFIX" && make install PREFIX="$PREFIX" BUILD_SHARED=yes BUILD_STATIC=no)
 }
 
+# @dep name=zstd version_env=ZSTD_VERSION cpe_vendor=facebook cpe_product=zstandard build_fn=build_zstd
 build_zstd() {
   local name="zstd-${ZSTD_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -256,6 +273,7 @@ build_zstd() {
   (cd "$src/lib" && make -j"$jobs" CC="$CC" AR="$AR" RANLIB="$RANLIB" PREFIX="$PREFIX" BUILD_SHARED=1 BUILD_STATIC=0 libzstd && make PREFIX="$PREFIX" BUILD_SHARED=1 BUILD_STATIC=0 install-shared install-includes install-pc)
 }
 
+# @dep name=libb2 version_env=LIBB2_VERSION cpe_vendor=blake2 cpe_product=libb2 build_fn=build_libb2
 build_libb2() {
   local name="libb2-${LIBB2_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -265,6 +283,7 @@ build_libb2() {
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
+# @dep name=libxml2 version_env=LIBXML2_VERSION cpe_vendor=xmlsoft cpe_product=libxml2 build_fn=build_libxml2
 build_libxml2() {
   local name="libxml2-${LIBXML2_VERSION}"; local tarball="$WORKDIR/$name.tar.xz"
   fetch "$tarball" \
@@ -276,6 +295,7 @@ build_libxml2() {
   (cd "$src" && CC="$CC" CFLAGS="$cflags_safe" ./configure --prefix="$PREFIX" --without-python --with-zlib --with-lzma --with-threads --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j1 && make install)
 }
 
+# @dep name=nettle version_env=NETTLE_VERSION cpe_vendor=gnu cpe_product=nettle build_fn=build_nettle
 build_nettle() {
   local name="nettle-${NETTLE_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -285,6 +305,7 @@ build_nettle() {
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static --enable-mini-gmp ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
+# @dep name=attr version_env=ATTR_VERSION cpe_vendor=savannah cpe_product=attr build_fn=build_attr
 build_attr() {
   local name="attr-${ATTR_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -295,6 +316,7 @@ build_attr() {
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
+# @dep name=acl version_env=ACL_VERSION cpe_vendor=savannah cpe_product=acl build_fn=build_acl
 build_acl() {
   local name="acl-${ACL_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
@@ -305,6 +327,7 @@ build_acl() {
   (cd "$src" && CC="$CC" ./configure --prefix="$PREFIX" --enable-shared --disable-static ${HOST:+--host=$HOST} && make -j"$PARALLEL" && make install)
 }
 
+# @dep name=libarchive version_env=LIBARCHIVE_VERSION cpe_vendor=libarchive cpe_product=libarchive build_fn=build_libarchive
 build_libarchive() {
   local name="libarchive-${LIBARCHIVE_VERSION}"; local tarball="$WORKDIR/$name.tar.gz"
   fetch "$tarball" \
