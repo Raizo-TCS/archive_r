@@ -19,10 +19,10 @@ Ruby bindings expose the archive_r traverser API with a natural, block-friendly 
    ```bash
    ./build.sh --with-ruby
    ```
-   Ruby packaging is enabled by default, so the command above builds the core library, compiles the binding, and creates `build/bindings/ruby/archive_r-<version>.gem`.
+  Ruby packaging is enabled by default, so the command above builds the core library, compiles the binding, and creates `build/bindings/ruby/archive_r_ruby-<version>.gem`.
 2. Install the freshly built gem into your desired GEM_HOME:
    ```bash
-   gem install --local build/bindings/ruby/archive_r-*.gem
+  gem install --local build/bindings/ruby/archive_r_ruby-*.gem
    ```
 3. When developing inside this repository the tests automatically install the gem into `build/ruby_gem_home` and set `ARCHIVE_R_CORE_ROOT=build` so the native extension links against the just-built static library.
 
@@ -35,7 +35,7 @@ cd bindings/ruby
 bundle install
 bundle exec rake compile   # builds ext/archive_r
 bundle exec rake test      # runs test/test_traverser.rb
-bundle exec rake build     # creates archive_r-<version>.gem locally
+bundle exec rake build     # creates archive_r_ruby-<version>.gem locally
 ```
 
 The `rake test` task compiles the extension, installs it into `lib/`, and executes the Minitest suite.
