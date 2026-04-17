@@ -58,6 +58,6 @@ Gem::Specification.new do |spec|
   spec.metadata["bug_tracker_uri"] = "https://github.com/raizo-tcs/archive_r/issues"
   spec.metadata["changelog_uri"] = "https://github.com/raizo-tcs/archive_r/releases"
   
-  spec.add_development_dependency "rake", "~> 13.0"
+  spec.add_development_dependency "rake", "~> 13.4"
   spec.add_development_dependency "minitest", "~> 5.0"
 end
