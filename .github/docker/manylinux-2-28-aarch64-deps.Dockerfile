@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM quay.io/pypa/manylinux_2_28_aarch64:latest@sha256:8b95e0b659e537f142526c02b8b75572715bbfa15d49a2ae9d9829adc949edf8
 
-ARG LIBARCHIVE_VERSION=3.7.5
+ARG LIBARCHIVE_VERSION=3.8.7
 ENV LIBARCHIVE_VERSION=${LIBARCHIVE_VERSION} \
     ARCHIVE_R_DEPS_PREFIX=/opt/archive_r_deps \
     PARALLEL=2
