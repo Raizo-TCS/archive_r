@@ -14,7 +14,7 @@ jobs:
       contents: read
       packages: write
     env:
-      LIBARCHIVE_VERSION: 3.7.5
+      LIBARCHIVE_VERSION: 3.8.7
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
 

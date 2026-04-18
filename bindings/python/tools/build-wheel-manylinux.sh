@@ -3,7 +3,7 @@ set -euo pipefail
 
 : "${PYTHON_TAG:?PYTHON_TAG must be set (e.g., cp310-cp310)}"
 : "${PLATFORM:?PLATFORM must be set (x86_64|aarch64)}"
-LIBARCHIVE_VERSION=${LIBARCHIVE_VERSION:-3.8.1}
+LIBARCHIVE_VERSION=${LIBARCHIVE_VERSION:-3.8.7}
 
 # Resolve repository root from tools/ directory
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
