@@ -41,11 +41,6 @@ static void set_passphrases(struct archive *ar, const std::vector<std::string> &
 }
 
 static void configure_formats(struct archive *ar, const std::vector<std::string> &format_names) {
-  if (format_names.empty()) {
-    archive_read_support_format_all(ar);
-    return;
-  }
-
   using FormatHandler = int (*)(struct archive *);
   static const std::unordered_map<std::string, FormatHandler> kFormatHandlers = {
     { "7zip", archive_read_support_format_7zip },   { "ar", archive_read_support_format_ar },           { "cab", archive_read_support_format_cab }, { "cpio", archive_read_support_format_cpio },
@@ -53,6 +48,18 @@ static void configure_formats(struct archive *ar, const std::vector<std::string>
     { "rar", archive_read_support_format_rar },     { "raw", archive_read_support_format_raw },         { "tar", archive_read_support_format_tar }, { "warc", archive_read_support_format_warc },
     { "xar", archive_read_support_format_xar },     { "zip", archive_read_support_format_zip },
   };
+
+  if (format_names.empty()) {
+    // Enable all known formats except iso9660 by default to mitigate CVE-2026-4426 in linked libarchive.
+    for (const auto &p : kFormatHandlers) {
+      if (p.first == "iso9660") {
+        continue;
+      }
+      // Best-effort enable; do not throw if a particular format handler is unavailable.
+      (void)p.second(ar);
+    }
+    return;
+  }
 
   for (const auto &format : format_names) {
     auto it = kFormatHandlers.find(format);
