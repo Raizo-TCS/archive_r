@@ -41,9 +41,33 @@ static void set_passphrases(struct archive *ar, const std::vector<std::string> &
 }
 
 static void configure_formats(struct archive *ar, const std::vector<std::string> &format_names) {
+  // If the caller requested "all" formats, prefer archive_read_support_format_all when
+  // libarchive is new enough. Older libarchive versions (<= 3.8.7) contain a known
+  // vulnerability in the RAR format handler; in that case, enable formats manually but
+  // skip RAR to avoid the unsafe code path.
   if (format_names.empty()) {
+#if defined(ARCHIVE_VERSION_NUMBER) && (ARCHIVE_VERSION_NUMBER <= 3008007)
+    using FormatHandler = int (*)(struct archive *);
+    static const std::unordered_map<std::string, FormatHandler> kAllHandlers = {
+      { "7zip", archive_read_support_format_7zip },   { "ar", archive_read_support_format_ar },           { "cab", archive_read_support_format_cab }, { "cpio", archive_read_support_format_cpio },
+      { "empty", archive_read_support_format_empty }, { "iso9660", archive_read_support_format_iso9660 }, { "lha", archive_read_support_format_lha }, { "mtree", archive_read_support_format_mtree },
+      /* skip { "rar", archive_read_support_format_rar }, */     { "raw", archive_read_support_format_raw },         { "tar", archive_read_support_format_tar }, { "warc", archive_read_support_format_warc },
+      { "xar", archive_read_support_format_xar },     { "zip", archive_read_support_format_zip },
+    };
+
+    for (const auto &p : kAllHandlers) {
+      int r = p.second(ar);
+      if (r != ARCHIVE_OK) {
+        char buf[1024];
+        std::snprintf(buf, sizeof(buf), "Failed to enable format (%s): %s", p.first.c_str(), archive_error_string(ar));
+        throw_archive_fault(buf, ar);
+      }
+    }
+    return;
+#else
     archive_read_support_format_all(ar);
     return;
+#endif
   }
 
   using FormatHandler = int (*)(struct archive *);
@@ -61,6 +85,14 @@ static void configure_formats(struct archive *ar, const std::vector<std::string>
       std::snprintf(buf, sizeof(buf), "Unsupported archive format specified (%s)", format.c_str());
       throw_archive_fault(buf);
     }
+
+#if defined(ARCHIVE_VERSION_NUMBER) && (ARCHIVE_VERSION_NUMBER <= 3008007)
+    if (format == "rar") {
+      char buf[1024];
+      std::snprintf(buf, sizeof(buf), "RAR support disabled: linked libarchive version is vulnerable (<=3.8.7). Upgrade libarchive to re-enable RAR support.");
+      throw_archive_fault(buf);
+    }
+#endif
 
     int r = it->second(ar);
     if (r != ARCHIVE_OK) {
