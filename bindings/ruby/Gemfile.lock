@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    archive_r_ruby (0.1.30)
+    archive_r_ruby (0.1.31)
 
 GEM
   remote: https://rubygems.org/
