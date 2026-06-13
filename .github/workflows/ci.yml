@@ -16,7 +16,7 @@ jobs:
     name: Validate manylinux dependency metadata
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Validate build-deps-manylinux metadata format
         run: python3 bindings/python/tools/validate_manylinux_dep_metadata.py
@@ -27,7 +27,7 @@ jobs:
     outputs:
       containers_needed: ${{ steps.filter.outputs.containers }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           fetch-depth: 0
 
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Install dependencies (Ubuntu x86_64)
         run: sudo ./install-deps-ubuntu.sh
@@ -103,7 +103,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Set up Ruby 2.7
         uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f
@@ -146,7 +146,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Set up QEMU (aarch64)
         uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a
@@ -245,7 +245,7 @@ jobs:
       HOMEBREW_NO_ANALYTICS: "1"
       HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Install dependencies (macOS)
         run: ./install-deps-macos.sh
@@ -283,7 +283,7 @@ jobs:
     env:
       MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Prepare CI Container
         shell: pwsh
@@ -327,7 +327,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
       - name: Prepare CI Container
         shell: pwsh
