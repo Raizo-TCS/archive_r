@@ -65,7 +65,7 @@ jobs:
         platform: [x86_64, aarch64]
         python-tag: [cp310-cp310, cp311-cp311, cp312-cp312, cp313-cp313, cp314-cp314]
     env:
-      LIBARCHIVE_VERSION: 3.8.7
+      LIBARCHIVE_VERSION: 3.8.8
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
 
