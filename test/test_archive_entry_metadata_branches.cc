@@ -98,9 +98,14 @@ EntryMetadataMap get_metadata(struct archive_entry *e, const std::unordered_set<
 }
 
 void set_acl_simple(struct archive_entry *e) {
-  // Basic user::rwx ACL entry to ensure acl_to_text() can return something.
-  // (Permissions are not important for this test; we just need at least one ACL entry.)
-  (void)archive_entry_acl_add_entry(e, ARCHIVE_ENTRY_ACL_TYPE_ACCESS, ARCHIVE_ENTRY_ACL_USER_OBJ, ARCHIVE_ENTRY_ACL_EXECUTE | ARCHIVE_ENTRY_ACL_READ | ARCHIVE_ENTRY_ACL_WRITE, -1, nullptr);
+  // Add a MASK entry to ensure acl_to_text() returns non-NULL text.
+  // USER_OBJ/GROUP_OBJ/OTHER with standard rwx bits are absorbed by libarchive
+  // into the mode field (acl_special()) and do not appear in the ACL entry list.
+  // libarchive >= 3.8.8 returns NULL from acl_to_text() when the ACL list is
+  // empty (archive_acl_text_empty()), so we must use an entry type that is
+  // stored in the list — MASK is not handled by acl_special() and works on all
+  // libarchive versions.
+  (void)archive_entry_acl_add_entry(e, ARCHIVE_ENTRY_ACL_TYPE_ACCESS, ARCHIVE_ENTRY_ACL_MASK, ARCHIVE_ENTRY_ACL_EXECUTE | ARCHIVE_ENTRY_ACL_READ | ARCHIVE_ENTRY_ACL_WRITE, -1, nullptr);
 }
 
 } // namespace
