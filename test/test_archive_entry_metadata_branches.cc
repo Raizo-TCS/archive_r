@@ -98,20 +98,15 @@ EntryMetadataMap get_metadata(struct archive_entry *e, const std::unordered_set<
 }
 
 void set_acl_simple(struct archive_entry *e) {
-  // Add an NFSv4 ALLOW entry to ensure archive_entry_acl_to_text() returns
-  // non-NULL text on all platforms and libarchive versions.
-  //
-  // POSIX ACCESS entries (USER_OBJ/GROUP_OBJ/OTHER/MASK) are only reliably
-  // supported on Linux; on macOS, libarchive uses NFSv4 ACLs natively.
-  // Additionally, libarchive >= 3.8.8 returns NULL from acl_to_text() when
-  // the POSIX ACL entry list contains only filemode-mapping entries
-  // (archive_acl_text_empty()). NFSv4 ALLOW entries are never absorbed by
-  // acl_special(), are always stored in acl_head, and produce output on all
-  // supported platforms.
-  (void)archive_entry_acl_add_entry(e, ARCHIVE_ENTRY_ACL_TYPE_ALLOW,
-    ARCHIVE_ENTRY_ACL_USER_OBJ,
-    ARCHIVE_ENTRY_ACL_READ_DATA | ARCHIVE_ENTRY_ACL_WRITE_DATA | ARCHIVE_ENTRY_ACL_EXECUTE,
-    -1, nullptr);
+  // Set a POSIX ACL via archive_entry_acl_from_text(), which reliably adds ACL
+  // entries on all platforms (including macOS where archive_entry_acl_add_entry
+  // may fail with ARCHIVE_FAILED when the system libarchive lacks POSIX ACL
+  // support). The ACL includes a named USER entry so that the ACL list is
+  // non-empty; libarchive >= 3.8.8 returns NULL from acl_to_text() when only
+  // filemode-mapping entries exist (archive_acl_text_empty()).
+  (void)archive_entry_acl_from_text(e,
+    "user::rwx,group::r-x,other::r-x,user:42:rwx,mask::rwx",
+    ARCHIVE_ENTRY_ACL_TYPE_ACCESS);
 }
 
 } // namespace
