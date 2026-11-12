@@ -81,7 +81,7 @@ jobs:
 
       - name: Upload PF1.0 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: archive-r-pf1-x86_64-${{ github.sha }}
           path: |
@@ -126,7 +126,7 @@ jobs:
 
       - name: Upload Ruby 2.7 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: archive-r-ruby27-${{ github.sha }}
           path: |
@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Set up QEMU (aarch64)
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1
 
       - name: Pull Cross-Build Image (Required)
         run: |
@@ -208,7 +208,7 @@ jobs:
 
       - name: Upload PF1.1 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: archive-r-pf1-arm64-${{ github.sha }}
           path: |
@@ -260,7 +260,7 @@ jobs:
 
       - name: Upload ${{ matrix.label }} artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: archive-r-${{ matrix.arch }}-${{ github.sha }}
           path: |
@@ -306,7 +306,7 @@ jobs:
 
       - name: Upload PF3 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: archive-r-pf3-${{ github.sha }}
           path: |
@@ -352,7 +352,7 @@ jobs:
 
       - name: Upload PF4 artifacts
         if: ${{ always() && env.ACT != 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: archive-r-pf4-${{ github.sha }}
           path: |
